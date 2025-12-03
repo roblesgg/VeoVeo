@@ -52,7 +52,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // CORRECCIÓN 3: La librería liquid va aquí directa, SIN otro bloque 'dependencies'
     implementation(libs.liquid)
 
     testImplementation(libs.junit)
