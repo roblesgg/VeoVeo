@@ -1,6 +1,7 @@
 package com.example.veoveo.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -10,12 +11,15 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.painterResource
 import com.example.veoveo.R
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
 @Composable
 fun MainScreen() {
     // Variable para saber en que pestaña estamos (0=Home, 1=Buscar, 2=Perfil)
@@ -103,9 +107,10 @@ fun MainScreen() {
         //este box es del scaffold para que no borre lo de la barra de abajo
         Box(modifier = Modifier.padding(innerPadding)) {
             when (pagina) {
-                0 -> Text("AQUÍ IRÁ LA HOME SCREEN", color = Color.White) // HomeScreen()
-                1 -> Text("AQUÍ IRÁ EL BUSCADOR", color = Color.White)   // SearchScreen()
-                2 -> Text("AQUÍ IRÁ EL PERFIL", color = Color.White)     // ProfileScreen()
+                0 -> Box(Modifier.fillMaxSize(), Alignment.Center){Text("Descubrir coming soon", color = Color.White, fontSize = 30.sp)}
+                1 -> Box(Modifier.fillMaxSize(), Alignment.Center){Text("Biblioteca coming soon", color = Color.White, fontSize = 30.sp)}
+                2 -> Box(Modifier.fillMaxSize(), Alignment.Center){Text("Tierlists coming soon", color = Color.White, fontSize = 30.sp)}
+                3 -> Box(Modifier.fillMaxSize(), Alignment.Center){Text("Social coming soon", color = Color.White, fontSize = 30.sp)}
             }
         }
     }
