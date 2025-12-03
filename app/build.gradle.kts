@@ -6,14 +6,15 @@ plugins {
 
 android {
     namespace = "com.example.veoveo"
-    compileSdk {
-        version = release(36)
-    }
+
+    // CORRECCIÓN 1: Usamos la versión 35 estable y la sintaxis simple
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.veoveo"
         minSdk = 29
-        targetSdk = 36
+        // CORRECCIÓN 2: targetSdk también a 35
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -50,6 +51,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // CORRECCIÓN 3: La librería liquid va aquí directa, SIN otro bloque 'dependencies'
+    implementation(libs.liquid)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
