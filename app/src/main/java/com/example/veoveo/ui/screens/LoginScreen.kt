@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(logueado:()-> Unit) {
     //Los colores del figma
     val brush = Brush.verticalGradient(
         colors = listOf(
@@ -85,7 +85,7 @@ fun LoginScreen() {
 
             // Btn Login
             Button(
-                onClick = { /* codigo pra ir al menu */ },
+                onClick = { logueado() },//aqui tenemos que poner la logica de comprobar el usuaroioy demas
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -114,5 +114,5 @@ fun LoginScreen() {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen()
+    LoginScreen(logueado = {})
 }
