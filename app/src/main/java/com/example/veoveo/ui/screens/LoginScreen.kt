@@ -1,10 +1,27 @@
 package com.example.veoveo.ui.screens
 
+// ===== importaciones necesarias =====
+// estas son las librerias que necesitamos para que funcione la pantalla
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -15,102 +32,167 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * ===== LOGINSCREEN - PANTALLA DE LOGIN =====
+ *
+ * esta es la primera pantalla que ves al abrir la app
+ * aqui el usuario pone su email y contraseña para entrar
+ *
+ * cuando el usuario le da al boton "iniciar sesion", se ejecuta la funcion logueado()
+ * que viene de AuthNavigation y cambia el estado de usuarioLogueado a true
+ *
+ * componentes basicos que usa:
+ * - Box: contenedor principal
+ * - Column: para poner las cosas en vertical (una abajo de otra)
+ * - Text: para mostrar textos
+ * - OutlinedTextField: para escribir texto (email y contraseña)
+ * - Button: botones
+ * - Spacer: para dar espacio entre elementos
+ */
 @Composable
-fun LoginScreen(logueado:()-> Unit) {
-    //Los colores del figma
+fun LoginScreen(
+    logueado: () -> Unit  // esta funcion se ejecuta cuando el usuario pulsa iniciar sesion
+) {
+
+    // ===== colores del fondo =====
+    // creamos un degradado de azul oscuro a morado
+    // estos colores vienen del diseño de figma
     val brush = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF1A1A2E), //azul oscuro arriba
-            Color(0xFF4B0082)  //morado abajo
+            Color(0xFF1A1A2E), // azul oscuro arriba
+            Color(0xFF4B0082)  // morado abajo
         )
     )
 
-    //Variables para lo que se escribe en los campos
+    // ===== variables para lo que escribe el usuario =====
+    // remember y mutableStateOf se usan para guardar lo que el usuario escribe
+    // cuando el usuario escribe algo, la variable cambia y la pantalla se actualiza
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    //contenedor principal (pantyalla entera)
+    // ===== contenedor principal =====
+    // el Box es el contenedor que ocupa toda la pantalla
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(brush = brush),
-        contentAlignment = Alignment.Center
+            .fillMaxSize()                  // ocupa toda la pantalla
+            .background(brush = brush),     // le ponemos el degradado de fondo
+        contentAlignment = Alignment.Center // centra todo lo que hay dentro
     ) {
+
+        // ===== columna vertical =====
+        // la Column pone todos los elementos en vertical (uno debajo del otro)
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+            horizontalAlignment = Alignment.CenterHorizontally,  // centra horizontalmente
+            modifier = Modifier.padding(32.dp)                   // margen de 32dp alrededor
         ) {
-            //aqui podemos poner el logo
+
+            // ===== logo/titulo =====
+            // texto grande con el nombre de la app
             Text(
                 text = "VeoVeo",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(bottom = 50.dp)
+                fontSize = 48.sp,              // tamaño grande para el titulo
+                fontWeight = FontWeight.Bold,  // texto en negrita
+                color = Color.White            // color blanco
             )
 
-            // Campo Email
+            // espacio entre el titulo y los campos
+            Spacer(modifier = Modifier.height(50.dp))
+
+            // ===== campo de email =====
+            // OutlinedTextField es un campo de texto con borde
             OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email", color = Color.Gray) },
+                value = email,                        // el valor actual del campo
+                onValueChange = { email = it },       // cuando el usuario escribe, actualiza la variable
+                label = {
+                    Text("Email", color = Color.Gray) // etiqueta que aparece arriba del campo
+                },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF6C63FF),
-                    unfocusedBorderColor = Color.Gray,
-                    // Estos son necesarios para que el fondo sea transparente o de otro color
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent
+                    focusedTextColor = Color.White,          // texto blanco cuando escribes
+                    unfocusedTextColor = Color.White,        // texto blanco cuando no escribes
+                    focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
+                    unfocusedBorderColor = Color.Gray,       // borde gris cuando no escribes
+                    focusedContainerColor = Color.Transparent,   // fondo transparente cuando escribes
+                    unfocusedContainerColor = Color.Transparent  // fondo transparente cuando no escribes
                 ),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-            )
-
-            // Campo Password
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña", color = Color.Gray) },
-                visualTransformation = PasswordVisualTransformation(), // Oculta las letras
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFF6C63FF),
-                    unfocusedBorderColor = Color.Gray,
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent
-                ),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
-            )
-
-            // Btn Login
-            Button(
-                onClick = { logueado() },//aqui tenemos que poner la logica de comprobar el usuaroioy demas
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(12.dp) // Bordes redondeados
+                    .fillMaxWidth()           // ocupa todo el ancho
+                    .padding(bottom = 16.dp)  // margen abajo de 16dp
+            )
+
+            // ===== campo de contraseña =====
+            // igual que el de email pero oculta lo que escribes
+            OutlinedTextField(
+                value = password,                     // el valor actual del campo
+                onValueChange = { password = it },    // cuando el usuario escribe, actualiza la variable
+                label = {
+                    Text("Contraseña", color = Color.Gray) // etiqueta del campo
+                },
+                visualTransformation = PasswordVisualTransformation(), // oculta las letras (pone •••)
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFF6C63FF),
+                    unfocusedBorderColor = Color.Gray,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()           // ocupa todo el ancho
+                    .padding(bottom = 32.dp)  // margen abajo mas grande (32dp)
+            )
+
+            // ===== boton de iniciar sesion =====
+            Button(
+                onClick = {
+                    // cuando pulsan el boton, ejecutamos la funcion logueado()
+                    // que viene de AuthNavigation
+                    // en el futuro aqui iria la logica de comprobar email y contraseña
+                    logueado()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()   // ocupa todo el ancho
+                    .height(50.dp),   // altura de 50dp
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black  // fondo negro
+                ),
+                shape = RoundedCornerShape(12.dp) // esquinas redondeadas
             ) {
-                Text("INICIAR SESIÓN", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    "INICIAR SESIÓN",
+                    color = Color.White,          // texto blanco
+                    fontWeight = FontWeight.Bold  // texto en negrita
+                )
             }
 
+            // espacio entre botones
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botón Google (Simulado)
+            // ===== boton de google =====
+            // boton alternativo para iniciar sesion con google
+            // por ahora no hace nada (onClick vacio)
             Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                shape = RoundedCornerShape(12.dp)
+                onClick = {
+                    // en el futuro aqui ira la logica de google sign in
+                },
+                modifier = Modifier
+                    .fillMaxWidth()   // ocupa todo el ancho
+                    .height(50.dp),   // altura de 50dp
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White  // fondo blanco
+                ),
+                shape = RoundedCornerShape(12.dp) // esquinas redondeadas
             ) {
-                Text("Continuar con Google", color = Color.Black)
+                Text(
+                    "Continuar con Google",
+                    color = Color.Black  // texto negro
+                )
             }
         }
     }
 }
 
-// Esto sirve para ver la pantalla a la derecha sin ejecutar el emulador
+// ===== vista previa =====
+// esto sirve para ver la pantalla en android studio sin ejecutar el emulador
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
