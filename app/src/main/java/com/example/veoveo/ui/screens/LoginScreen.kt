@@ -59,7 +59,7 @@ fun LoginScreen(logueado:()-> Unit) {
                     unfocusedTextColor = Color.White,
                     focusedBorderColor = Color(0xFF6C63FF),
                     unfocusedBorderColor = Color.Gray,
-                    // Estos son necesarios para que el fondo sea transparente o del color que quieras
+                    // Estos son necesarios para que el fondo sea transparente o de otro color
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent
                 ),
