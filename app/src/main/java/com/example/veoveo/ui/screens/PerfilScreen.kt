@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,6 +82,10 @@ fun PerfilScreen(
     // volver atras con boton del movil
     BackHandler(onBack = { onVolverClick() })
 
+    val montserratFontFamily = FontFamily(
+        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
+    )
+
     // ===== colores del fondo =====
     // el mismo degradado de siempre
     val brush = Brush.verticalGradient(
@@ -120,7 +126,7 @@ fun PerfilScreen(
                     .size(110.dp)                  // tamaño de 110dp
                     .clip(CircleShape)             // forma circular
                     .border(                       // borde alrededor
-                        width = 2.dp,
+                        width = 3.dp,
                         color = Color.White,
                         shape = CircleShape
                     )
@@ -134,7 +140,8 @@ fun PerfilScreen(
                 text = "User",
                 color = Color.White,
                 fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontFamily = montserratFontFamily
             )
 
             // espacio entre nombre y estadisticas

@@ -31,6 +31,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -64,6 +67,11 @@ import com.example.veoveo.R
 fun MainScreen(
     onNavigateToPerfil: () -> Unit = {}  // funcion que se ejecuta al pulsar el icono de perfil
 ) {
+
+    //fuente
+    val montserratFontFamily = FontFamily(
+        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
+    )
 
     // ===== variable para saber que pestaña esta activa =====
     // 0 = descubrir
@@ -192,6 +200,16 @@ fun MainScreen(
                             contentAlignment = Alignment.Center  // centra el contenido
                         ) {
                             Text(
+                                text = "Descubrir",
+                                fontSize = 35.sp,
+                                color = Color.White,
+                                fontFamily = montserratFontFamily,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(top =25.dp, start = 25.dp)
+
+                            )
+                            Text(
                                 text = "descubrir coming soon",
                                 fontSize = 30.sp,
                                 color = Color.Gray
@@ -204,6 +222,18 @@ fun MainScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
+
+                            Text(
+                                text = "Biblioteca",
+                                fontSize = 35.sp,
+                                color = Color.White,
+                                fontFamily = montserratFontFamily,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(top =25.dp, start = 25.dp)
+
+                            )
+
                             Text(
                                 text = "biblioteca coming soon",
                                 fontSize = 30.sp,
@@ -217,6 +247,17 @@ fun MainScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
+
+                            Text(
+                                text = "TierLists",
+                                fontSize = 35.sp,
+                                color = Color.White,
+                                fontFamily = montserratFontFamily,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(top =25.dp, start = 25.dp)
+
+                            )
                             Text(
                                 text = "tierlists coming soon",
                                 fontSize = 30.sp,
@@ -230,6 +271,17 @@ fun MainScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
+
+                            Text(
+                                text = "Social",
+                                fontSize = 35.sp,
+                                color = Color.White,
+                                fontFamily = montserratFontFamily,
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .padding(top =25.dp, start = 25.dp)
+
+                            )
                             Text(
                                 text = "social coming soon",
                                 fontSize = 30.sp,
@@ -249,7 +301,8 @@ fun MainScreen(
                     },
                     modifier = Modifier
                         .align(Alignment.TopEnd)  // lo ponemos arriba a la derecha
-                        .padding(16.dp)           // margen de 16dp
+                        .padding(top = 25.dp, end = 25.dp)
+                        .size(40.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_perfil),
@@ -259,7 +312,7 @@ fun MainScreen(
                             .size(40.dp)                   // tamaño de 40dp
                             .clip(CircleShape)             // forma circular
                             .border(                       // borde alrededor
-                                width = 2.dp,
+                                width = 3.dp,
                                 color = Color.White,
                                 shape = CircleShape
                             )

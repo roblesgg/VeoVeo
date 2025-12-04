@@ -26,11 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import com.example.veoveo.R
 
 /**
  * ===== LOGINSCREEN - PANTALLA DE LOGIN =====
@@ -64,6 +67,11 @@ fun LoginScreen(
         )
     )
 
+
+    val montserratFontFamily = FontFamily(
+        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
+    )
+
     // ===== variables para lo que escribe el usuario =====
     // remember y mutableStateOf se usan para guardar lo que el usuario escribe
     // cuando el usuario escribe algo, la variable cambia y la pantalla se actualiza
@@ -92,6 +100,7 @@ fun LoginScreen(
                 text = "VeoVeo",
                 fontSize = 48.sp,              // tamaño grande para el titulo
                 fontWeight = FontWeight.Bold,  // texto en negrita
+                fontFamily = montserratFontFamily,  // fuente montserrat
                 color = Color.White            // color blanco
             )
 
