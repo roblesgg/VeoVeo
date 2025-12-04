@@ -3,6 +3,7 @@ package com.example.veoveo.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -230,9 +231,12 @@ fun MainScreen() {
                             contentDescription = "Ir al Perfil",
                             contentScale = ContentScale.Crop, // Recorta la foto
                             modifier = Modifier
+
+
                                 .size(40.dp) // Un poco más grande ahora que está solo
                                 .clip(CircleShape) // Lo hace circulo
                                 .background(Color.Gray)
+                                .border(width = 2.dp, color = Color.DarkGray, shape = CircleShape)
                         )
                     }
                 }
