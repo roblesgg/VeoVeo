@@ -28,10 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veoveo.R
-// Importaciones de Liquid (necesarias para el efecto)
-import io.github.fletchmckee.liquid.rememberLiquidState
-import io.github.fletchmckee.liquid.liquefiable
-import io.github.fletchmckee.liquid.liquid
 
 @Composable
 fun MainScreen() {
@@ -44,9 +40,6 @@ fun MainScreen() {
     // 4 = PERFIL.kt (pantalla separada SIN barras)
     var pagina by remember { mutableIntStateOf(0) }
 
-    // Estado para el efecto liquido
-    val liquidState = rememberLiquidState()
-
     // El degradado del fondo (igual que en Login y Perfil)
     val brush = Brush.verticalGradient(
         colors = listOf(
@@ -56,13 +49,11 @@ fun MainScreen() {
     )
 
     // ESTRUCTURA PRINCIPAL:
-    // Movemos el Box con el fondo AQUI para que envuelva todo (incluida la barra)
-    // Esto es necesario para que el efecto liquid sepa qué distorsionar
+    // Box con el fondo que envuelve todo
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(brush = brush) // Fondo con degradado
-            .liquefiable(liquidState)  // Marcamos el fondo como distorsionable
     ) {
 
         //esto es para que no se enseñe el esqueleto si esta en alguna pestaña como perfil etc..
@@ -71,7 +62,6 @@ fun MainScreen() {
             BackHandler {
                 pagina = 0 // Vuelve a Descubrir
             }
-            // Quitamos el Box de fondo que tenías aquí porque ya lo pusimos en el padre
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -109,18 +99,14 @@ fun MainScreen() {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // Margen externo: lo separa de los lados y de abajo
                             .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
-                            // Forma ovalada (cápsula)
                             .clip(RoundedCornerShape(50.dp))
-                            // AQUI aplicamos el efecto liquido a la cápsula
-                            .liquid(liquidState)
+                            .background(Color.Black.copy(alpha = 0.3f)) // Fondo semi-transparente
                     ) {
                         NavigationBar(
-                            // Color transparente porque el color lo da el efecto liquid o el Box padre
-                            containerColor = Color.Black.copy(alpha = 0.3f), // Un poco oscuro y transparente
-                            tonalElevation = 0.dp, // Sin elevación por defecto
-                            modifier = Modifier.height(70.dp) // Altura de la cápsula
+                            containerColor = Color.Transparent, // Transparente para que se vea el fondo del Box
+                            tonalElevation = 0.dp,
+                            modifier = Modifier.height(70.dp)
                         ) {
                             //descubrir
                             NavigationBarItem(
@@ -195,9 +181,8 @@ fun MainScreen() {
                 // innerPadding es el espacio que ocupa la barra de abajo
                 Box(
                     modifier = Modifier
-                        .padding(innerPadding) // Para que no lo tape la barra de abajo
-                        .fillMaxSize()         // Ocupa todo
-                    // Quitamos el background de aqui porque ya esta en el padre global
+                        .padding(innerPadding)
+                        .fillMaxSize()
                 ) {
 
                     // Decide que se enseña segun el valor de pagina es un switch
