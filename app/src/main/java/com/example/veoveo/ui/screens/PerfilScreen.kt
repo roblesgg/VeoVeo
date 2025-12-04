@@ -121,7 +121,7 @@ fun PerfilScreen(
                     .clip(CircleShape)             // forma circular
                     .border(                       // borde alrededor
                         width = 2.dp,
-                        color = Color(0xFF1A1A2E),
+                        color = Color.White,
                         shape = CircleShape
                     )
             )
@@ -131,7 +131,7 @@ fun PerfilScreen(
 
             // ===== nombre de usuario =====
             Text(
-                text = "Maryluu_32",
+                text = "User",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
@@ -147,9 +147,9 @@ fun PerfilScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly  // distribuye el espacio uniformemente
             ) {
                 // cada estadistica usa la funcion EstadisticaItem (ver abajo)
-                EstadisticaItem("129", "Peliculas\nVistas")
-                EstadisticaItem("3680", "Seguidores")
-                EstadisticaItem("93", "Reseñas")
+                EstadisticaItem("0", "Peliculas\nVistas")
+                EstadisticaItem("0", "Seguidores")
+                EstadisticaItem("0", "Reseñas")
             }
 
             // espacio entre estadisticas y tarjeta de opciones

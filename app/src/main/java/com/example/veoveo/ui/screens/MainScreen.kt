@@ -114,7 +114,7 @@ fun MainScreen(
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.descubrir),
+                                    painter = painterResource(id = R.drawable.ic_descubrir),
                                     contentDescription = "Descubrir",
                                     modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
                                 )
@@ -129,7 +129,7 @@ fun MainScreen(
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.biblioteca),
+                                    painter = painterResource(id = R.drawable.ic_biblioteca),
                                     contentDescription = "Biblioteca",
                                     modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
                                 )
@@ -144,7 +144,7 @@ fun MainScreen(
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.tierlist),
+                                    painter = painterResource(id = R.drawable.ic_tierlist),
                                     contentDescription = "TierLists",
                                     modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
                                 )
@@ -159,7 +159,7 @@ fun MainScreen(
                         NavigationBarItem(
                             icon = {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.social),
+                                    painter = painterResource(id = R.drawable.ic_social),
                                     contentDescription = "Social",
                                     modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
                                 )
@@ -258,7 +258,6 @@ fun MainScreen(
                         modifier = Modifier
                             .size(40.dp)                   // tamaño de 40dp
                             .clip(CircleShape)             // forma circular
-                            .background(Color.Gray)        // fondo gris
                             .border(                       // borde alrededor
                                 width = 2.dp,
                                 color = Color.White,
