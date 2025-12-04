@@ -124,7 +124,9 @@ fun LoginScreen(
                     focusedContainerColor = Color.Transparent,   // fondo transparente cuando escribes
                     unfocusedContainerColor = Color.Transparent  // fondo transparente cuando no escribes
                 ),
-                modifier = Modifier
+                shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                        modifier = Modifier
                     .fillMaxWidth()           // ocupa todo el ancho
                     .padding(bottom = 16.dp)  // margen abajo de 16dp
             )
@@ -146,7 +148,9 @@ fun LoginScreen(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent
                 ),
-                modifier = Modifier
+                shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                        modifier = Modifier
                     .fillMaxWidth()           // ocupa todo el ancho
                     .padding(bottom = 32.dp)  // margen abajo mas grande (32dp)
             )
@@ -181,7 +185,7 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black  // fondo negro
                 ),
-                shape = RoundedCornerShape(12.dp) // esquinas redondeadas
+                shape = RoundedCornerShape(30.dp) // esquinas redondeadas
             ) {
                 Text(
                     "INICIAR SESIÓN",
@@ -208,7 +212,7 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White  // fondo blanco
                 ),
-                shape = RoundedCornerShape(12.dp) // esquinas redondeadas
+                shape = RoundedCornerShape(30.dp) // esquinas redondeadas
             ) {
                 Text(
                     "Continuar con Google",
