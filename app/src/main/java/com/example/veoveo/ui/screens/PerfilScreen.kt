@@ -22,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,16 +48,17 @@ import com.example.veoveo.R
  * ===== PERFILSCREEN - PANTALLA DE PERFIL =====
  *
  * esta pantalla muestra la informacion del usuario y sus opciones
- * tiene varias partes:
+ * estructura super simple:
  *
- * 1. boton de atras arriba a la izquierda
- * 2. foto de perfil circular en la parte de arriba
- * 3. nombre de usuario debajo de la foto
- * 4. estadisticas (peliculas vistas, seguidores, reseñas)
- * 5. tarjeta con opciones:
- *    - ajustes: para configurar la app
- *    - bloqueados: para ver usuarios bloqueados
- *    - desconectar: para cerrar sesion
+ * Box principal {
+ *   Column (todo el contenido) {
+ *     - foto de perfil circular
+ *     - nombre de usuario
+ *     - Row con estadisticas
+ *     - opciones (ajustes, bloqueados, desconectar)
+ *   }
+ *   IconButton (boton atras encima)
+ * }
  *
  * componentes basicos que usa:
  * - Box: contenedor principal
@@ -67,7 +66,6 @@ import com.example.veoveo.R
  * - Row: para poner cosas en horizontal
  * - Image: para la foto de perfil
  * - Text: para textos
- * - Card: tarjeta con fondo semi-transparente
  * - Spacer: para dar espacio entre elementos
  * - HorizontalDivider: lineas divisoras
  */
@@ -82,6 +80,7 @@ fun PerfilScreen(
     // volver atras con boton del movil
     BackHandler(onBack = { onVolverClick() })
 
+    // fuente montserrat
     val montserratFontFamily = FontFamily(
         Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
     )
@@ -97,7 +96,6 @@ fun PerfilScreen(
 
     // ===== contenedor principal =====
     // Box es un contenedor donde puedes poner elementos uno encima del otro
-    // y usar .align() para posicionarlos donde quieras
     Box(
         modifier = Modifier
             .fillMaxSize()              // ocupa toda la pantalla
@@ -105,7 +103,6 @@ fun PerfilScreen(
     ) {
 
         // ===== columna con todo el contenido del perfil =====
-        // esta Column tiene toda la info del usuario centrada
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -117,22 +114,17 @@ fun PerfilScreen(
             Spacer(modifier = Modifier.height(60.dp))
 
             // ===== foto de perfil =====
-            // imagen circular con borde
+            // imagen circular con borde blanco
             Image(
                 painter = painterResource(id = R.drawable.ic_perfil),
                 contentDescription = "Foto Perfil",
-                contentScale = ContentScale.Crop,  // recorta la imagen para que encaje
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(110.dp)                  // tamaño de 110dp
-                    .clip(CircleShape)             // forma circular
-                    .border(                       // borde alrededor
-                        width = 3.dp,
-                        color = Color.White,
-                        shape = CircleShape
-                    )
+                    .size(110.dp)
+                    .clip(CircleShape)
+                    .border(3.dp, Color.White, CircleShape)
             )
 
-            // espacio entre foto y nombre
             Spacer(modifier = Modifier.height(16.dp))
 
             // ===== nombre de usuario =====
@@ -144,56 +136,50 @@ fun PerfilScreen(
                 fontFamily = montserratFontFamily
             )
 
-            // espacio entre nombre y estadisticas
             Spacer(modifier = Modifier.height(24.dp))
 
             // ===== fila de estadisticas =====
-            // Row pone las 3 estadisticas en horizontal (una al lado de otra)
+            // Row pone las 3 estadisticas en horizontal
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly  // distribuye el espacio uniformemente
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // cada estadistica usa la funcion EstadisticaItem (ver abajo)
                 EstadisticaItem("0", "Peliculas\nVistas")
                 EstadisticaItem("0", "Seguidores")
                 EstadisticaItem("0", "Reseñas")
             }
 
-            // espacio entre estadisticas y tarjeta de opciones
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ===== tarjeta con opciones =====
-            // Card es un contenedor con fondo y bordes redondeados
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),  // esquinas redondeadas
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Black.copy(alpha = 0.4f)  // fondo negro semi-transparente
-                )
+            // ===== seccion de opciones =====
+            // ahora sin Card, solo un Box con fondo semi-transparente
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))  // esquinas redondeadas
+                    .background(Color.Black.copy(alpha = 0.4f))  // fondo negro semi-transparente
+                    .padding(16.dp)  // padding dentro del box
             ) {
-                // columna dentro de la tarjeta
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column {
 
                     // ===== opcion 1: ajustes =====
                     OpcionPerfil(
                         texto = "Ajustes",
-                        icono = Icons.Default.Settings,  // icono de engranaje
-                        onClick = onAjustesClick         // funcion que viene de AppNavigation
+                        icono = Icons.Default.Settings,
+                        onClick = onAjustesClick
                     )
 
-                    // espacio y linea divisora
                     Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))  // linea gris semi-transparente
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // ===== opcion 2: bloqueados =====
                     OpcionPerfil(
                         texto = "Bloqueados",
-                        icono = Icons.Default.Close,     // icono de X
-                        onClick = onBloqueadosClick      // funcion que viene de AppNavigation
+                        icono = Icons.Default.Close,
+                        onClick = onBloqueadosClick
                     )
 
-                    // espacio y linea divisora
                     Spacer(modifier = Modifier.height(8.dp))
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(8.dp))
@@ -201,32 +187,26 @@ fun PerfilScreen(
                     // ===== opcion 3: desconectar =====
                     OpcionPerfil(
                         texto = "Desconectar",
-                        icono = Icons.Default.ArrowForward,  // icono de flecha
-                        esDestructivo = true,                // true = texto rojo (accion peligrosa)
-                        onClick = onDesconectarClick         // funcion que viene de AppNavigation
+                        icono = Icons.Default.ArrowForward,
+                        esDestructivo = true,  // texto rojo
+                        onClick = onDesconectarClick
                     )
                 }
             }
         }
 
         // ===== boton de atras arriba a la izquierda =====
-        // este boton va ENCIMA de todo el contenido
-        // por eso esta fuera de la Column y dentro del Box
+        // este boton va ENCIMA de todo
         IconButton(
-            onClick = {
-                // cuando pulsan el boton, ejecutamos onVolverClick()
-                // que viene de AppNavigation y vuelve a la pantalla main
-                onVolverClick()
-            },
+            onClick = { onVolverClick() },
             modifier = Modifier
-                .align(Alignment.TopStart)  // lo pone arriba a la izquierda
-                .padding(start = 20.dp, top = 50.dp)  // margen izquierda 20dp, arriba 50dp para bajarlo
+                .align(Alignment.TopStart)
+                .padding(start = 20.dp, top = 50.dp)
         ) {
-            // icono de flecha hacia atras
             Image(
                 painter = painterResource(id = R.drawable.ic_atras),
                 contentDescription = "Volver",
-                modifier = Modifier.size(28.dp)  // tamaño del icono
+                modifier = Modifier.size(28.dp)
             )
         }
     }
@@ -235,51 +215,31 @@ fun PerfilScreen(
 /**
  * ===== ESTADISTICAITEM - COMPONENTE PARA CADA ESTADISTICA =====
  *
- * este componente muestra un numero grande arriba y una etiqueta pequeña abajo
- * se usa para mostrar: peliculas vistas, seguidores, reseñas
- *
- * parametros:
- * - numero: el numero que se muestra arriba (ej: "129")
- * - etiqueta: el texto que se muestra abajo (ej: "Peliculas\nVistas")
+ * muestra un numero grande arriba y una etiqueta pequeña abajo
  */
 @Composable
 fun EstadisticaItem(numero: String, etiqueta: String) {
-    // columna para poner el numero arriba y la etiqueta abajo
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-        // numero grande
         Text(
             text = numero,
             color = Color.White,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
-
-        // etiqueta pequeña debajo
         Text(
             text = etiqueta,
             color = Color.LightGray,
             fontSize = 12.sp,
-            lineHeight = 14.sp,              // altura de linea para textos con \n
-            textAlign = TextAlign.Center     // centra el texto
+            lineHeight = 14.sp,
+            textAlign = TextAlign.Center
         )
     }
 }
 
 /**
- * ===== OPCIONPERFIL - COMPONENTE PARA CADA OPCION DE LA TARJETA =====
+ * ===== OPCIONPERFIL - COMPONENTE PARA CADA OPCION =====
  *
- * este componente muestra una fila con:
- * - texto a la izquierda (ej: "Ajustes")
- * - icono a la derecha (ej: engranaje)
- *
- * cuando lo pulsas, ejecuta la funcion onClick
- *
- * parametros:
- * - texto: el texto que se muestra (ej: "Ajustes")
- * - icono: el icono que se muestra (ej: Icons.Default.Settings)
- * - esDestructivo: si es true, el texto es rojo (para acciones peligrosas como desconectar)
- * - onClick: funcion que se ejecuta cuando lo pulsas
+ * fila con texto a la izquierda e icono a la derecha
  */
 @Composable
 fun OpcionPerfil(
@@ -288,30 +248,25 @@ fun OpcionPerfil(
     esDestructivo: Boolean = false,
     onClick: () -> Unit = {}
 ) {
-    // fila horizontal con el texto a la izquierda y el icono a la derecha
     Row(
         modifier = Modifier
-            .fillMaxWidth()                  // ocupa todo el ancho
-            .padding(vertical = 15.dp)       // margen vertical de 15dp
-            .clickable { onClick() },        // cuando lo pulsas, ejecuta onClick
-        verticalAlignment = Alignment.CenterVertically,        // centra verticalmente
-        horizontalArrangement = Arrangement.SpaceBetween       // pone el texto y el icono en los extremos
+            .fillMaxWidth()
+            .padding(vertical = 15.dp)
+            .clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-
-        // texto a la izquierda
         Text(
             text = texto,
-            color = if (esDestructivo) Color(0xFFFF5252) else Color.White,  // rojo si es destructivo, blanco si no
+            color = if (esDestructivo) Color(0xFFFF5252) else Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
-
-        // icono a la derecha
         Icon(
             imageVector = icono,
             contentDescription = null,
-            tint = Color.Gray,          // color gris
-            modifier = Modifier.size(20.dp)  // tamaño de 20dp
+            tint = Color.Gray,
+            modifier = Modifier.size(20.dp)
         )
     }
 }
