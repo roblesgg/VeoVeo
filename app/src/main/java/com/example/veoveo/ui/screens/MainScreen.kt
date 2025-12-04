@@ -261,7 +261,7 @@ fun MainScreen(
                             .background(Color.Gray)        // fondo gris
                             .border(                       // borde alrededor
                                 width = 2.dp,
-                                color = Color.DarkGray,
+                                color = Color.White,
                                 shape = CircleShape
                             )
                     )

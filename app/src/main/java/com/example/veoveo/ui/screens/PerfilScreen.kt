@@ -50,15 +50,17 @@ import com.example.veoveo.R
  * esta pantalla muestra la informacion del usuario y sus opciones
  * tiene varias partes:
  *
- * 1. foto de perfil circular en la parte de arriba
- * 2. nombre de usuario debajo de la foto
- * 3. estadisticas (peliculas vistas, seguidores, reseñas)
- * 4. tarjeta con opciones:
+ * 1. boton de atras arriba a la izquierda
+ * 2. foto de perfil circular en la parte de arriba
+ * 3. nombre de usuario debajo de la foto
+ * 4. estadisticas (peliculas vistas, seguidores, reseñas)
+ * 5. tarjeta con opciones:
  *    - ajustes: para configurar la app
  *    - bloqueados: para ver usuarios bloqueados
  *    - desconectar: para cerrar sesion
  *
  * componentes basicos que usa:
+ * - Box: contenedor principal
  * - Column: para poner cosas en vertical
  * - Row: para poner cosas en horizontal
  * - Image: para la foto de perfil
@@ -72,10 +74,10 @@ fun PerfilScreen(
     onAjustesClick: () -> Unit = {},        // cuando pulsan ajustes
     onBloqueadosClick: () -> Unit = {},     // cuando pulsan bloqueados
     onDesconectarClick: () -> Unit = {},    // cuando pulsan desconectar
-    onVolverClick: () -> Unit = {}          // cuando pulsan la flecha de volver (no se usa ahora)
+    onVolverClick: () -> Unit = {}          // cuando pulsan la flecha de volver
 ) {
 
-    // "Si pulsan el botón atrás del móvil, ejecuta onVolverClick"
+    // volver atras con boton del movil
     BackHandler(onBack = { onVolverClick() })
 
     // ===== colores del fondo =====
@@ -87,19 +89,126 @@ fun PerfilScreen(
         )
     )
 
+    // ===== contenedor principal =====
+    // Box es un contenedor donde puedes poner elementos uno encima del otro
+    // y usar .align() para posicionarlos donde quieras
     Box(
         modifier = Modifier
-            .fillMaxSize()                  // ocupa toda la pantalla
-            .background(brush = brush),     // le ponemos el degradado de fondo
-        contentAlignment = Alignment.Center // centra todo lo que hay dentro
-    ){
+            .fillMaxSize()              // ocupa toda la pantalla
+            .background(brush = brush)  // le ponemos el degradado
+    ) {
+
+        // ===== columna con todo el contenido del perfil =====
+        // esta Column tiene toda la info del usuario centrada
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally  // centra todo horizontalmente
+        ) {
+
+            // espacio arriba para no chocar con el boton de atras
+            Spacer(modifier = Modifier.height(60.dp))
+
+            // ===== foto de perfil =====
+            // imagen circular con borde
+            Image(
+                painter = painterResource(id = R.drawable.ic_perfil),
+                contentDescription = "Foto Perfil",
+                contentScale = ContentScale.Crop,  // recorta la imagen para que encaje
+                modifier = Modifier
+                    .size(110.dp)                  // tamaño de 110dp
+                    .clip(CircleShape)             // forma circular
+                    .border(                       // borde alrededor
+                        width = 2.dp,
+                        color = Color(0xFF1A1A2E),
+                        shape = CircleShape
+                    )
+            )
+
+            // espacio entre foto y nombre
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ===== nombre de usuario =====
+            Text(
+                text = "Maryluu_32",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // espacio entre nombre y estadisticas
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ===== fila de estadisticas =====
+            // Row pone las 3 estadisticas en horizontal (una al lado de otra)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly  // distribuye el espacio uniformemente
+            ) {
+                // cada estadistica usa la funcion EstadisticaItem (ver abajo)
+                EstadisticaItem("129", "Peliculas\nVistas")
+                EstadisticaItem("3680", "Seguidores")
+                EstadisticaItem("93", "Reseñas")
+            }
+
+            // espacio entre estadisticas y tarjeta de opciones
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // ===== tarjeta con opciones =====
+            // Card es un contenedor con fondo y bordes redondeados
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),  // esquinas redondeadas
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Black.copy(alpha = 0.4f)  // fondo negro semi-transparente
+                )
+            ) {
+                // columna dentro de la tarjeta
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    // ===== opcion 1: ajustes =====
+                    OpcionPerfil(
+                        texto = "Ajustes",
+                        icono = Icons.Default.Settings,  // icono de engranaje
+                        onClick = onAjustesClick         // funcion que viene de AppNavigation
+                    )
+
+                    // espacio y linea divisora
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))  // linea gris semi-transparente
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // ===== opcion 2: bloqueados =====
+                    OpcionPerfil(
+                        texto = "Bloqueados",
+                        icono = Icons.Default.Close,     // icono de X
+                        onClick = onBloqueadosClick      // funcion que viene de AppNavigation
+                    )
+
+                    // espacio y linea divisora
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // ===== opcion 3: desconectar =====
+                    OpcionPerfil(
+                        texto = "Desconectar",
+                        icono = Icons.Default.ArrowForward,  // icono de flecha
+                        esDestructivo = true,                // true = texto rojo (accion peligrosa)
+                        onClick = onDesconectarClick         // funcion que viene de AppNavigation
+                    )
+                }
+            }
+        }
 
         // ===== boton de atras arriba a la izquierda =====
-        // IconButton es un boton que contiene un icono
+        // este boton va ENCIMA de todo el contenido
+        // por eso esta fuera de la Column y dentro del Box
         IconButton(
             onClick = {
                 // cuando pulsan el boton, ejecutamos onVolverClick()
-                // que viene de AppNavigation y vuelve a la pantalla de perfil
+                // que viene de AppNavigation y vuelve a la pantalla main
                 onVolverClick()
             },
             modifier = Modifier
@@ -112,117 +221,6 @@ fun PerfilScreen(
                 contentDescription = "Volver",
                 modifier = Modifier.size(28.dp)  // tamaño del icono
             )
-        }
-
-
-
-
-
-
-
-    }
-    // ===== columna principal =====
-    // Column pone todos los elementos en vertical (uno debajo del otro)
-    Column(
-        modifier = Modifier
-            .fillMaxSize()              // ocupa toda la pantalla
-            .background(brush = brush)  // le ponemos el degradado
-            .padding(24.dp),            // margen alrededor de 24dp
-        horizontalAlignment = Alignment.CenterHorizontally  // centra todo horizontalmente
-    ) {
-
-        // espacio arriba
-        Spacer(modifier = Modifier.height(60.dp))
-
-        // ===== foto de perfil =====
-        // imagen circular con borde
-        Image(
-            painter = painterResource(id = R.drawable.ic_perfil),
-            contentDescription = "Foto Perfil",
-            contentScale = ContentScale.Crop,  // recorta la imagen para que encaje
-            modifier = Modifier
-                .size(110.dp)                  // tamaño de 110dp
-                .clip(CircleShape)             // forma circular
-                .border(                       // borde alrededor
-                    width = 2.dp,
-                    color = Color(0xFF1A1A2E),
-                    shape = CircleShape
-                )
-        )
-
-        // espacio entre foto y nombre
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ===== nombre de usuario =====
-        Text(
-            text = "Maryluu_32",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        // espacio entre nombre y estadisticas
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // ===== fila de estadisticas =====
-        // Row pone las 3 estadisticas en horizontal (una al lado de otra)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly  // distribuye el espacio uniformemente
-        ) {
-            // cada estadistica usa la funcion EstadisticaItem (ver abajo)
-            EstadisticaItem("129", "Peliculas\nVistas")
-            EstadisticaItem("3680", "Seguidores")
-            EstadisticaItem("93", "Reseñas")
-        }
-
-        // espacio entre estadisticas y tarjeta de opciones
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // ===== tarjeta con opciones =====
-        // Card es un contenedor con fondo y bordes redondeados
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),  // esquinas redondeadas
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Black.copy(alpha = 0.4f)  // fondo negro semi-transparente
-            )
-        ) {
-            // columna dentro de la tarjeta
-            Column(modifier = Modifier.padding(16.dp)) {
-
-                // ===== opcion 1: ajustes =====
-                OpcionPerfil(
-                    texto = "Ajustes",
-                    icono = Icons.Default.Settings,  // icono de engranaje
-                    onClick = onAjustesClick         // funcion que viene de AppNavigation
-                )
-
-                // espacio y linea divisora
-                Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))  // linea gris semi-transparente
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // ===== opcion 2: bloqueados =====
-                OpcionPerfil(
-                    texto = "Bloqueados",
-                    icono = Icons.Default.Close,     // icono de X
-                    onClick = onBloqueadosClick      // funcion que viene de AppNavigation
-                )
-
-                // espacio y linea divisora
-                Spacer(modifier = Modifier.height(8.dp))
-                HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // ===== opcion 3: desconectar =====
-                OpcionPerfil(
-                    texto = "Desconectar",
-                    icono = Icons.Default.ArrowForward,  // icono de flecha
-                    esDestructivo = true,                // true = texto rojo (accion peligrosa)
-                    onClick = onDesconectarClick         // funcion que viene de AppNavigation
-                )
-            }
         }
     }
 }
