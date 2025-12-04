@@ -77,6 +77,7 @@ fun LoginScreen(
     // cuando el usuario escribe algo, la variable cambia y la pantalla se actualiza
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var mostrarError by remember { mutableStateOf(false) }  // para mostrar el mensaje de error
 
     // ===== contenedor principal =====
     // el Box es el contenedor que ocupa toda la pantalla
@@ -113,7 +114,7 @@ fun LoginScreen(
                 value = email,                        // el valor actual del campo
                 onValueChange = { email = it },       // cuando el usuario escribe, actualiza la variable
                 label = {
-                    Text("Email", color = Color.Gray) // etiqueta que aparece arriba del campo
+                    Text("Email", color = Color.Gray,fontFamily = montserratFontFamily) // etiqueta que aparece arriba del campo
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,          // texto blanco cuando escribes
@@ -134,7 +135,7 @@ fun LoginScreen(
                 value = password,                     // el valor actual del campo
                 onValueChange = { password = it },    // cuando el usuario escribe, actualiza la variable
                 label = {
-                    Text("Contraseña", color = Color.Gray) // etiqueta del campo
+                    Text("Contraseña", color = Color.Gray,fontFamily = montserratFontFamily) // etiqueta del campo
                 },
                 visualTransformation = PasswordVisualTransformation(), // oculta las letras (pone •••)
                 colors = OutlinedTextFieldDefaults.colors(
@@ -150,15 +151,29 @@ fun LoginScreen(
                     .padding(bottom = 32.dp)  // margen abajo mas grande (32dp)
             )
 
+            // ===== mensaje de error =====
+            // si mostrarError es true, mostramos el mensaje en rojo
+            if (mostrarError) {
+                Text(
+                    text = "Email/Contraseña incorrectos",
+                    color = Color(0xFFFF5252),  // rojo
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    fontFamily = montserratFontFamily
+                )
+            }
+
             // ===== boton de iniciar sesion =====
             Button(
                 onClick = {
-
-                    if (email.equals("admin") && password.equals("admin")) {
-                        // si el email y la contraseña no estan vacios, ejecutamos logueado()
+                    if ((email.equals("admin") && password.equals("admin"))||(email.equals("1234") && password.equals("1234"))) {
+                        // si el email y la contraseña son correctos, ejecutamos logueado()
+                        mostrarError = false  // quitamos el error
                         logueado()
+                    } else {
+                        // si son incorrectos, mostramos el error
+                        mostrarError = true
                     }
-
                 },
                 modifier = Modifier
                     .fillMaxWidth()   // ocupa todo el ancho
@@ -171,7 +186,9 @@ fun LoginScreen(
                 Text(
                     "INICIAR SESIÓN",
                     color = Color.White,          // texto blanco
-                    fontWeight = FontWeight.Bold  // texto en negrita
+                    fontWeight = FontWeight.Bold,  // texto en negrita
+                    fontFamily = montserratFontFamily
+
                 )
             }
 
@@ -195,7 +212,9 @@ fun LoginScreen(
             ) {
                 Text(
                     "Continuar con Google",
-                    color = Color.Black  // texto negro
+                    color = Color.Black,  // texto negro
+                    fontWeight = FontWeight.Bold,  // texto en negrita
+                    fontFamily = montserratFontFamily
                 )
             }
         }
