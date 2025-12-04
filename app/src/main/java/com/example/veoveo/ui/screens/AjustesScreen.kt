@@ -1,9 +1,11 @@
 package com.example.veoveo.ui.screens
 
 // ===== importaciones necesarias =====
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -40,6 +42,8 @@ import com.example.veoveo.R
 fun AjustesScreen(
     onVolverClick: () -> Unit = {}  // funcion que se ejecuta cuando pulsan la flecha de volver
 ) {
+    //volver atras con boton del movil
+    BackHandler(onBack = { onVolverClick() })
 
     // ===== colores del fondo =====
     // el mismo degradado de siempre
@@ -58,6 +62,7 @@ fun AjustesScreen(
             .fillMaxSize()              // ocupa toda la pantalla
             .background(brush = brush)  // le ponemos el degradado
     ) {
+        //Spacer(modifier = Modifier.size(30.dp))
 
         // ===== texto en el centro =====
         // este texto aparece en el medio de la pantalla
@@ -78,7 +83,7 @@ fun AjustesScreen(
             },
             modifier = Modifier
                 .align(Alignment.TopStart)  // lo pone arriba a la izquierda
-                .padding(20.dp)             // margen de 20dp desde el borde
+                .padding(start = 20.dp, top = 50.dp)  // margen izquierda 20dp, arriba 50dp para bajarlo
         ) {
             // icono de flecha hacia atras
             Image(

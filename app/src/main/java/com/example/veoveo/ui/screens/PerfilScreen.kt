@@ -1,11 +1,13 @@
 package com.example.veoveo.ui.screens
 
 // ===== importaciones necesarias =====
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -72,6 +75,9 @@ fun PerfilScreen(
     onVolverClick: () -> Unit = {}          // cuando pulsan la flecha de volver (no se usa ahora)
 ) {
 
+    // "Si pulsan el botón atrás del móvil, ejecuta onVolverClick"
+    BackHandler(onBack = { onVolverClick() })
+
     // ===== colores del fondo =====
     // el mismo degradado de siempre
     val brush = Brush.verticalGradient(
@@ -81,6 +87,40 @@ fun PerfilScreen(
         )
     )
 
+    Box(
+        modifier = Modifier
+            .fillMaxSize()                  // ocupa toda la pantalla
+            .background(brush = brush),     // le ponemos el degradado de fondo
+        contentAlignment = Alignment.Center // centra todo lo que hay dentro
+    ){
+
+        // ===== boton de atras arriba a la izquierda =====
+        // IconButton es un boton que contiene un icono
+        IconButton(
+            onClick = {
+                // cuando pulsan el boton, ejecutamos onVolverClick()
+                // que viene de AppNavigation y vuelve a la pantalla de perfil
+                onVolverClick()
+            },
+            modifier = Modifier
+                .align(Alignment.TopStart)  // lo pone arriba a la izquierda
+                .padding(start = 20.dp, top = 50.dp)  // margen izquierda 20dp, arriba 50dp para bajarlo
+        ) {
+            // icono de flecha hacia atras
+            Image(
+                painter = painterResource(id = R.drawable.ic_atras),
+                contentDescription = "Volver",
+                modifier = Modifier.size(28.dp)  // tamaño del icono
+            )
+        }
+
+
+
+
+
+
+
+    }
     // ===== columna principal =====
     // Column pone todos los elementos en vertical (uno debajo del otro)
     Column(
