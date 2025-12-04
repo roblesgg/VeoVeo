@@ -153,10 +153,12 @@ fun LoginScreen(
             // ===== boton de iniciar sesion =====
             Button(
                 onClick = {
-                    // cuando pulsan el boton, ejecutamos la funcion logueado()
-                    // que viene de AuthNavigation
-                    // en el futuro aqui iria la logica de comprobar email y contraseña
-                    logueado()
+
+                    if (email.equals("admin") && password.equals("admin")) {
+                        // si el email y la contraseña no estan vacios, ejecutamos logueado()
+                        logueado()
+                    }
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()   // ocupa todo el ancho

@@ -220,6 +220,11 @@ fun PerfilScreen(
 @Composable
 fun EstadisticaItem(numero: String, etiqueta: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // fuente montserrat
+        val montserratFontFamily = FontFamily(
+            Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
+        )
+
         Text(
             text = numero,
             color = Color.White,
@@ -231,7 +236,8 @@ fun EstadisticaItem(numero: String, etiqueta: String) {
             color = Color.LightGray,
             fontSize = 12.sp,
             lineHeight = 14.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            fontFamily = montserratFontFamily
         )
     }
 }
@@ -248,6 +254,11 @@ fun OpcionPerfil(
     esDestructivo: Boolean = false,
     onClick: () -> Unit = {}
 ) {
+    // fuente montserrat
+    val montserratFontFamily = FontFamily(
+        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -260,7 +271,9 @@ fun OpcionPerfil(
             text = texto,
             color = if (esDestructivo) Color(0xFFFF5252) else Color.White,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            fontFamily = montserratFontFamily
+
         )
         Icon(
             imageVector = icono,
