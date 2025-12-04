@@ -29,8 +29,19 @@ import androidx.compose.ui.unit.sp
 import com.example.veoveo.R
 import androidx.compose.ui.tooling.preview.Preview
 
+/**
+ * PERFILSCREEN - PANTALLA DE PERFIL
+ *
+ * muestra la informacion del usuario: foto, nombre, estadisticas
+ * y opciones: ajustes, bloqueados, desconectar
+ */
 @Composable
-fun PerfilScreen() {
+fun PerfilScreen(
+    onAjustesClick: () -> Unit = {},        // cuando pulsan ajustes
+    onBloqueadosClick: () -> Unit = {},     // cuando pulsan bloqueados
+    onDesconectarClick: () -> Unit = {},    // cuando pulsan desconectar
+    onVolverClick: () -> Unit = {}          // cuando pulsan la flecha de volver
+) {
     val brush = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1A1A2E),
@@ -90,7 +101,8 @@ fun PerfilScreen() {
 
                 OpcionPerfil(
                     texto = "Ajustes",
-                    icono = Icons.Default.Settings
+                    icono = Icons.Default.Settings,
+                    onClick = onAjustesClick
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -100,7 +112,8 @@ fun PerfilScreen() {
                 OpcionPerfil(
                     texto = "Bloqueados",
                     // He cambiado Block por Close (X) porque siempre viene incluido
-                    icono = Icons.Default.Close
+                    icono = Icons.Default.Close,
+                    onClick = onBloqueadosClick
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -111,7 +124,8 @@ fun PerfilScreen() {
                     texto = "Desconectar",
                     // He cambiado ExitToApp por ArrowForward para evitar líos de AutoMirrored
                     icono = Icons.Default.ArrowForward,
-                    esDestructivo = true
+                    esDestructivo = true,
+                    onClick = onDesconectarClick
                 )
             }
         }
@@ -141,13 +155,14 @@ fun EstadisticaItem(numero: String, etiqueta: String) {
 fun OpcionPerfil(
     texto: String,
     icono: ImageVector,
-    esDestructivo: Boolean = false
+    esDestructivo: Boolean = false,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { },
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -167,9 +182,14 @@ fun OpcionPerfil(
     }
 }
 
-// Esto sirve para ver la pantalla a la derecha sin ejecutar el emulador
+// vista previa para android studio
 @Preview(showBackground = true)
 @Composable
 fun PerfilScreenPreview() {
-    PerfilScreen()
+    PerfilScreen(
+        onAjustesClick = {},
+        onBloqueadosClick = {},
+        onDesconectarClick = {},
+        onVolverClick = {}
+    )
 }
