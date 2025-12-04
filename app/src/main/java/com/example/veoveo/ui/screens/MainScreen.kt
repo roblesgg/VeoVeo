@@ -1,10 +1,12 @@
 package com.example.veoveo.ui.screens
 
 // ===== importaciones necesarias =====
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,11 +19,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -194,26 +200,76 @@ fun MainScreen(
                 // when es como un switch en otros lenguajes
                 when (paginaActual) {
                     0 -> {
+                        var buscarPelis by remember { mutableStateOf(false) }
+                        var buscar by remember { mutableStateOf("") }
+                        BackHandler(onBack = { buscarPelis=false })
+
                         // contenido de descubrir (por ahora solo texto)
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center  // centra el contenido
                         ) {
-                            Text(
-                                text = "Descubrir",
-                                fontSize = 35.sp,
-                                color = Color.White,
-                                fontFamily = montserratFontFamily,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(top =25.dp, start = 25.dp)
 
-                            )
-                            Text(
-                                text = "descubrir coming soon",
-                                fontSize = 30.sp,
-                                color = Color.Gray
-                            )
+                            Row (
+                                modifier = Modifier
+                                    .align ( Alignment.TopCenter )
+                                    .fillMaxWidth()
+                            ){
+                                Text(
+                                    text = "Descubrir",
+                                    fontSize = 35.sp,
+                                    color = Color.White,
+                                    fontFamily = montserratFontFamily,
+                                    modifier = Modifier
+                                        .padding(top =25.dp, start = 25.dp)
+
+                                )
+
+                                IconButton(
+                                    onClick = { if(buscarPelis==false){buscarPelis=true}else{buscarPelis=false} },
+                                    modifier = Modifier
+                                        .padding(start = 60.dp, top = 26.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_descubrir),
+                                        contentDescription = "Volver",
+                                        modifier = Modifier.size(100.dp)
+                                    )
+                                }
+                            }
+                            if (buscarPelis){
+                                Row (
+                                    modifier = Modifier
+                                        .align ( Alignment.TopCenter )
+                                        .fillMaxWidth()
+                                        .padding(top = 80.dp)
+
+                                ){
+                                    OutlinedTextField(
+                                        value = buscar,
+                                        onValueChange = { buscar = it },
+                                        label = {
+                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
+                                        },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
+                                            unfocusedBorderColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 70.dp, end = 20.dp)
+                                            .size(60.dp)
+
+                                    )
+                                }
+                            }
+
                         }
                     }
                     1 -> {
