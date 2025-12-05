@@ -5,15 +5,34 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -23,23 +42,26 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.VerticalAlignmentLine
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -205,16 +227,50 @@ fun MainScreen(
                     //--------------------------------------------------------------------------
 
                     0 -> {
+                        // ===== VARIABLES DE ESTADO =====
                         var buscarPelis by remember { mutableStateOf(false) }
                         var buscar by remember { mutableStateOf("") }
-                        BackHandler(onBack = { buscarPelis=false })
+                        var modoEdicion by remember { mutableStateOf(false) }
+                        var mostrarDialogo by remember { mutableStateOf(false) }
 
-                        // contenido de descubrir (por ahora solo texto)
+                        // Lista de carruseles disponibles para elegir
+                        val carruselesDisponibles = remember {
+                            listOf(
+                                "Terror 2025",
+                                "Más vistas del año",
+                                "Películas de los 2000",
+                                "Comedias clásicas",
+                                "Basado en amigos",
+                                "Acción y aventuras",
+                                "Documentales",
+                                "Anime",
+                                "Películas españolas"
+                            )
+                        }
+
+                        // Lista de carruseles activos (los que ve el usuario)
+                        val carruselesActivos = remember {
+                            mutableStateListOf(
+                                "Terror 2025",
+                                "Más vistas del año",
+                                "Películas de los 2000"
+                            )
+                        }
+
+                        BackHandler(onBack = {
+                            if (buscarPelis) {
+                                buscarPelis = false
+                            } else if (modoEdicion) {
+                                modoEdicion = false
+                            }
+                        })
+
+                        // ===== CONTENIDO DE DESCUBRIR =====
                         Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center  // centra el contenido
+                            modifier = Modifier.fillMaxSize()
                         ) {
 
+                            // ===== TÍTULO Y BOTONES SUPERIORES =====
                             // Título a la izquierda
                             Text(
                                 text = "Descubrir",
@@ -226,7 +282,7 @@ fun MainScreen(
                                     .padding(top = 25.dp, start = 25.dp)
                             )
 
-                            // Botón de búsqueda a la derecha
+                            // Botón de búsqueda
                             IconButton(
                                 onClick = { buscarPelis = !buscarPelis },
                                 modifier = Modifier
@@ -239,39 +295,114 @@ fun MainScreen(
                                     modifier = Modifier.size(35.dp)
                                 )
                             }
-                            if (buscarPelis){
-                                Row (
+
+                            // Botón de editar/listo
+                            TextButton(
+                                onClick = { modoEdicion = !modoEdicion },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 65.dp, end = 25.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (modoEdicion) Icons.Default.Close else Icons.Default.Edit,
+                                    contentDescription = if (modoEdicion) "Listo" else "Editar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (modoEdicion) "Listo" else "Editar",
+                                    color = Color.White,
+                                    fontFamily = montserratFontFamily,
+                                    fontSize = 14.sp
+                                )
+                            }
+
+                            // ===== BARRA DE BÚSQUEDA =====
+                            if (buscarPelis) {
+                                OutlinedTextField(
+                                    value = buscar,
+                                    onValueChange = { buscar = it },
+                                    label = {
+                                        Text("Buscar", color = Color.White, fontFamily = montserratFontFamily, fontSize = 12.sp)
+                                    },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        focusedBorderColor = Color(0xFF6C63FF),
+                                        unfocusedBorderColor = Color.White,
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent
+                                    ),
+                                    shape = RoundedCornerShape(30.dp),
                                     modifier = Modifier
-                                        .align ( Alignment.TopCenter )
+                                        .align(Alignment.TopCenter)
                                         .fillMaxWidth()
-                                        .padding(top = 80.dp)
+                                        .padding(start = 20.dp, end = 20.dp, top = 80.dp)
+                                        .height(60.dp)
+                                )
+                            }
 
-                                ){
-                                    OutlinedTextField(
-                                        value = buscar,
-                                        onValueChange = { buscar = it },
-                                        label = {
-                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
-                                        },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
-                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
-                                            unfocusedBorderColor = Color.White,
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
-                                        ),
-                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
-
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 70.dp, end = 20.dp)
-                                            .size(60.dp)
-
+                            // ===== CARRUSELES =====
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(top = if (buscarPelis) 150.dp else 80.dp, bottom = 20.dp)
+                            ) {
+                                // Mostrar cada carrusel activo
+                                items(carruselesActivos.toList()) { tituloCarrusel ->
+                                    CarruselPeliculas(
+                                        titulo = tituloCarrusel,
+                                        modoEdicion = modoEdicion,
+                                        onEliminar = { carruselesActivos.remove(tituloCarrusel) },
+                                        montserratFontFamily = montserratFontFamily
                                     )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+
+                                // Botón "Añadir Lista" (solo en modo edición)
+                                if (modoEdicion) {
+                                    item {
+                                        Button(
+                                            onClick = { mostrarDialogo = true },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = Color(0xFF6C63FF)
+                                            ),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 25.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Add,
+                                                contentDescription = "Añadir",
+                                                tint = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Añadir Lista",
+                                                color = Color.White,
+                                                fontFamily = montserratFontFamily,
+                                                fontSize = 16.sp
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
+                            // ===== DIÁLOGO PARA AÑADIR LISTAS =====
+                            if (mostrarDialogo) {
+                                DialogoAñadirLista(
+                                    carruselesDisponibles = carruselesDisponibles,
+                                    carruselesActivos = carruselesActivos,
+                                    onDismiss = { mostrarDialogo = false },
+                                    onAñadir = { nuevaLista ->
+                                        if (!carruselesActivos.contains(nuevaLista)) {
+                                            carruselesActivos.add(nuevaLista)
+                                        }
+                                    },
+                                    montserratFontFamily = montserratFontFamily
+                                )
+                            }
                         }
                     }
                     //--------------------------------------------------------------------------
@@ -536,6 +667,210 @@ fun navBarColors() = NavigationBarItemDefaults.colors(
     unselectedIconColor = Color.White,     // icono no seleccionado: blanco
     indicatorColor = Color.Transparent     // sin indicador de fondo
 )
+
+// ===== COMPONENTE: CARRUSEL DE PELÍCULAS =====
+/**
+ * Muestra un carrusel horizontal con películas
+ * @param titulo Título del carrusel (ej: "Terror 2025")
+ * @param modoEdicion Si está en true, muestra el botón de eliminar
+ * @param onEliminar Función que se ejecuta al pulsar eliminar
+ */
+@Composable
+fun CarruselPeliculas(
+    titulo: String,
+    modoEdicion: Boolean,
+    onEliminar: () -> Unit,
+    montserratFontFamily: FontFamily
+) {
+    // Películas fake para el carrusel (después se reemplazarán con datos de la API)
+    val peliculasFake = remember {
+        listOf(
+            "Película 1", "Película 2", "Película 3",
+            "Película 4", "Película 5", "Película 6"
+        )
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // ===== CABECERA DEL CARRUSEL =====
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 25.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Título del carrusel
+            Text(
+                text = titulo,
+                fontSize = 20.sp,
+                color = Color.White,
+                fontFamily = montserratFontFamily,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            // Botón de eliminar (solo visible en modo edición)
+            if (modoEdicion) {
+                IconButton(
+                    onClick = onEliminar,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Eliminar carrusel",
+                        tint = Color(0xFFFF5252),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ===== SCROLL HORIZONTAL DE PELÍCULAS =====
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 25.dp)
+        ) {
+            items(peliculasFake) { pelicula ->
+                // Card de cada película
+                Card(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(180.dp)
+                        .clickable {
+                            // Aquí irá la lógica para abrir los detalles de la película
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF2A2A3E)
+                    )
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Por ahora mostramos solo texto
+                        // Después aquí irá la imagen del póster
+                        Text(
+                            text = pelicula,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontFamily = montserratFontFamily,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ===== COMPONENTE: DIÁLOGO PARA AÑADIR LISTAS =====
+/**
+ * Diálogo que muestra todas las listas disponibles
+ * para que el usuario pueda añadirlas a su página
+ */
+@Composable
+fun DialogoAñadirLista(
+    carruselesDisponibles: List<String>,
+    carruselesActivos: List<String>,
+    onDismiss: () -> Unit,
+    onAñadir: (String) -> Unit,
+    montserratFontFamily: FontFamily
+) {
+    // Listas seleccionadas para añadir
+    val seleccionadas = remember { mutableStateListOf<String>() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Añadir Listas",
+                fontFamily = montserratFontFamily,
+                fontSize = 20.sp,
+                color = Color.White
+            )
+        },
+        text = {
+            // Lista de checkboxes con todas las opciones
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                carruselesDisponibles.forEach { carrusel ->
+                    // Solo mostrar si no está ya en carruseles activos
+                    if (!carruselesActivos.contains(carrusel)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (seleccionadas.contains(carrusel)) {
+                                        seleccionadas.remove(carrusel)
+                                    } else {
+                                        seleccionadas.add(carrusel)
+                                    }
+                                }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = seleccionadas.contains(carrusel),
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        seleccionadas.add(carrusel)
+                                    } else {
+                                        seleccionadas.remove(carrusel)
+                                    }
+                                },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Color(0xFF6C63FF),
+                                    uncheckedColor = Color.White
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = carrusel,
+                                fontFamily = montserratFontFamily,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    // Añadir todas las listas seleccionadas
+                    seleccionadas.forEach { lista ->
+                        onAñadir(lista)
+                    }
+                    onDismiss()
+                }
+            ) {
+                Text(
+                    text = "Añadir",
+                    fontFamily = montserratFontFamily,
+                    color = Color(0xFF6C63FF)
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancelar",
+                    fontFamily = montserratFontFamily,
+                    color = Color.White
+                )
+            }
+        },
+        containerColor = Color(0xFF1A1A2E),
+        textContentColor = Color.White
+    )
+}
 
 // ===== vista previa =====
 @Preview(showBackground = true)
