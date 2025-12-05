@@ -296,28 +296,6 @@ fun MainScreen(
                                 )
                             }
 
-                            // Botón de editar/listo
-                            TextButton(
-                                onClick = { modoEdicion = !modoEdicion },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 65.dp, end = 25.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (modoEdicion) Icons.Default.Close else Icons.Default.Edit,
-                                    contentDescription = if (modoEdicion) "Listo" else "Editar",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (modoEdicion) "Listo" else "Editar",
-                                    color = Color.White,
-                                    fontFamily = montserratFontFamily,
-                                    fontSize = 14.sp
-                                )
-                            }
-
                             // ===== BARRA DE BÚSQUEDA =====
                             if (buscarPelis) {
                                 OutlinedTextField(
@@ -358,6 +336,34 @@ fun MainScreen(
                                         montserratFontFamily = montserratFontFamily
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
+                                }
+
+                                // Botón "Editar/Listo" al final
+                                item {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { modoEdicion = !modoEdicion },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (modoEdicion) Color(0xFFFF5252) else Color(0xFF6C63FF)
+                                        ),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 25.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (modoEdicion) Icons.Default.Close else Icons.Default.Edit,
+                                            contentDescription = if (modoEdicion) "Listo" else "Editar",
+                                            tint = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (modoEdicion) "Listo" else "Editar Listas",
+                                            color = Color.White,
+                                            fontFamily = montserratFontFamily,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
 
                                 // Botón "Añadir Lista" (solo en modo edición)
