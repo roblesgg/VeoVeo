@@ -199,6 +199,11 @@ fun MainScreen(
                 // ===== decide que mostrar segun la pestaña =====
                 // when es como un switch en otros lenguajes
                 when (paginaActual) {
+
+                    //--------------------------------------------------------------------------
+                    //Buscar
+                    //--------------------------------------------------------------------------
+
                     0 -> {
                         var buscarPelis by remember { mutableStateOf(false) }
                         var buscar by remember { mutableStateOf("") }
@@ -210,32 +215,29 @@ fun MainScreen(
                             contentAlignment = Alignment.Center  // centra el contenido
                         ) {
 
-                            Row (
+                            // Título a la izquierda
+                            Text(
+                                text = "Descubrir",
+                                fontSize = 35.sp,
+                                color = Color.White,
+                                fontFamily = montserratFontFamily,
                                 modifier = Modifier
-                                    .align ( Alignment.TopCenter )
-                                    .fillMaxWidth()
-                            ){
-                                Text(
-                                    text = "Descubrir",
-                                    fontSize = 35.sp,
-                                    color = Color.White,
-                                    fontFamily = montserratFontFamily,
-                                    modifier = Modifier
-                                        .padding(top =25.dp, start = 25.dp)
+                                    .align(Alignment.TopStart)
+                                    .padding(top = 25.dp, start = 25.dp)
+                            )
 
+                            // Botón de búsqueda a la derecha
+                            IconButton(
+                                onClick = { buscarPelis = !buscarPelis },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 20.dp, end = 130.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_descubrir),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(35.dp)
                                 )
-
-                                IconButton(
-                                    onClick = { if(buscarPelis==false){buscarPelis=true}else{buscarPelis=false} },
-                                    modifier = Modifier
-                                        .padding(start = 60.dp, top = 26.dp)
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.ic_descubrir),
-                                        contentDescription = "Volver",
-                                        modifier = Modifier.size(100.dp)
-                                    )
-                                }
                             }
                             if (buscarPelis){
                                 Row (
@@ -272,13 +274,21 @@ fun MainScreen(
 
                         }
                     }
+                    //--------------------------------------------------------------------------
+                    //Biblioteca
+                    //--------------------------------------------------------------------------
                     1 -> {
-                        // contenido de biblioteca (por ahora solo texto)
+                        var buscarBiblioteca by remember { mutableStateOf(false) }
+                        var buscar by remember { mutableStateOf("") }
+                        BackHandler(onBack = { buscarBiblioteca=false })
+
+                        // contenido de biblioteca
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center  // centra el contenido
                         ) {
 
+                            // Título a la izquierda
                             Text(
                                 text = "Biblioteca",
                                 fontSize = 35.sp,
@@ -286,24 +296,72 @@ fun MainScreen(
                                 fontFamily = montserratFontFamily,
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(top =25.dp, start = 25.dp)
-
+                                    .padding(top = 25.dp, start = 25.dp)
                             )
 
-                            Text(
-                                text = "biblioteca coming soon",
-                                fontSize = 30.sp,
-                                color = Color.Gray
-                            )
+                            // Botón de búsqueda a la derecha
+                            IconButton(
+                                onClick = { buscarBiblioteca = !buscarBiblioteca },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 20.dp, end = 130.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_descubrir),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(35.dp)
+                                )
+                            }
+                            if (buscarBiblioteca){
+                                Row (
+                                    modifier = Modifier
+                                        .align ( Alignment.TopCenter )
+                                        .fillMaxWidth()
+                                        .padding(top = 80.dp)
+
+                                ){
+                                    OutlinedTextField(
+                                        value = buscar,
+                                        onValueChange = { buscar = it },
+                                        label = {
+                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
+                                        },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
+                                            unfocusedBorderColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 70.dp, end = 20.dp)
+                                            .size(60.dp)
+
+                                    )
+                                }
+                            }
+
                         }
                     }
+                    //--------------------------------------------------------------------------
+                    //Tierlists
+                    //--------------------------------------------------------------------------
                     2 -> {
-                        // contenido de tierlists (por ahora solo texto)
+                        var buscarTierList by remember { mutableStateOf(false) }
+                        var buscar by remember { mutableStateOf("") }
+                        BackHandler(onBack = { buscarTierList=false })
+
+                        // contenido de tierlists
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center  // centra el contenido
                         ) {
 
+                            // Título a la izquierda
                             Text(
                                 text = "TierLists",
                                 fontSize = 35.sp,
@@ -311,23 +369,72 @@ fun MainScreen(
                                 fontFamily = montserratFontFamily,
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(top =25.dp, start = 25.dp)
+                                    .padding(top = 25.dp, start = 25.dp)
+                            )
 
-                            )
-                            Text(
-                                text = "tierlists coming soon",
-                                fontSize = 30.sp,
-                                color = Color.Gray
-                            )
+                            // Botón de búsqueda a la derecha
+                            IconButton(
+                                onClick = { buscarTierList = !buscarTierList },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 20.dp, end = 130.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_descubrir),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(35.dp)
+                                )
+                            }
+                            if (buscarTierList){
+                                Row (
+                                    modifier = Modifier
+                                        .align ( Alignment.TopCenter )
+                                        .fillMaxWidth()
+                                        .padding(top = 80.dp)
+
+                                ){
+                                    OutlinedTextField(
+                                        value = buscar,
+                                        onValueChange = { buscar = it },
+                                        label = {
+                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
+                                        },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
+                                            unfocusedBorderColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 70.dp, end = 20.dp)
+                                            .size(60.dp)
+
+                                    )
+                                }
+                            }
+
                         }
                     }
+                    //--------------------------------------------------------------------------
+                    //Social
+                    //--------------------------------------------------------------------------
                     3 -> {
-                        // contenido de social (por ahora solo texto)
+                        var buscarSocial by remember { mutableStateOf(false) }
+                        var buscar by remember { mutableStateOf("") }
+                        BackHandler(onBack = { buscarSocial=false })
+
+                        // contenido de social
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center  // centra el contenido
                         ) {
 
+                            // Título a la izquierda
                             Text(
                                 text = "Social",
                                 fontSize = 35.sp,
@@ -335,14 +442,55 @@ fun MainScreen(
                                 fontFamily = montserratFontFamily,
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(top =25.dp, start = 25.dp)
+                                    .padding(top = 25.dp, start = 25.dp)
+                            )
 
-                            )
-                            Text(
-                                text = "social coming soon",
-                                fontSize = 30.sp,
-                                color = Color.Gray
-                            )
+                            // Botón de búsqueda a la derecha
+                            IconButton(
+                                onClick = { buscarSocial = !buscarSocial },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 20.dp, end = 130.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_descubrir),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(35.dp)
+                                )
+                            }
+                            if (buscarSocial){
+                                Row (
+                                    modifier = Modifier
+                                        .align ( Alignment.TopCenter )
+                                        .fillMaxWidth()
+                                        .padding(top = 80.dp)
+
+                                ){
+                                    OutlinedTextField(
+                                        value = buscar,
+                                        onValueChange = { buscar = it },
+                                        label = {
+                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
+                                        },
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
+                                            unfocusedBorderColor = Color.White,
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent
+                                        ),
+                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
+
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 70.dp, end = 20.dp)
+                                            .size(60.dp)
+
+                                    )
+                                }
+                            }
+
                         }
                     }
                 }
