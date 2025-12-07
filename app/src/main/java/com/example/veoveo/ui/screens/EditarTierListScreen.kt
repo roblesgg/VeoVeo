@@ -123,6 +123,12 @@ fun EditarTierListScreen(onVolverClick: () -> Unit = {}, onGuardarClick: () -> U
     }
 }
 
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun EditarTierListScreenPreview() {
+    EditarTierListScreen()
+}
+
 // componente zona de tier donde se pueden colocar peliculas
 @Composable
 fun TierZone(titulo: String, colorFondo: Color, peliculas: List<String>, font: FontFamily) {

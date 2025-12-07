@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veoveo.R
@@ -71,85 +72,139 @@ import com.example.veoveo.R
 @Composable
 fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
+    // fuente personalizada montserrat
     val montserratFont = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
 
+    // variable para controlar que pestaña esta activa (0=descubrir, 1=biblioteca, 2=tierlists, 3=social)
     var paginaActual by remember { mutableIntStateOf(0) }
+
+    // variable para controlar subpantallas en tierlists
     var pantallaTierList by remember { mutableIntStateOf(0) }
+
+    // variable para mostrar u ocultar pantalla de contacto en social
     var mostrarContactoSocial by remember { mutableStateOf(false) }
 
+    // variable para controlar si se muestra la pantalla de pelicula
+    var mostrarPelicula by remember { mutableStateOf(false) }
+
+    // variable para guardar el nombre de la pelicula seleccionada
+    var peliculaSeleccionada by remember { mutableStateOf("") }
+
+    // degradado de fondo morado oscuro
     val brush = Brush.verticalGradient(
         colors = listOf(Color(0xFF1A1A2E), Color(0xFF4B0082))
     )
 
+    // caja principal con degradado de fondo
     Box(modifier = Modifier.fillMaxSize().background(brush)) {
+
+        // scaffold es la estructura base con barra de navegacion abajo
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(Color.Black.copy(alpha = 0.3f))
-                ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        tonalElevation = 0.dp,
-                        modifier = Modifier.height(80.dp)
+                // solo muestra la barra de navegacion si no esta en pantalla de pelicula
+                if (!mostrarPelicula) {
+                    // contenedor de la barra de navegacion con bordes redondeados
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
+                            .clip(RoundedCornerShape(50.dp))
+                            .background(Color.Black.copy(alpha = 0.3f))
                     ) {
-                        NavigationBarItem(
-                            icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
-                            label = null,
-                            selected = paginaActual == 0,
-                            onClick = { paginaActual = 0 },
-                            colors = navBarColors()
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
-                            label = null,
-                            selected = paginaActual == 1,
-                            onClick = { paginaActual = 1 },
-                            colors = navBarColors()
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
-                            label = null,
-                            selected = paginaActual == 2,
-                            onClick = { paginaActual = 2 },
-                            colors = navBarColors()
-                        )
-                        NavigationBarItem(
-                            icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
-                            label = null,
-                            selected = paginaActual == 3,
-                            onClick = { paginaActual = 3 },
-                            colors = navBarColors()
-                        )
+                        // barra de navegacion inferior con 4 botones
+                        NavigationBar(
+                            containerColor = Color.Transparent,
+                            tonalElevation = 0.dp,
+                            modifier = Modifier.height(80.dp)
+                        ) {
+                            NavigationBarItem(
+                                icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
+                                label = null,
+                                selected = paginaActual == 0,
+                                onClick = { paginaActual = 0 },
+                                colors = navBarColors()
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
+                                label = null,
+                                selected = paginaActual == 1,
+                                onClick = { paginaActual = 1 },
+                                colors = navBarColors()
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
+                                label = null,
+                                selected = paginaActual == 2,
+                                onClick = { paginaActual = 2 },
+                                colors = navBarColors()
+                            )
+                            NavigationBarItem(
+                                icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
+                                label = null,
+                                selected = paginaActual == 3,
+                                onClick = { paginaActual = 3 },
+                                colors = navBarColors()
+                            )
+                        }
                     }
                 }
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                when (paginaActual) {
-                    0 -> DescubrirTab(montserratFont)
-                    1 -> BibliotecaTab(montserratFont)
-                    2 -> TierListsTab(montserratFont, pantallaTierList) { pantallaTierList = it }
-                    3 -> SocialTab(montserratFont) { mostrarContactoSocial = it }
+                // muestra la pantalla de pelicula si esta activa
+                if (mostrarPelicula) {
+                    PeliculaScreen(
+                        nombrePelicula = peliculaSeleccionada,
+                        onVolverClick = { mostrarPelicula = false }
+                    )
+                } else {
+                    // muestra las pestanas normales
+                    when (paginaActual) {
+                        0 -> DescubrirTab(montserratFont) { pelicula ->
+                            peliculaSeleccionada = pelicula
+                            mostrarPelicula = true
+                        }
+                        1 -> BibliotecaTab(montserratFont) { pelicula ->
+                            peliculaSeleccionada = pelicula
+                            mostrarPelicula = true
+                        }
+                        2 -> TierListsTab(montserratFont, pantallaTierList,
+                            onPantallaChange = { pantallaTierList = it },
+                            onPeliculaClick = { pelicula ->
+                                peliculaSeleccionada = pelicula
+                                mostrarPelicula = true
+                            }
+                        )
+                        3 -> SocialTab(montserratFont,
+                            onContactoClick = { mostrarContactoSocial = it },
+                            onPeliculaClick = { pelicula ->
+                                peliculaSeleccionada = pelicula
+                                mostrarPelicula = true
+                            }
+                        )
+                    }
                 }
             }
         }
 
-        // boton de perfil arriba derecha
-        if (!(paginaActual == 2 && pantallaTierList != 0) && !mostrarContactoSocial) {
+        // boton de perfil arriba derecha (se oculta en algunas pantallas)
+        if (!(paginaActual == 2 && pantallaTierList != 0) && !mostrarContactoSocial && !mostrarPelicula) {
             IconButton(
                 onClick = onNavigateToPerfil,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 25.dp, end = 25.dp).size(40.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 50.dp, end = 25.dp)
+                    .size(40.dp)
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_perfil),
                     contentDescription = "perfil",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(40.dp).clip(CircleShape).border(3.dp, Color.White, CircleShape)
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .border(3.dp, Color.White, CircleShape)
                 )
             }
         }
@@ -158,26 +213,41 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
 // pestana descubrir
 @Composable
-fun DescubrirTab(font: FontFamily) {
+fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
+
+    // controla si se muestra el campo de busqueda
     var buscar by remember { mutableStateOf(false) }
+
+    // texto que el usuario escribe en el buscador
     var textoBuscar by remember { mutableStateOf("") }
+
+    // controla si esta en modo edicion (permite eliminar carruseles)
     var modoEdicion by remember { mutableStateOf(false) }
+
+    // controla si se muestra el dialogo para anadir nuevos carruseles
     var mostrarDialogo by remember { mutableStateOf(false) }
 
+    // lista de todos los carruseles disponibles
     val carruselesDisponibles = remember {
         listOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000",
                "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
     }
+
+    // lista de carruseles que se muestran actualmente en pantalla
     val carruselesActivos = remember {
         mutableStateListOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000")
     }
 
+    // maneja el boton atras del dispositivo
     BackHandler(onBack = { if (buscar) buscar = false else if (modoEdicion) modoEdicion = false })
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        // titulo de la seccion
         Text("Descubrir", fontSize = 35.sp, color = Color.White, fontFamily = font,
             modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
 
+        // boton de lupa para abrir el buscador
         IconButton(
             onClick = { buscar = !buscar },
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
@@ -185,6 +255,7 @@ fun DescubrirTab(font: FontFamily) {
             Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
         }
 
+        // campo de texto para buscar peliculas (solo se muestra si buscar es true)
         if (buscar) {
             OutlinedTextField(
                 value = textoBuscar,
@@ -204,14 +275,17 @@ fun DescubrirTab(font: FontFamily) {
             )
         }
 
+        // lista vertical con todos los carruseles de peliculas
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(top = if (buscar) 150.dp else 80.dp, bottom = 80.dp)
         ) {
+            // muestra cada carrusel activo
             items(carruselesActivos.toList()) { carrusel ->
-                CarruselPeliculas(carrusel, modoEdicion, { carruselesActivos.remove(carrusel) }, font)
+                CarruselPeliculas(carrusel, modoEdicion, { carruselesActivos.remove(carrusel) }, font, onPeliculaClick)
                 Spacer(Modifier.height(16.dp))
             }
 
+            // boton para activar o desactivar el modo edicion
             item {
                 Spacer(Modifier.height(8.dp))
                 Button(
@@ -228,6 +302,7 @@ fun DescubrirTab(font: FontFamily) {
                 Spacer(Modifier.height(8.dp))
             }
 
+            // boton para anadir nuevos carruseles (solo visible en modo edicion)
             if (modoEdicion) {
                 item {
                     Button(
@@ -243,6 +318,7 @@ fun DescubrirTab(font: FontFamily) {
             }
         }
 
+        // dialogo modal para seleccionar carruseles disponibles
         if (mostrarDialogo) {
             DialogoAnadirLista(
                 carruselesDisponibles,
@@ -257,7 +333,7 @@ fun DescubrirTab(font: FontFamily) {
 
 // pestana biblioteca
 @Composable
-fun BibliotecaTab(font: FontFamily) {
+fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var seccion by remember { mutableIntStateOf(0) }
@@ -334,7 +410,7 @@ fun BibliotecaTab(font: FontFamily) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     fila.forEach { pelicula ->
                         Card(
-                            modifier = Modifier.weight(1f).height(180.dp).clickable {},
+                            modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
@@ -354,7 +430,7 @@ fun BibliotecaTab(font: FontFamily) {
 
 // pestana tierlists
 @Composable
-fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit) {
+fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit, onPeliculaClick: (String) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var tierListSeleccionada by remember { mutableStateOf("") }
@@ -448,7 +524,7 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                 }
             }
         }
-        1 -> TierListScreen({ onPantallaChange(0) }, { onPantallaChange(2) }, { onPantallaChange(0) })
+        1 -> TierListScreen({ onPantallaChange(0) }, { onPantallaChange(2) }, { onPantallaChange(0) }, onPeliculaClick)
         2 -> CrearTierListScreen(
             { onPantallaChange(if (tierListSeleccionada.isNotEmpty()) 1 else 0) },
             { onPantallaChange(3) }
@@ -459,7 +535,7 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
 
 // pestana social
 @Composable
-fun SocialTab(font: FontFamily, onMostrarContacto: (Boolean) -> Unit) {
+fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaClick: (String) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var mostrarMensaje by remember { mutableStateOf(false) }
@@ -474,11 +550,12 @@ fun SocialTab(font: FontFamily, onMostrarContacto: (Boolean) -> Unit) {
     })
 
     if (mostrarContacto) {
-        onMostrarContacto(true)
+        onContactoClick(true)
         ContactoScreen(
             contactoSeleccionado,
-            { mostrarContacto = false; onMostrarContacto(false) },
-            { mostrarContacto = false; onMostrarContacto(false) }
+            { mostrarContacto = false; onContactoClick(false) },
+            { mostrarContacto = false; onContactoClick(false) },
+            onPeliculaClick
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -565,7 +642,7 @@ fun SocialTab(font: FontFamily, onMostrarContacto: (Boolean) -> Unit) {
 
 // componente carrusel de peliculas
 @Composable
-fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Unit, font: FontFamily) {
+fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Unit, font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
     val peliculas = remember { listOf("Pelicula 1", "Pelicula 2", "Pelicula 3", "Pelicula 4", "Pelicula 5", "Pelicula 6") }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -588,7 +665,7 @@ fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Un
         ) {
             items(peliculas) { pelicula ->
                 Card(
-                    modifier = Modifier.width(120.dp).height(180.dp).clickable {},
+                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(pelicula) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
@@ -661,3 +738,11 @@ fun navBarColors() = NavigationBarItemDefaults.colors(
     unselectedIconColor = Color.White,
     indicatorColor = Color.Transparent
 )
+
+// ===== vista previa =====
+// esto sirve para ver la pantalla en android studio sin ejecutar el emulador
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    MainScreen()
+}

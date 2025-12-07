@@ -157,3 +157,9 @@ fun CrearTierListScreen(onVolverClick: () -> Unit = {}, onSiguienteClick: () -> 
         }
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun CrearTierListScreenPreview() {
+    CrearTierListScreen()
+}

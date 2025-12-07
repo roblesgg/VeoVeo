@@ -54,7 +54,8 @@ import com.example.veoveo.R
 fun ContactoScreen(
     nombreContacto: String = "Amigo 1",
     onVolverClick: () -> Unit = {},
-    onBloquearClick: () -> Unit = {}
+    onBloquearClick: () -> Unit = {},
+    onPeliculaClick: (String) -> Unit = {}
 ) {
     val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
     val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
@@ -119,7 +120,7 @@ fun ContactoScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 fila.forEach { pelicula ->
                                     Card(
-                                        modifier = Modifier.weight(1f).height(180.dp),
+                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
@@ -139,7 +140,7 @@ fun ContactoScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 fila.forEach { pelicula ->
                                     Card(
-                                        modifier = Modifier.weight(1f).height(180.dp),
+                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
@@ -198,4 +199,10 @@ fun ContactoScreen(
             Icon(Icons.AutoMirrored.Filled.ArrowBack, "volver", tint = Color.White, modifier = Modifier.size(28.dp))
         }
     }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun ContactoScreenPreview() {
+    ContactoScreen()
 }

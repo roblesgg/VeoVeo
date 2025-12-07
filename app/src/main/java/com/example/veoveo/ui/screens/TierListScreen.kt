@@ -3,6 +3,7 @@ package com.example.veoveo.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +52,8 @@ import com.example.veoveo.R
 fun TierListScreen(
     onVolverClick: () -> Unit = {},
     onEditarClick: () -> Unit = {},
-    onEliminarClick: () -> Unit = {}
+    onEliminarClick: () -> Unit = {},
+    onPeliculaClick: (String) -> Unit = {}
 ) {
     val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
     val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
@@ -84,15 +86,15 @@ fun TierListScreen(
             Text(nombreTierList, fontSize = 28.sp, color = Color.White, fontFamily = font, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(32.dp))
 
-            TierRow("Obra Maestra", Color(0xFF3D2A54), obraMaestra, font)
+            TierRow("Obra Maestra", Color(0xFF3D2A54), obraMaestra, font, onPeliculaClick)
             Spacer(Modifier.height(2.dp))
-            TierRow("Muy Buena", Color(0xFF3D2A54), muyBuena, font)
+            TierRow("Muy Buena", Color(0xFF3D2A54), muyBuena, font, onPeliculaClick)
             Spacer(Modifier.height(2.dp))
-            TierRow("Buena", Color(0xFF3D2A54), buena, font)
+            TierRow("Buena", Color(0xFF3D2A54), buena, font, onPeliculaClick)
             Spacer(Modifier.height(2.dp))
-            TierRow("Mala", Color(0xFF3D2A54), mala, font)
+            TierRow("Mala", Color(0xFF3D2A54), mala, font, onPeliculaClick)
             Spacer(Modifier.height(2.dp))
-            TierRow("Nefasta", Color(0xFF3D2A54), nefasta, font)
+            TierRow("Nefasta", Color(0xFF3D2A54), nefasta, font, onPeliculaClick)
             Spacer(Modifier.height(32.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -126,9 +128,15 @@ fun TierListScreen(
     }
 }
 
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun TierListScreenPreview() {
+    TierListScreen()
+}
+
 // componente que muestra una fila de tier con titulo y peliculas
 @Composable
-fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: FontFamily) {
+fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
     Row(
         modifier = Modifier.fillMaxWidth().height(100.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -153,7 +161,7 @@ fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: Fo
                 ) {
                     items(peliculas) { pelicula ->
                         Card(
-                            modifier = Modifier.width(60.dp).aspectRatio(0.7f),
+                            modifier = Modifier.width(60.dp).aspectRatio(0.7f).clickable { onPeliculaClick(pelicula) },
                             shape = RoundedCornerShape(4.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
