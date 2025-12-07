@@ -1,6 +1,5 @@
 package com.example.veoveo.ui.screens
 
-// ===== importaciones necesarias =====
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,8 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -50,7 +52,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,145 +63,64 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.veoveo.R
 
-/**
- * ===== MAINSCREEN - PANTALLA PRINCIPAL =====
- *
- * esta es la pantalla principal cuando ya estas dentro de la app
- * tiene 2 partes importantes:
- *
- * 1. barra de navegacion de abajo (las 4 pestañas):
- *    - descubrir: para buscar peliculas y series nuevas
- *    - biblioteca: tus peliculas y series guardadas
- *    - tierlists: tus listas de rankings
- *    - social: para ver lo que hacen tus amigos
- *
- * 2. icono de perfil arriba a la derecha:
- *    - cuando lo pulsas te lleva a tu perfil
- *
- * componentes basicos que usa:
- * - Box: contenedor principal
- * - Scaffold: estructura basica con barra de navegacion
- * - NavigationBar: la barra de abajo con las 4 pestañas
- * - NavigationBarItem: cada pestaña individual
- * - IconButton: el boton del perfil
- * - Image: la imagen del perfil
- * - Text: textos
- */
+// pantalla principal con 4 pestanas: descubrir, biblioteca, tierlists, social
 @Composable
-fun MainScreen(
-    onNavigateToPerfil: () -> Unit = {}  // funcion que se ejecuta al pulsar el icono de perfil
-) {
+fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
-    //fuente
-    val montserratFontFamily = FontFamily(
-        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
-    )
+    val montserratFont = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
 
-    // ===== variable para saber que pestaña esta activa =====
-    // 0 = descubrir
-    // 1 = biblioteca
-    // 2 = tierlists
-    // 3 = social
     var paginaActual by remember { mutableIntStateOf(0) }
+    var pantallaTierList by remember { mutableIntStateOf(0) }
+    var mostrarContactoSocial by remember { mutableStateOf(false) }
 
-    // ===== colores del fondo =====
-    // el mismo degradado que en login y perfil
     val brush = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF1A1A2E), // azul oscuro arriba
-            Color(0xFF4B0082)  // morado abajo
-        )
+        colors = listOf(Color(0xFF1A1A2E), Color(0xFF4B0082))
     )
 
-    // ===== contenedor principal =====
-    Box(
-        modifier = Modifier
-            .fillMaxSize()              // ocupa toda la pantalla
-            .background(brush = brush)  // le ponemos el degradado
-    ) {
-
-        // ===== scaffold =====
-        // Scaffold es una estructura basica que nos da espacio para poner
-        // contenido en el centro y una barra de navegacion abajo
+    Box(modifier = Modifier.fillMaxSize().background(brush)) {
         Scaffold(
-            containerColor = Color.Transparent,  // hacemos el fondo transparente para ver el degradado
-
-            // ===== barra de navegacion de abajo =====
+            containerColor = Color.Transparent,
             bottomBar = {
-                // Box para darle forma redondeada a la barra
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()                              // ocupa todo el ancho
-                        .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)  // margen alrededor
-                        .clip(RoundedCornerShape(50.dp))             // esquinas muy redondeadas (capsula)
-                        .background(Color.Black.copy(alpha = 0.3f))  // fondo negro semi-transparente
+                        .fillMaxWidth()
+                        .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(Color.Black.copy(alpha = 0.3f))
                 ) {
                     NavigationBar(
-                        containerColor = Color.Transparent,  // fondo transparente
-                        tonalElevation = 0.dp,               // sin sombra
-                        modifier = Modifier.height(80.dp)    // altura de 80dp (mas grande)
+                        containerColor = Color.Transparent,
+                        tonalElevation = 0.dp,
+                        modifier = Modifier.height(80.dp)
                     ) {
-
-                        // ===== pestaña 1: descubrir =====
                         NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_descubrir),
-                                    contentDescription = "Descubrir",
-                                    modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
-                                )
-                            },
-                            label = null,  // sin texto
-                            selected = paginaActual == 0,  // esta seleccionada si paginaActual es 0
-                            onClick = { paginaActual = 0 },  // cuando la pulsan, cambia paginaActual a 0
-                            colors = navBarColors()  // colores personalizados (ver funcion abajo)
+                            icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
+                            label = null,
+                            selected = paginaActual == 0,
+                            onClick = { paginaActual = 0 },
+                            colors = navBarColors()
                         )
-
-                        // ===== pestaña 2: biblioteca =====
                         NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_biblioteca),
-                                    contentDescription = "Biblioteca",
-                                    modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
-                                )
-                            },
-                            label = null,  // sin texto
+                            icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
+                            label = null,
                             selected = paginaActual == 1,
                             onClick = { paginaActual = 1 },
                             colors = navBarColors()
                         )
-
-                        // ===== pestaña 3: tierlists =====
                         NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_tierlist),
-                                    contentDescription = "TierLists",
-                                    modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
-                                )
-                            },
-                            label = null,  // sin texto
+                            icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
+                            label = null,
                             selected = paginaActual == 2,
                             onClick = { paginaActual = 2 },
                             colors = navBarColors()
                         )
-
-                        // ===== pestaña 4: social =====
                         NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_social),
-                                    contentDescription = "Social",
-                                    modifier = Modifier.size(28.dp)  // tamaño del icono mas grande
-                                )
-                            },
-                            label = null,  // sin texto
+                            icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
+                            label = null,
                             selected = paginaActual == 3,
                             onClick = { paginaActual = 3 },
                             colors = navBarColors()
@@ -208,565 +128,473 @@ fun MainScreen(
                     }
                 }
             }
-        ) { innerPadding ->
-
-            // ===== contenido central =====
-            // este Box muestra el contenido que cambia segun la pestaña
-            Box(
-                modifier = Modifier
-                    .padding(innerPadding)  // respeta el espacio de la barra de navegacion
-                    .fillMaxSize()          // ocupa todo el espacio restante
-            ) {
-
-                // ===== decide que mostrar segun la pestaña =====
-                // when es como un switch en otros lenguajes
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
                 when (paginaActual) {
+                    0 -> DescubrirTab(montserratFont)
+                    1 -> BibliotecaTab(montserratFont)
+                    2 -> TierListsTab(montserratFont, pantallaTierList) { pantallaTierList = it }
+                    3 -> SocialTab(montserratFont) { mostrarContactoSocial = it }
+                }
+            }
+        }
 
-                    //--------------------------------------------------------------------------
-                    //Buscar
-                    //--------------------------------------------------------------------------
+        // boton de perfil arriba derecha
+        if (!(paginaActual == 2 && pantallaTierList != 0) && !mostrarContactoSocial) {
+            IconButton(
+                onClick = onNavigateToPerfil,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 25.dp, end = 25.dp).size(40.dp)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_perfil),
+                    contentDescription = "perfil",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(40.dp).clip(CircleShape).border(3.dp, Color.White, CircleShape)
+                )
+            }
+        }
+    }
+}
 
-                    0 -> {
-                        // ===== VARIABLES DE ESTADO =====
-                        var buscarPelis by remember { mutableStateOf(false) }
-                        var buscar by remember { mutableStateOf("") }
-                        var modoEdicion by remember { mutableStateOf(false) }
-                        var mostrarDialogo by remember { mutableStateOf(false) }
+// pestana descubrir
+@Composable
+fun DescubrirTab(font: FontFamily) {
+    var buscar by remember { mutableStateOf(false) }
+    var textoBuscar by remember { mutableStateOf("") }
+    var modoEdicion by remember { mutableStateOf(false) }
+    var mostrarDialogo by remember { mutableStateOf(false) }
 
-                        // Lista de carruseles disponibles para elegir
-                        val carruselesDisponibles = remember {
-                            listOf(
-                                "Terror 2025",
-                                "Más vistas del año",
-                                "Películas de los 2000",
-                                "Comedias clásicas",
-                                "Basado en amigos",
-                                "Acción y aventuras",
-                                "Documentales",
-                                "Anime",
-                                "Películas españolas"
-                            )
-                        }
+    val carruselesDisponibles = remember {
+        listOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000",
+               "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
+    }
+    val carruselesActivos = remember {
+        mutableStateListOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000")
+    }
 
-                        // Lista de carruseles activos (los que ve el usuario)
-                        val carruselesActivos = remember {
-                            mutableStateListOf(
-                                "Terror 2025",
-                                "Más vistas del año",
-                                "Películas de los 2000"
-                            )
-                        }
+    BackHandler(onBack = { if (buscar) buscar = false else if (modoEdicion) modoEdicion = false })
 
-                        BackHandler(onBack = {
-                            if (buscarPelis) {
-                                buscarPelis = false
-                            } else if (modoEdicion) {
-                                modoEdicion = false
-                            }
-                        })
+    Box(modifier = Modifier.fillMaxSize()) {
+        Text("Descubrir", fontSize = 35.sp, color = Color.White, fontFamily = font,
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
 
-                        // ===== CONTENIDO DE DESCUBRIR =====
-                        Box(
-                            modifier = Modifier.fillMaxSize()
+        IconButton(
+            onClick = { buscar = !buscar },
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+        ) {
+            Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
+        }
+
+        if (buscar) {
+            OutlinedTextField(
+                value = textoBuscar,
+                onValueChange = { textoBuscar = it },
+                label = { Text("Buscar", color = Color.White, fontFamily = font, fontSize = 12.sp) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFF6C63FF),
+                    unfocusedBorderColor = Color.White,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(30.dp),
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 80.dp).height(60.dp)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 150.dp else 80.dp, bottom = 80.dp)
+        ) {
+            items(carruselesActivos.toList()) { carrusel ->
+                CarruselPeliculas(carrusel, modoEdicion, { carruselesActivos.remove(carrusel) }, font)
+                Spacer(Modifier.height(16.dp))
+            }
+
+            item {
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { modoEdicion = !modoEdicion },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (modoEdicion) Color(0xFFFF5252) else Color(0xFF6C63FF)
+                    ),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp)
+                ) {
+                    Icon(if (modoEdicion) Icons.Default.Close else Icons.Default.Edit, null, tint = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (modoEdicion) "Listo" else "Editar Listas", color = Color.White, fontFamily = font, fontSize = 16.sp)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (modoEdicion) {
+                item {
+                    Button(
+                        onClick = { mostrarDialogo = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp)
+                    ) {
+                        Icon(Icons.Default.Add, null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Anadir Lista", color = Color.White, fontFamily = font, fontSize = 16.sp)
+                    }
+                }
+            }
+        }
+
+        if (mostrarDialogo) {
+            DialogoAnadirLista(
+                carruselesDisponibles,
+                carruselesActivos,
+                { mostrarDialogo = false },
+                { if (!carruselesActivos.contains(it)) carruselesActivos.add(it) },
+                font
+            )
+        }
+    }
+}
+
+// pestana biblioteca
+@Composable
+fun BibliotecaTab(font: FontFamily) {
+    var buscar by remember { mutableStateOf(false) }
+    var textoBuscar by remember { mutableStateOf("") }
+    var seccion by remember { mutableIntStateOf(0) }
+
+    val peliculasPorVer = remember { listOf("Pelicula 1", "Pelicula 2", "Pelicula 3", "Pelicula 4", "Pelicula 5", "Pelicula 6", "Pelicula 7", "Pelicula 8", "Pelicula 9") }
+    val peliculasVistas = remember { listOf("Vista 1", "Vista 2", "Vista 3", "Vista 4", "Vista 5", "Vista 6") }
+
+    BackHandler(onBack = { if (buscar) buscar = false })
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Text("Biblioteca", fontSize = 35.sp, color = Color.White, fontFamily = font,
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+
+        IconButton(
+            onClick = { buscar = !buscar },
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+        ) {
+            Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 75.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Text(
+                "Por Ver",
+                fontSize = 18.sp,
+                color = if (seccion == 0) Color.White else Color.Gray,
+                fontFamily = font,
+                fontWeight = if (seccion == 0) FontWeight.Bold else FontWeight.Normal,
+                modifier = Modifier.clickable { seccion = 0 }
+            )
+            Text(
+                "Vistas",
+                fontSize = 18.sp,
+                color = if (seccion == 1) Color.White else Color.Gray,
+                fontFamily = font,
+                fontWeight = if (seccion == 1) FontWeight.Bold else FontWeight.Normal,
+                modifier = Modifier.clickable { seccion = 1 }
+            )
+        }
+
+        if (buscar) {
+            OutlinedTextField(
+                value = textoBuscar,
+                onValueChange = { textoBuscar = it },
+                label = { Text("Buscar", color = Color.White, fontFamily = font, fontSize = 12.sp) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = Color(0xFF6C63FF),
+                    unfocusedBorderColor = Color.White,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(30.dp),
+                modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 115.dp).height(60.dp)
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(
+                top = if (buscar) 185.dp else 115.dp,
+                bottom = 80.dp,
+                start = 25.dp,
+                end = 25.dp
+            )
+        ) {
+            val peliculas = if (seccion == 0) peliculasPorVer else peliculasVistas
+            val filas = peliculas.chunked(3)
+
+            items(filas) { fila ->
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    fila.forEach { pelicula ->
+                        Card(
+                            modifier = Modifier.weight(1f).height(180.dp).clickable {},
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
-
-                            // ===== TÍTULO Y BOTONES SUPERIORES =====
-                            // Título a la izquierda
-                            Text(
-                                text = "Descubrir",
-                                fontSize = 35.sp,
-                                color = Color.White,
-                                fontFamily = montserratFontFamily,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(top = 25.dp, start = 25.dp)
-                            )
-
-                            // Botón de búsqueda
-                            IconButton(
-                                onClick = { buscarPelis = !buscarPelis },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 20.dp, end = 130.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_descubrir),
-                                    contentDescription = "Buscar",
-                                    modifier = Modifier.size(35.dp)
-                                )
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font,
+                                    textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
                             }
+                        }
+                    }
+                    repeat(3 - fila.size) { Spacer(Modifier.weight(1f)) }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    }
+}
 
-                            // ===== BARRA DE BÚSQUEDA =====
-                            if (buscarPelis) {
-                                OutlinedTextField(
-                                    value = buscar,
-                                    onValueChange = { buscar = it },
-                                    label = {
-                                        Text("Buscar", color = Color.White, fontFamily = montserratFontFamily, fontSize = 12.sp)
+// pestana tierlists
+@Composable
+fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit) {
+    var buscar by remember { mutableStateOf(false) }
+    var textoBuscar by remember { mutableStateOf("") }
+    var tierListSeleccionada by remember { mutableStateOf("") }
+
+    val tierLists = remember { listOf("Mis Favoritas", "Terror Clasico", "Accion 2024", "Comedias", "Sci-Fi") }
+
+    BackHandler(onBack = {
+        if (buscar) buscar = false
+        else if (pantalla != 0) onPantallaChange(0)
+    })
+
+    when (pantalla) {
+        0 -> {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Text("TierLists", fontSize = 35.sp, color = Color.White, fontFamily = font,
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+
+                IconButton(
+                    onClick = { buscar = !buscar },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+                ) {
+                    Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
+                }
+
+                if (buscar) {
+                    OutlinedTextField(
+                        value = textoBuscar,
+                        onValueChange = { textoBuscar = it },
+                        label = { Text("Buscar", color = Color.White, fontFamily = font, fontSize = 12.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF6C63FF),
+                            unfocusedBorderColor = Color.White,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(30.dp),
+                        modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                            .padding(start = 20.dp, end = 20.dp, top = 80.dp).height(60.dp)
+                    )
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(
+                        top = if (buscar) 150.dp else 80.dp,
+                        bottom = 100.dp,
+                        start = 25.dp,
+                        end = 25.dp
+                    )
+                ) {
+                    val filas = tierLists.chunked(2)
+                    items(filas) { fila ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            fila.forEach { tierlist ->
+                                Column(
+                                    modifier = Modifier.weight(1f).clickable {
+                                        tierListSeleccionada = tierlist
+                                        onPantallaChange(1)
                                     },
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        focusedBorderColor = Color(0xFF6C63FF),
-                                        unfocusedBorderColor = Color.White,
-                                        focusedContainerColor = Color.Transparent,
-                                        unfocusedContainerColor = Color.Transparent
-                                    ),
-                                    shape = RoundedCornerShape(30.dp),
-                                    modifier = Modifier
-                                        .align(Alignment.TopCenter)
-                                        .fillMaxWidth()
-                                        .padding(start = 20.dp, end = 20.dp, top = 80.dp)
-                                        .height(60.dp)
-                                )
-                            }
-
-                            // ===== CARRUSELES =====
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(top = if (buscarPelis) 150.dp else 80.dp, bottom = 20.dp)
-                            ) {
-                                // Mostrar cada carrusel activo
-                                items(carruselesActivos.toList()) { tituloCarrusel ->
-                                    CarruselPeliculas(
-                                        titulo = tituloCarrusel,
-                                        modoEdicion = modoEdicion,
-                                        onEliminar = { carruselesActivos.remove(tituloCarrusel) },
-                                        montserratFontFamily = montserratFontFamily
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-
-                                // Botón "Editar/Listo" al final
-                                item {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Button(
-                                        onClick = { modoEdicion = !modoEdicion },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (modoEdicion) Color(0xFFFF5252) else Color(0xFF6C63FF)
-                                        ),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 25.dp)
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
-                                        Icon(
-                                            imageVector = if (modoEdicion) Icons.Default.Close else Icons.Default.Edit,
-                                            contentDescription = if (modoEdicion) "Listo" else "Editar",
-                                            tint = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = if (modoEdicion) "Listo" else "Editar Listas",
-                                            color = Color.White,
-                                            fontFamily = montserratFontFamily,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-
-                                // Botón "Añadir Lista" (solo en modo edición)
-                                if (modoEdicion) {
-                                    item {
-                                        Button(
-                                            onClick = { mostrarDialogo = true },
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFF6C63FF)
-                                            ),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 25.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Add,
-                                                contentDescription = "Añadir",
-                                                tint = Color.White
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "Añadir Lista",
-                                                color = Color.White,
-                                                fontFamily = montserratFontFamily,
-                                                fontSize = 16.sp
-                                            )
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Text(tierlist, color = Color.White, fontSize = 16.sp, fontFamily = font,
+                                                textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
                                         }
                                     }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(tierlist, color = Color.White, fontSize = 14.sp, fontFamily = font,
+                                        textAlign = TextAlign.Center, maxLines = 2)
                                 }
                             }
-
-                            // ===== DIÁLOGO PARA AÑADIR LISTAS =====
-                            if (mostrarDialogo) {
-                                DialogoAñadirLista(
-                                    carruselesDisponibles = carruselesDisponibles,
-                                    carruselesActivos = carruselesActivos,
-                                    onDismiss = { mostrarDialogo = false },
-                                    onAñadir = { nuevaLista ->
-                                        if (!carruselesActivos.contains(nuevaLista)) {
-                                            carruselesActivos.add(nuevaLista)
-                                        }
-                                    },
-                                    montserratFontFamily = montserratFontFamily
-                                )
-                            }
+                            repeat(2 - fila.size) { Spacer(Modifier.weight(1f)) }
                         }
-                    }
-                    //--------------------------------------------------------------------------
-                    //Biblioteca
-                    //--------------------------------------------------------------------------
-                    1 -> {
-                        var buscarBiblioteca by remember { mutableStateOf(false) }
-                        var buscar by remember { mutableStateOf("") }
-                        BackHandler(onBack = { buscarBiblioteca=false })
-
-                        // contenido de biblioteca
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center  // centra el contenido
-                        ) {
-
-                            // Título a la izquierda
-                            Text(
-                                text = "Biblioteca",
-                                fontSize = 35.sp,
-                                color = Color.White,
-                                fontFamily = montserratFontFamily,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(top = 25.dp, start = 25.dp)
-                            )
-
-                            // Botón de búsqueda a la derecha
-                            IconButton(
-                                onClick = { buscarBiblioteca = !buscarBiblioteca },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 20.dp, end = 130.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_descubrir),
-                                    contentDescription = "Buscar",
-                                    modifier = Modifier.size(35.dp)
-                                )
-                            }
-                            if (buscarBiblioteca){
-                                Row (
-                                    modifier = Modifier
-                                        .align ( Alignment.TopCenter )
-                                        .fillMaxWidth()
-                                        .padding(top = 80.dp)
-
-                                ){
-                                    OutlinedTextField(
-                                        value = buscar,
-                                        onValueChange = { buscar = it },
-                                        label = {
-                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
-                                        },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
-                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
-                                            unfocusedBorderColor = Color.White,
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
-                                        ),
-                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
-
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 70.dp, end = 20.dp)
-                                            .size(60.dp)
-
-                                    )
-                                }
-                            }
-
-                        }
-                    }
-                    //--------------------------------------------------------------------------
-                    //Tierlists
-                    //--------------------------------------------------------------------------
-                    2 -> {
-                        var buscarTierList by remember { mutableStateOf(false) }
-                        var buscar by remember { mutableStateOf("") }
-                        BackHandler(onBack = { buscarTierList=false })
-
-                        // contenido de tierlists
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center  // centra el contenido
-                        ) {
-
-                            // Título a la izquierda
-                            Text(
-                                text = "TierLists",
-                                fontSize = 35.sp,
-                                color = Color.White,
-                                fontFamily = montserratFontFamily,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(top = 25.dp, start = 25.dp)
-                            )
-
-                            // Botón de búsqueda a la derecha
-                            IconButton(
-                                onClick = { buscarTierList = !buscarTierList },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 20.dp, end = 130.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_descubrir),
-                                    contentDescription = "Buscar",
-                                    modifier = Modifier.size(35.dp)
-                                )
-                            }
-                            if (buscarTierList){
-                                Row (
-                                    modifier = Modifier
-                                        .align ( Alignment.TopCenter )
-                                        .fillMaxWidth()
-                                        .padding(top = 80.dp)
-
-                                ){
-                                    OutlinedTextField(
-                                        value = buscar,
-                                        onValueChange = { buscar = it },
-                                        label = {
-                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
-                                        },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
-                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
-                                            unfocusedBorderColor = Color.White,
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
-                                        ),
-                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
-
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 70.dp, end = 20.dp)
-                                            .size(60.dp)
-
-                                    )
-                                }
-                            }
-
-                        }
-                    }
-                    //--------------------------------------------------------------------------
-                    //Social
-                    //--------------------------------------------------------------------------
-                    3 -> {
-                        var buscarSocial by remember { mutableStateOf(false) }
-                        var buscar by remember { mutableStateOf("") }
-                        BackHandler(onBack = { buscarSocial=false })
-
-                        // contenido de social
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center  // centra el contenido
-                        ) {
-
-                            // Título a la izquierda
-                            Text(
-                                text = "Social",
-                                fontSize = 35.sp,
-                                color = Color.White,
-                                fontFamily = montserratFontFamily,
-                                modifier = Modifier
-                                    .align(Alignment.TopStart)
-                                    .padding(top = 25.dp, start = 25.dp)
-                            )
-
-                            // Botón de búsqueda a la derecha
-                            IconButton(
-                                onClick = { buscarSocial = !buscarSocial },
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 20.dp, end = 130.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_descubrir),
-                                    contentDescription = "Buscar",
-                                    modifier = Modifier.size(35.dp)
-                                )
-                            }
-                            if (buscarSocial){
-                                Row (
-                                    modifier = Modifier
-                                        .align ( Alignment.TopCenter )
-                                        .fillMaxWidth()
-                                        .padding(top = 80.dp)
-
-                                ){
-                                    OutlinedTextField(
-                                        value = buscar,
-                                        onValueChange = { buscar = it },
-                                        label = {
-                                            Text("Buscar", color = Color.White,fontFamily = montserratFontFamily, fontSize = 12.sp)
-                                        },
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
-                                            focusedBorderColor = Color(0xFF6C63FF), // borde morado cuando escribes
-                                            unfocusedBorderColor = Color.White,
-                                            focusedContainerColor = Color.Transparent,
-                                            unfocusedContainerColor = Color.Transparent
-                                        ),
-                                        shape = RoundedCornerShape(30.dp), // esquinas redondeadas
-
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(start = 70.dp, end = 20.dp)
-                                            .size(60.dp)
-
-                                    )
-                                }
-                            }
-
-                        }
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
 
-                // ===== icono de perfil arriba a la derecha =====
-                // este boton siempre esta visible encima de todo el contenido
-                IconButton(
-                    onClick = {
-                        // cuando pulsan el icono, ejecutamos la funcion onNavigateToPerfil()
-                        // que viene de AppNavigation y cambia pantallaApp a "perfil"
-                        onNavigateToPerfil()
-                    },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)  // lo ponemos arriba a la derecha
-                        .padding(top = 25.dp, end = 25.dp)
-                        .size(40.dp)
+                FloatingActionButton(
+                    onClick = { onPantallaChange(2) },
+                    containerColor = Color(0xFF6C63FF),
+                    contentColor = Color.White,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 25.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_perfil),
-                        contentDescription = "Ir al Perfil",
-                        contentScale = ContentScale.Crop,  // recorta la imagen para que encaje
-                        modifier = Modifier
-                            .size(40.dp)                   // tamaño de 40dp
-                            .clip(CircleShape)             // forma circular
-                            .border(                       // borde alrededor
-                                width = 3.dp,
-                                color = Color.White,
-                                shape = CircleShape
-                            )
+                    Icon(Icons.Default.Add, "crear tierlist", Modifier.size(28.dp))
+                }
+            }
+        }
+        1 -> TierListScreen({ onPantallaChange(0) }, { onPantallaChange(2) }, { onPantallaChange(0) })
+        2 -> CrearTierListScreen(
+            { onPantallaChange(if (tierListSeleccionada.isNotEmpty()) 1 else 0) },
+            { onPantallaChange(3) }
+        )
+        3 -> EditarTierListScreen({ onPantallaChange(2) }, { tierListSeleccionada = ""; onPantallaChange(0) })
+    }
+}
+
+// pestana social
+@Composable
+fun SocialTab(font: FontFamily, onMostrarContacto: (Boolean) -> Unit) {
+    var buscar by remember { mutableStateOf(false) }
+    var textoBuscar by remember { mutableStateOf("") }
+    var mostrarMensaje by remember { mutableStateOf(false) }
+    var mostrarContacto by remember { mutableStateOf(false) }
+    var contactoSeleccionado by remember { mutableStateOf("") }
+
+    val amigos = remember { listOf("Amigo 1", "Amigo 2", "Amigo 3", "Amigo 4", "Amigo 5", "Amigo 6", "Amigo 7", "Amigo 8", "Amigo 9", "Amigo 10") }
+
+    BackHandler(onBack = {
+        if (buscar) buscar = false
+        else if (mostrarContacto) mostrarContacto = false
+    })
+
+    if (mostrarContacto) {
+        onMostrarContacto(true)
+        ContactoScreen(
+            contactoSeleccionado,
+            { mostrarContacto = false; onMostrarContacto(false) },
+            { mostrarContacto = false; onMostrarContacto(false) }
+        )
+    } else {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text("Social", fontSize = 35.sp, color = Color.White, fontFamily = font,
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+
+            IconButton(
+                onClick = { buscar = !buscar },
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 80.dp)
+            ) {
+                Icon(Icons.Default.Add, "agregar", tint = Color.White, modifier = Modifier.size(35.dp))
+            }
+
+            if (buscar) {
+                Column(
+                    modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
+                        .padding(top = 80.dp, start = 20.dp, end = 20.dp)
+                ) {
+                    OutlinedTextField(
+                        value = textoBuscar,
+                        onValueChange = { textoBuscar = it },
+                        label = { Text("Buscar amigo", color = Color.White, fontFamily = font, fontSize = 12.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF6C63FF),
+                            unfocusedBorderColor = Color.White,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(30.dp),
+                        modifier = Modifier.fillMaxWidth().height(60.dp)
                     )
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = { if (textoBuscar.isNotBlank()) { mostrarMensaje = true; textoBuscar = "" } },
+                        enabled = textoBuscar.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6C63FF),
+                            disabledContainerColor = Color.Gray
+                        ),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Agregar", color = Color.White, fontFamily = font, fontSize = 16.sp)
+                    }
+                    if (mostrarMensaje) {
+                        Spacer(Modifier.height(12.dp))
+                        Text("Solicitud enviada", color = Color(0xFF32CD32), fontFamily = font, fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(
+                    top = if (buscar) 240.dp else 80.dp,
+                    bottom = 80.dp,
+                    start = 25.dp,
+                    end = 25.dp
+                )
+            ) {
+                items(amigos) { amigo ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            contactoSeleccionado = amigo
+                            mostrarContacto = true
+                        }.padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painterResource(R.drawable.ic_perfil),
+                            "perfil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(50.dp).clip(CircleShape).border(2.dp, Color.White, CircleShape)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(amigo, fontSize = 18.sp, color = Color.White, fontFamily = font)
+                    }
                 }
             }
         }
     }
 }
 
-// ===== funcion para los colores de la barra de navegacion =====
-// esta funcion define los colores de los iconos
-// todos los iconos son blancos (seleccionados y no seleccionados)
+// componente carrusel de peliculas
 @Composable
-fun navBarColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = Color.White,       // icono seleccionado: blanco
-    unselectedIconColor = Color.White,     // icono no seleccionado: blanco
-    indicatorColor = Color.Transparent     // sin indicador de fondo
-)
+fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Unit, font: FontFamily) {
+    val peliculas = remember { listOf("Pelicula 1", "Pelicula 2", "Pelicula 3", "Pelicula 4", "Pelicula 5", "Pelicula 6") }
 
-// ===== COMPONENTE: CARRUSEL DE PELÍCULAS =====
-/**
- * Muestra un carrusel horizontal con películas
- * @param titulo Título del carrusel (ej: "Terror 2025")
- * @param modoEdicion Si está en true, muestra el botón de eliminar
- * @param onEliminar Función que se ejecuta al pulsar eliminar
- */
-@Composable
-fun CarruselPeliculas(
-    titulo: String,
-    modoEdicion: Boolean,
-    onEliminar: () -> Unit,
-    montserratFontFamily: FontFamily
-) {
-    // Películas fake para el carrusel (después se reemplazarán con datos de la API)
-    val peliculasFake = remember {
-        listOf(
-            "Película 1", "Película 2", "Película 3",
-            "Película 4", "Película 5", "Película 6"
-        )
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // ===== CABECERA DEL CARRUSEL =====
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 25.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Título del carrusel
-            Text(
-                text = titulo,
-                fontSize = 20.sp,
-                color = Color.White,
-                fontFamily = montserratFontFamily,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            // Botón de eliminar (solo visible en modo edición)
+            Text(titulo, fontSize = 20.sp, color = Color.White, fontFamily = font, fontWeight = FontWeight.SemiBold)
             if (modoEdicion) {
-                IconButton(
-                    onClick = onEliminar,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Eliminar carrusel",
-                        tint = Color(0xFFFF5252),
-                        modifier = Modifier.size(24.dp)
-                    )
+                IconButton(onClick = onEliminar, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Close, "eliminar", tint = Color(0xFFFF5252), modifier = Modifier.size(24.dp))
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // ===== SCROLL HORIZONTAL DE PELÍCULAS =====
+        Spacer(Modifier.height(12.dp))
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 25.dp)
+            contentPadding = PaddingValues(horizontal = 25.dp)
         ) {
-            items(peliculasFake) { pelicula ->
-                // Card de cada película
+            items(peliculas) { pelicula ->
                 Card(
-                    modifier = Modifier
-                        .width(120.dp)
-                        .height(180.dp)
-                        .clickable {
-                            // Aquí irá la lógica para abrir los detalles de la película
-                        },
+                    modifier = Modifier.width(120.dp).height(180.dp).clickable {},
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF2A2A3E)
-                    )
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Por ahora mostramos solo texto
-                        // Después aquí irá la imagen del póster
-                        Text(
-                            text = pelicula,
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontFamily = montserratFontFamily,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(8.dp)
-                        )
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font,
+                            textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
                     }
                 }
             }
@@ -774,103 +602,51 @@ fun CarruselPeliculas(
     }
 }
 
-// ===== COMPONENTE: DIÁLOGO PARA AÑADIR LISTAS =====
-/**
- * Diálogo que muestra todas las listas disponibles
- * para que el usuario pueda añadirlas a su página
- */
+// dialogo para anadir listas
 @Composable
-fun DialogoAñadirLista(
-    carruselesDisponibles: List<String>,
-    carruselesActivos: List<String>,
+fun DialogoAnadirLista(
+    disponibles: List<String>,
+    activos: List<String>,
     onDismiss: () -> Unit,
-    onAñadir: (String) -> Unit,
-    montserratFontFamily: FontFamily
+    onAnadir: (String) -> Unit,
+    font: FontFamily
 ) {
-    // Listas seleccionadas para añadir
     val seleccionadas = remember { mutableStateListOf<String>() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "Añadir Listas",
-                fontFamily = montserratFontFamily,
-                fontSize = 20.sp,
-                color = Color.White
-            )
-        },
+        title = { Text("Anadir Listas", fontFamily = font, fontSize = 20.sp, color = Color.White) },
         text = {
-            // Lista de checkboxes con todas las opciones
-            Column(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                carruselesDisponibles.forEach { carrusel ->
-                    // Solo mostrar si no está ya en carruseles activos
-                    if (!carruselesActivos.contains(carrusel)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                disponibles.forEach { carrusel ->
+                    if (!activos.contains(carrusel)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    if (seleccionadas.contains(carrusel)) {
-                                        seleccionadas.remove(carrusel)
-                                    } else {
-                                        seleccionadas.add(carrusel)
-                                    }
-                                }
-                                .padding(vertical = 8.dp),
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                if (seleccionadas.contains(carrusel)) seleccionadas.remove(carrusel)
+                                else seleccionadas.add(carrusel)
+                            }.padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 checked = seleccionadas.contains(carrusel),
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        seleccionadas.add(carrusel)
-                                    } else {
-                                        seleccionadas.remove(carrusel)
-                                    }
-                                },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = Color(0xFF6C63FF),
-                                    uncheckedColor = Color.White
-                                )
+                                onCheckedChange = { if (it) seleccionadas.add(carrusel) else seleccionadas.remove(carrusel) },
+                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF6C63FF), uncheckedColor = Color.White)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = carrusel,
-                                fontFamily = montserratFontFamily,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(carrusel, fontFamily = font, fontSize = 16.sp, color = Color.White)
                         }
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    // Añadir todas las listas seleccionadas
-                    seleccionadas.forEach { lista ->
-                        onAñadir(lista)
-                    }
-                    onDismiss()
-                }
-            ) {
-                Text(
-                    text = "Añadir",
-                    fontFamily = montserratFontFamily,
-                    color = Color(0xFF6C63FF)
-                )
+            TextButton(onClick = { seleccionadas.forEach { onAnadir(it) }; onDismiss() }) {
+                Text("Anadir", fontFamily = font, color = Color(0xFF6C63FF))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    text = "Cancelar",
-                    fontFamily = montserratFontFamily,
-                    color = Color.White
-                )
+                Text("Cancelar", fontFamily = font, color = Color.White)
             }
         },
         containerColor = Color(0xFF1A1A2E),
@@ -878,9 +654,10 @@ fun DialogoAñadirLista(
     )
 }
 
-// ===== vista previa =====
-@Preview(showBackground = true)
+// colores de la navbar
 @Composable
-fun MainScreenPreview() {
-    MainScreen(onNavigateToPerfil = {})
-}
+fun navBarColors() = NavigationBarItemDefaults.colors(
+    selectedIconColor = Color.White,
+    unselectedIconColor = Color.White,
+    indicatorColor = Color.Transparent
+)
