@@ -229,7 +229,7 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     // lista de todos los carruseles disponibles
     val carruselesDisponibles = remember {
-        listOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000",
+        listOf("Terror 2025", "Más vistas del año", "Películas de los 2000",
                "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
     }
 
