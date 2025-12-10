@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.veoveo.R
 
 // pantalla principal con 4 pestanas: descubrir, biblioteca, tierlists, social
@@ -231,7 +232,7 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     // lista de todos los carruseles disponibles
     val carruselesDisponibles = remember {
-        listOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000",
+        listOf("Terror 2025", "Más vistas del año", "Películas de los 2000",
                "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
     }
 
@@ -645,8 +646,16 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
 // componente carrusel de peliculas
 @Composable
 fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Unit, font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
-    val peliculas = remember { listOf("Pelicula 1", "Pelicula 2", "Pelicula 3", "Pelicula 4", "Pelicula 5", "Pelicula 6") }
-
+    val peliculas = remember {
+        listOf(
+            "/q6y0Go1rZgVoTFzwOv0zDplM2mn.jpg", // Gladiator 2
+            "/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", // Deadpool
+            "/m2zXTuNPkywdYMwOpxD8NVMNhXS.jpg", // Wicked
+            "/aosm8NMQ3UyoBVpSxyimorCQykC.jpg", // Venom
+            "/p5ozvmdgsmbWe0H8Xk7Rc8SCwM6.jpg", // Intensamente 2
+            "/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg"  // Wild Robot
+        )
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp),
@@ -671,10 +680,13 @@ fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Un
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font,
-                            textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
-                    }
+                    // 3. CAMBIO: Aquí ponemos la imagen en lugar del Box con Text
+                    AsyncImage(
+                        model = "https://image.tmdb.org/t/p/w200$pelicula", // Construimos la URL
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop, // Recorta para llenar la tarjeta
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
