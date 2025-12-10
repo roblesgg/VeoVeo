@@ -54,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -98,92 +99,93 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
     // caja principal con degradado de fondo
     Box(modifier = Modifier.fillMaxSize().background(brush)) {
 
-        // scaffold es la estructura base con barra de navegacion abajo
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                // solo muestra la barra de navegacion si no esta en pantalla de pelicula
-                if (!mostrarPelicula) {
-                    // contenedor de la barra de navegacion con bordes redondeados
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
-                            .clip(RoundedCornerShape(50.dp))
-                            .background(Color.Black.copy(alpha = 0.3f))
-                    ) {
-                        // barra de navegacion inferior con 4 botones
-                        NavigationBar(
-                            containerColor = Color.Transparent,
-                            tonalElevation = 0.dp,
-                            modifier = Modifier.height(80.dp)
-                        ) {
-                            NavigationBarItem(
-                                icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
-                                label = null,
-                                selected = paginaActual == 0,
-                                onClick = { paginaActual = 0 },
-                                colors = navBarColors()
-                            )
-                            NavigationBarItem(
-                                icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
-                                label = null,
-                                selected = paginaActual == 1,
-                                onClick = { paginaActual = 1 },
-                                colors = navBarColors()
-                            )
-                            NavigationBarItem(
-                                icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
-                                label = null,
-                                selected = paginaActual == 2,
-                                onClick = { paginaActual = 2 },
-                                colors = navBarColors()
-                            )
-                            NavigationBarItem(
-                                icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
-                                label = null,
-                                selected = paginaActual == 3,
-                                onClick = { paginaActual = 3 },
-                                colors = navBarColors()
-                            )
-                        }
+        // contenido principal que ocupa toda la pantalla
+        Box(modifier = Modifier.fillMaxSize()) {
+            // muestra la pantalla de pelicula si esta activa
+            if (mostrarPelicula) {
+                PeliculaScreen(
+                    nombrePelicula = peliculaSeleccionada,
+                    onVolverClick = { mostrarPelicula = false }
+                )
+            } else {
+                // muestra las pestanas normales
+                when (paginaActual) {
+                    0 -> DescubrirTab(montserratFont) { pelicula ->
+                        peliculaSeleccionada = pelicula
+                        mostrarPelicula = true
                     }
+                    1 -> BibliotecaTab(montserratFont) { pelicula ->
+                        peliculaSeleccionada = pelicula
+                        mostrarPelicula = true
+                    }
+                    2 -> TierListsTab(montserratFont, pantallaTierList,
+                        onPantallaChange = { pantallaTierList = it },
+                        onPeliculaClick = { pelicula ->
+                            peliculaSeleccionada = pelicula
+                            mostrarPelicula = true
+                        }
+                    )
+                    3 -> SocialTab(montserratFont,
+                        onContactoClick = { mostrarContactoSocial = it },
+                        onPeliculaClick = { pelicula ->
+                            peliculaSeleccionada = pelicula
+                            mostrarPelicula = true
+                        }
+                    )
                 }
             }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                // muestra la pantalla de pelicula si esta activa
-                if (mostrarPelicula) {
-                    PeliculaScreen(
-                        nombrePelicula = peliculaSeleccionada,
-                        onVolverClick = { mostrarPelicula = false }
+        }
+
+        // barra de navegacion suelta encima del contenido (solo visible si no esta en pelicula)
+        if (!mostrarPelicula) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(RoundedCornerShape(50.dp))
+                        .background(Color.Black.copy(alpha = 0.3f))
+                        .blur(radius = 10.dp)
+                )
+                NavigationBar(
+                    containerColor = Color.Transparent,
+                    tonalElevation = 0.dp,
+                    modifier = Modifier
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(50.dp))
+                ) {
+                    NavigationBarItem(
+                        icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
+                        label = null,
+                        selected = paginaActual == 0,
+                        onClick = { paginaActual = 0 },
+                        colors = navBarColors()
                     )
-                } else {
-                    // muestra las pestanas normales
-                    when (paginaActual) {
-                        0 -> DescubrirTab(montserratFont) { pelicula ->
-                            peliculaSeleccionada = pelicula
-                            mostrarPelicula = true
-                        }
-                        1 -> BibliotecaTab(montserratFont) { pelicula ->
-                            peliculaSeleccionada = pelicula
-                            mostrarPelicula = true
-                        }
-                        2 -> TierListsTab(montserratFont, pantallaTierList,
-                            onPantallaChange = { pantallaTierList = it },
-                            onPeliculaClick = { pelicula ->
-                                peliculaSeleccionada = pelicula
-                                mostrarPelicula = true
-                            }
-                        )
-                        3 -> SocialTab(montserratFont,
-                            onContactoClick = { mostrarContactoSocial = it },
-                            onPeliculaClick = { pelicula ->
-                                peliculaSeleccionada = pelicula
-                                mostrarPelicula = true
-                            }
-                        )
-                    }
+                    NavigationBarItem(
+                        icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
+                        label = null,
+                        selected = paginaActual == 1,
+                        onClick = { paginaActual = 1 },
+                        colors = navBarColors()
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
+                        label = null,
+                        selected = paginaActual == 2,
+                        onClick = { paginaActual = 2 },
+                        colors = navBarColors()
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
+                        label = null,
+                        selected = paginaActual == 3,
+                        onClick = { paginaActual = 3 },
+                        colors = navBarColors()
+                    )
                 }
             }
         }
@@ -622,7 +624,7 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
                         modifier = Modifier.fillMaxWidth().clickable {
                             contactoSeleccionado = amigo
                             mostrarContacto = true
-                        }.padding(vertical = 12.dp),
+                        }.padding(vertical = 12.dp),    
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Image(
