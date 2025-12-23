@@ -237,13 +237,13 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     // lista de todos los carruseles disponibles
     val carruselesDisponibles = remember {
-        listOf("Terror 2025", "Más vistas del año", "Películas de los 2000",
+        listOf("Terror", "Más vistas del año", "Películas de los 2000",
                "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
     }
 
     // lista de carruseles que se muestran actualmente en pantalla
     val carruselesActivos = remember {
-        mutableStateListOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000")
+        mutableStateListOf("Terror", "Mas vistas del ano", "Peliculas de los 2000")
     }
 
     // maneja el boton atras del dispositivo
@@ -683,7 +683,7 @@ fun CarruselPeliculas(
             }
             if (response.isSuccessful) {
                 // Actualizamos la lista con los resultados (si no es null)
-                listaPeliculas = response.body()?.results ?: emptyList()
+                listaPeliculas = (response.body()?.results?:emptyList()) as List<Movie>
             }
         } catch (e: Exception) {
             e.printStackTrace() // Manejo básico de errores
