@@ -1,9 +1,8 @@
-package com.ejemplo.tuaplicacion.network
+package com.example.veoveo.conexion
 
-import MovieResponse
+import com.example.veoveo.model.MovieResponse
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Header
 import retrofit2.http.Query
 
 interface ApiService {

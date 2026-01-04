@@ -1,9 +1,8 @@
-package com.ejemplo.tuaplicacion.network // Android Studio pone esto solo
+package com.example.veoveo.conexion
 
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory // Asegúrate de importar tu interfaz
+import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
     // 1. Base URL según el comando curl

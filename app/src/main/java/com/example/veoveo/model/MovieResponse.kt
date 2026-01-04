@@ -1,3 +1,5 @@
+package com.example.veoveo.model
+
 import com.google.gson.annotations.SerializedName
 
 // 1. Esta clase representa TODO el JSON que te llega (la "caja" grande)
