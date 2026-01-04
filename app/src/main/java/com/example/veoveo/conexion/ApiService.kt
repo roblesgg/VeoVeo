@@ -13,4 +13,10 @@ interface ApiService {
         @Query("query") nombrePelicula: String,
         @Query("language") idioma: String = "es-ES"
     ): Response<MovieResponse>
+
+    suspend fun buscarPeliculasporGenero(
+        @Query("with_genres") generoId: String,
+        @Query("language") idioma: String = "es-ES",
+        @Query("sort_by") orden: String = "popularity.desc"
+    ): Response<MovieResponse>
 }

@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -69,6 +70,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.veoveo.R
+import kotlinx.coroutines.withContext
+import com.ejemplo.tuaplicacion.network.RetrofitClient
+import kotlinx.coroutines.Dispatchers
+import com.example.veoveo.model.Movie
 
 // pantalla principal con 4 pestanas: descubrir, biblioteca, tierlists, social
 @Composable
@@ -232,13 +237,13 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     // lista de todos los carruseles disponibles
     val carruselesDisponibles = remember {
-        listOf("Terror 2025", "Más vistas del año", "Películas de los 2000",
+        listOf("Terror", "Más vistas del año", "Películas de los 2000",
                "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
     }
 
     // lista de carruseles que se muestran actualmente en pantalla
     val carruselesActivos = remember {
-        mutableStateListOf("Terror 2025", "Mas vistas del ano", "Peliculas de los 2000")
+        mutableStateListOf("Terror", "Mas vistas del ano", "Peliculas de los 2000")
     }
 
     // maneja el boton atras del dispositivo
@@ -643,19 +648,48 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
     }
 }
 
+fun obtenerIdGenero(titulo: String): String {
+    return when {
+        titulo.contains("Terror", ignoreCase = true) -> "27"
+        titulo.contains("Comedia", ignoreCase = true) -> "35"
+        titulo.contains("Accion", ignoreCase = true) -> "28"
+        titulo.contains("Aventura", ignoreCase = true) -> "12"
+        titulo.contains("Ciencia Ficcion", ignoreCase = true) || titulo.contains("Sci-Fi") -> "878"
+        titulo.contains("Animacion", ignoreCase = true) -> "16"
+        // Si no coincide, devolvemos '28' (Acción) por defecto o una cadena vacía para manejarlo
+        else -> "28"
+    }
+}
+
 // componente carrusel de peliculas
 @Composable
-fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Unit, font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
-    val peliculas = remember {
-        listOf(
-            "/q6y0Go1rZgVoTFzwOv0zDplM2mn.jpg", // Gladiator 2
-            "/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg", // Deadpool
-            "/m2zXTuNPkywdYMwOpxD8NVMNhXS.jpg", // Wicked
-            "/aosm8NMQ3UyoBVpSxyimorCQykC.jpg", // Venom
-            "/p5ozvmdgsmbWe0H8Xk7Rc8SCwM6.jpg", // Intensamente 2
-            "/wTnV3PCVW5O92JMrFvvrRcV39RU.jpg"  // Wild Robot
-        )
+fun CarruselPeliculas(
+    titulo: String,
+    modoEdicion: Boolean,
+    onEliminar: () -> Unit,
+    font: FontFamily,
+    onPeliculaClick: (String) -> Unit = {}
+) {
+    // 1. Estado para guardar las películas que vienen de la API
+    var listaPeliculas by remember { mutableStateOf(emptyList<Movie>()) }
+
+    // 2. Llamada a la API al cargar el componente
+    LaunchedEffect(titulo) {
+        val generoId = obtenerIdGenero(titulo)
+        try {
+            // Hacemos la llamada en un hilo secundario (IO)
+            val response = withContext(Dispatchers.IO) {
+                RetrofitClient.instance.buscarPeliculasporGenero(generoId)
+            }
+            if (response.isSuccessful) {
+                // Actualizamos la lista con los resultados (si no es null)
+                listaPeliculas = (response.body()?.results?:emptyList()) as List<Movie>
+            }
+        } catch (e: Exception) {
+            e.printStackTrace() // Manejo básico de errores
+        }
     }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp),
@@ -670,21 +704,24 @@ fun CarruselPeliculas(titulo: String, modoEdicion: Boolean, onEliminar: () -> Un
             }
         }
         Spacer(Modifier.height(12.dp))
+
+        // 3. Mostramos la lista dinámica
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 25.dp)
         ) {
-            items(peliculas) { pelicula ->
+            items(listaPeliculas) { movie ->
                 Card(
-                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(pelicula) },
+                    // Pasamos el título o el ID al hacer click
+                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.title) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
-                    // 3. CAMBIO: Aquí ponemos la imagen en lugar del Box con Text
+                    // Usamos el posterPath que viene de la API
                     AsyncImage(
-                        model = "https://image.tmdb.org/t/p/w200$pelicula", // Construimos la URL
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop, // Recorta para llenar la tarjeta
+                        model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                        contentDescription = movie.title,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
