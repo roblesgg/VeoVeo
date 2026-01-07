@@ -71,7 +71,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.veoveo.R
 import kotlinx.coroutines.withContext
-import com.ejemplo.tuaplicacion.network.RetrofitClient
+import com.example.veoveo.conexion.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import com.example.veoveo.model.Movie
 
