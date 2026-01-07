@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -67,4 +68,23 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // Opcional: para ver logs
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Firebase BoM (Bill of Materials) - maneja las versiones automáticamente
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+
+    // Firebase Authentication
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Firebase Firestore (para la base de datos)
+    implementation("com.google.firebase:firebase-firestore-ktx")
+
+    // Google Sign-In para Android
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // Coroutines para operaciones asíncronas
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Lifecycle ViewModel con Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 }

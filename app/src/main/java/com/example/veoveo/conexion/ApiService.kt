@@ -14,6 +14,7 @@ interface ApiService {
         @Query("language") idioma: String = "es-ES"
     ): Response<MovieResponse>
 
+    @GET("discover/movie")
     suspend fun buscarPeliculasporGenero(
         @Query("with_genres") generoId: String,
         @Query("language") idioma: String = "es-ES",

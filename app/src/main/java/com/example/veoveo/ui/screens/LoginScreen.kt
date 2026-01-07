@@ -14,10 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +37,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veoveo.R
+import com.example.veoveo.viewmodel.AuthState
+import com.example.veoveo.viewmodel.AuthViewModel
 
 /**
  * ===== LOGINSCREEN - PANTALLA DE LOGIN =====
@@ -54,8 +61,12 @@ import com.example.veoveo.R
  */
 @Composable
 fun LoginScreen(
-    logueado: () -> Unit  // esta funcion se ejecuta cuando el usuario pulsa iniciar sesion
+    logueado: () -> Unit,  // esta funcion se ejecuta cuando el usuario pulsa iniciar sesion
+    onRegisterClick: () -> Unit = {},  // navega a la pantalla de registro
+    viewModel: AuthViewModel = viewModel()  // el ViewModel de autenticación
 ) {
+    // ===== observamos el estado de autenticación =====
+    val authState by viewModel.authState.collectAsState()
 
     // ===== colores del fondo =====
     // creamos un degradado de azul oscuro a morado
@@ -67,7 +78,6 @@ fun LoginScreen(
         )
     )
 
-
     val montserratFontFamily = FontFamily(
         Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
     )
@@ -77,7 +87,24 @@ fun LoginScreen(
     // cuando el usuario escribe algo, la variable cambia y la pantalla se actualiza
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var mostrarError by remember { mutableStateOf(false) }  // para mostrar el mensaje de error
+    var errorMessage by remember { mutableStateOf("") }
+
+    // ===== reaccionar cuando el usuario se autentica =====
+    // cuando el estado cambia a Authenticated, llamamos a logueado()
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                errorMessage = ""
+                logueado()
+            }
+            is AuthState.Error -> {
+                errorMessage = (authState as AuthState.Error).message
+            }
+            else -> {
+                // no hacemos nada en otros casos
+            }
+        }
+    }
 
     // ===== contenedor principal =====
     // el Box es el contenedor que ocupa toda la pantalla
@@ -156,10 +183,10 @@ fun LoginScreen(
             )
 
             // ===== mensaje de error =====
-            // si mostrarError es true, mostramos el mensaje en rojo
-            if (mostrarError) {
+            // si hay un error, mostramos el mensaje en rojo
+            if (errorMessage.isNotEmpty()) {
                 Text(
-                    text = "Email/Contraseña incorrectos",
+                    text = errorMessage,
                     color = Color(0xFFFF5252),  // rojo
                     fontSize = 14.sp,
                     modifier = Modifier.padding(bottom = 16.dp),
@@ -167,18 +194,22 @@ fun LoginScreen(
                 )
             }
 
+            // ===== indicador de carga =====
+            // si estamos en estado Loading, mostramos un spinner
+            if (authState is AuthState.Loading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             // ===== boton de iniciar sesion =====
             Button(
                 onClick = {
-                    if ((email.equals("admin") && password.equals("admin"))||(email.equals("1234") && password.equals("1234"))) {
-                        // si el email y la contraseña son correctos, ejecutamos logueado()
-                        mostrarError = false  // quitamos el error
-                        logueado()
-                    } else {
-                        // si son incorrectos, mostramos el error
-                        mostrarError = true
-                    }
+                    // llamamos al ViewModel para hacer login
+                    viewModel.loginWithEmail(email, password)
                 },
+                enabled = authState !is AuthState.Loading,  // deshabilitamos el botón mientras carga
                 modifier = Modifier
                     .fillMaxWidth()   // ocupa todo el ancho
                     .height(50.dp),   // altura de 50dp
@@ -192,7 +223,6 @@ fun LoginScreen(
                     color = Color.White,          // texto blanco
                     fontWeight = FontWeight.Bold,  // texto en negrita
                     fontFamily = montserratFontFamily
-
                 )
             }
 
@@ -218,6 +248,17 @@ fun LoginScreen(
                     "Continuar con Google",
                     color = Color.Black,  // texto negro
                     fontWeight = FontWeight.Bold,  // texto en negrita
+                    fontFamily = montserratFontFamily
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ===== boton para ir a registro =====
+            TextButton(onClick = onRegisterClick) {
+                Text(
+                    "¿No tienes cuenta? Regístrate",
+                    color = Color.White,
                     fontFamily = montserratFontFamily
                 )
             }
