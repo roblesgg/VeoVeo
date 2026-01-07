@@ -155,7 +155,14 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
                     .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
                     .height(80.dp)
                     .clip(RoundedCornerShape(50.dp))
-                    .background(Color.Black.copy(alpha = 0.75f))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF1A1A1A).copy(alpha = 0.95f),
+                                Color(0xFF0D0D0D).copy(alpha = 0.98f)
+                            )
+                        )
+                    )
             ) {
                 NavigationBarItem(
                     icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
