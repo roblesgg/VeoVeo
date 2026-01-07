@@ -143,57 +143,48 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
             }
         }
 
-        // barra de navegacion suelta encima del contenido (solo visible si no esta en pelicula ni viendo perfil de amigo)
-        if (!mostrarPelicula && !mostrarContactoSocial) {
-            Box(
+        // barra de navegacion suelta encima del contenido (solo visible en pantallas principales)
+        // Se oculta si: está viendo película, viendo perfil de amigo, o dentro de una tierlist (crear/ver/editar)
+        if (!mostrarPelicula && !mostrarContactoSocial && !(paginaActual == 2 && pantallaTierList != 0)) {
+            NavigationBar(
+                containerColor = Color.Transparent,
+                tonalElevation = 0.dp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(start = 30.dp, end = 30.dp, bottom = 30.dp)
+                    .height(80.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(Color.Black.copy(alpha = 0.75f))
             ) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(Color.Black.copy(alpha = 0.3f))
-                        .blur(radius = 10.dp)
+                NavigationBarItem(
+                    icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
+                    label = null,
+                    selected = paginaActual == 0,
+                    onClick = { paginaActual = 0 },
+                    colors = navBarColors()
                 )
-                NavigationBar(
-                    containerColor = Color.Transparent,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                ) {
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 0,
-                        onClick = { paginaActual = 0 },
-                        colors = navBarColors()
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 1,
-                        onClick = { paginaActual = 1 },
-                        colors = navBarColors()
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 2,
-                        onClick = { paginaActual = 2 },
-                        colors = navBarColors()
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 3,
-                        onClick = { paginaActual = 3 },
-                        colors = navBarColors()
-                    )
-                }
+                NavigationBarItem(
+                    icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
+                    label = null,
+                    selected = paginaActual == 1,
+                    onClick = { paginaActual = 1 },
+                    colors = navBarColors()
+                )
+                NavigationBarItem(
+                    icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
+                    label = null,
+                    selected = paginaActual == 2,
+                    onClick = { paginaActual = 2 },
+                    colors = navBarColors()
+                )
+                NavigationBarItem(
+                    icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
+                    label = null,
+                    selected = paginaActual == 3,
+                    onClick = { paginaActual = 3 },
+                    colors = navBarColors()
+                )
             }
         }
 
@@ -286,7 +277,8 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
         // lista vertical con todos los carruseles de peliculas
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp, bottom = 80.dp)
+            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp),
+            contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             // muestra cada carrusel activo
             items(carruselesActivos.toList()) { carrusel ->
@@ -407,10 +399,10 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(
                 top = if (buscar) 185.dp else 140.dp,
-                bottom = 80.dp,
                 start = 25.dp,
                 end = 25.dp
-            )
+            ),
+            contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             val peliculas = if (seccion == 0) peliculasPorVer else peliculasVistas
             val filas = peliculas.chunked(3)
@@ -486,10 +478,10 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(
                         top = if (buscar) 175.dp else 105.dp,
-                        bottom = 100.dp,
                         start = 25.dp,
                         end = 25.dp
-                    )
+                    ),
+                    contentPadding = PaddingValues(bottom = 130.dp)
                 ) {
                     val filas = tierLists.chunked(2)
                     items(filas) { fila ->
@@ -527,7 +519,7 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                     onClick = { onPantallaChange(2) },
                     containerColor = Color(0xFF6C63FF),
                     contentColor = Color.White,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 100.dp, end = 25.dp)
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 130.dp, end = 25.dp)
                 ) {
                     Icon(Icons.Default.Add, "crear tierlist", Modifier.size(28.dp))
                 }
@@ -621,10 +613,10 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(
                     top = if (buscar) 265.dp else 105.dp,
-                    bottom = 80.dp,
                     start = 25.dp,
                     end = 25.dp
-                )
+                ),
+                contentPadding = PaddingValues(bottom = 110.dp)
             ) {
                 items(amigos) { amigo ->
                     Row(
