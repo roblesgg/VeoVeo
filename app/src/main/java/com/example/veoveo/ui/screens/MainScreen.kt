@@ -52,6 +52,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,7 +72,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.veoveo.R
 import kotlinx.coroutines.withContext
-import com.ejemplo.tuaplicacion.network.RetrofitClient
+import com.example.veoveo.conexion.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import com.example.veoveo.model.Movie
 
