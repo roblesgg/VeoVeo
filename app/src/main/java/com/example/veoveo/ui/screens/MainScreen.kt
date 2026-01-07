@@ -143,8 +143,8 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
             }
         }
 
-        // barra de navegacion suelta encima del contenido (solo visible si no esta en pelicula)
-        if (!mostrarPelicula) {
+        // barra de navegacion suelta encima del contenido (solo visible si no esta en pelicula ni viendo perfil de amigo)
+        if (!mostrarPelicula && !mostrarContactoSocial) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -254,12 +254,12 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
         // titulo de la seccion
         Text("Descubrir", fontSize = 35.sp, color = Color.White, fontFamily = font,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 50.dp, start = 25.dp))
 
         // boton de lupa para abrir el buscador
         IconButton(
             onClick = { buscar = !buscar },
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 45.dp, end = 130.dp)
         ) {
             Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
         }
@@ -280,13 +280,13 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
                 ),
                 shape = RoundedCornerShape(30.dp),
                 modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 80.dp).height(60.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 105.dp).height(60.dp)
             )
         }
 
         // lista vertical con todos los carruseles de peliculas
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 150.dp else 80.dp, bottom = 80.dp)
+            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp, bottom = 80.dp)
         ) {
             // muestra cada carrusel activo
             items(carruselesActivos.toList()) { carrusel ->
@@ -354,17 +354,17 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Text("Biblioteca", fontSize = 35.sp, color = Color.White, fontFamily = font,
-            modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 50.dp, start = 25.dp))
 
         IconButton(
             onClick = { buscar = !buscar },
-            modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = 45.dp, end = 130.dp)
         ) {
             Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
         }
 
         Row(
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 75.dp),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp),
             horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
@@ -406,7 +406,7 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(
-                top = if (buscar) 185.dp else 115.dp,
+                top = if (buscar) 185.dp else 140.dp,
                 bottom = 80.dp,
                 start = 25.dp,
                 end = 25.dp
@@ -455,11 +455,11 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
         0 -> {
             Box(modifier = Modifier.fillMaxSize()) {
                 Text("TierLists", fontSize = 35.sp, color = Color.White, fontFamily = font,
-                    modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+                    modifier = Modifier.align(Alignment.TopStart).padding(top = 50.dp, start = 25.dp))
 
                 IconButton(
                     onClick = { buscar = !buscar },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 130.dp)
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 45.dp, end = 130.dp)
                 ) {
                     Image(painterResource(R.drawable.ic_descubrir), "buscar", Modifier.size(35.dp))
                 }
@@ -479,13 +479,13 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                         ),
                         shape = RoundedCornerShape(30.dp),
                         modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                            .padding(start = 20.dp, end = 20.dp, top = 80.dp).height(60.dp)
+                            .padding(start = 20.dp, end = 20.dp, top = 105.dp).height(60.dp)
                     )
                 }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(
-                        top = if (buscar) 150.dp else 80.dp,
+                        top = if (buscar) 175.dp else 105.dp,
                         bottom = 100.dp,
                         start = 25.dp,
                         end = 25.dp
@@ -569,11 +569,11 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
             Text("Social", fontSize = 35.sp, color = Color.White, fontFamily = font,
-                modifier = Modifier.align(Alignment.TopStart).padding(top = 25.dp, start = 25.dp))
+                modifier = Modifier.align(Alignment.TopStart).padding(top = 50.dp, start = 25.dp))
 
             IconButton(
                 onClick = { buscar = !buscar },
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 20.dp, end = 80.dp)
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 45.dp, end = 80.dp)
             ) {
                 Icon(Icons.Default.Add, "agregar", tint = Color.White, modifier = Modifier.size(35.dp))
             }
@@ -581,7 +581,7 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
             if (buscar) {
                 Column(
                     modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()
-                        .padding(top = 80.dp, start = 20.dp, end = 20.dp)
+                        .padding(top = 105.dp, start = 20.dp, end = 20.dp)
                 ) {
                     OutlinedTextField(
                         value = textoBuscar,
@@ -620,7 +620,7 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(
-                    top = if (buscar) 240.dp else 80.dp,
+                    top = if (buscar) 265.dp else 105.dp,
                     bottom = 80.dp,
                     start = 25.dp,
                     end = 25.dp
