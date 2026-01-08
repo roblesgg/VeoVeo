@@ -242,7 +242,7 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
     // lista de carruseles que se muestran actualmente en pantalla
     val carruselesActivos = remember {
-        mutableStateListOf("Terror", "Mas vistas del ano", "Peliculas de los 2000")
+        mutableStateListOf("Terror", "Comedia", "Acción")
     }
 
     // maneja el boton atras del dispositivo
@@ -652,10 +652,10 @@ fun obtenerIdGenero(titulo: String): String {
     return when {
         titulo.contains("Terror", ignoreCase = true) -> "27"
         titulo.contains("Comedia", ignoreCase = true) -> "35"
-        titulo.contains("Accion", ignoreCase = true) -> "28"
+        titulo.contains("Acción", ignoreCase = true) -> "28"
         titulo.contains("Aventura", ignoreCase = true) -> "12"
-        titulo.contains("Ciencia Ficcion", ignoreCase = true) || titulo.contains("Sci-Fi") -> "878"
-        titulo.contains("Animacion", ignoreCase = true) -> "16"
+        titulo.contains("Ciencia Ficción", ignoreCase = true) || titulo.contains("Sci-Fi") -> "878"
+        titulo.contains("Animación", ignoreCase = true) -> "16"
         // Si no coincide, devolvemos '28' (Acción) por defecto o una cadena vacía para manejarlo
         else -> "28"
     }
