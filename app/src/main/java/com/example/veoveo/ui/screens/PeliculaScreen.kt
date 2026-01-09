@@ -30,13 +30,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,12 +54,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.veoveo.R
+import com.example.veoveo.conexion.RetrofitClient
+import com.example.veoveo.model.CastMember
+import com.example.veoveo.model.MovieDetails
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // pantalla de detalle de una pelicula con informacion completa
 @Composable
 fun PeliculaScreen(
-    nombrePelicula: String = "Titulo de la Pelicula",
+    movieId: Int,
     onVolverClick: () -> Unit = {}
 ) {
 
@@ -65,6 +75,15 @@ fun PeliculaScreen(
 
     // degradado de fondo morado oscuro
     val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
+
+    // estados de carga
+    var cargando by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var movieDetails by remember { mutableStateOf<MovieDetails?>(null) }
+    var reparto by remember { mutableStateOf<List<CastMember>>(emptyList()) }
+
+    // coroutine scope para llamadas a la API
+    val scope = rememberCoroutineScope()
 
     // controla si cada seccion esta expandida o colapsada
     var descripcionExpandida by remember { mutableStateOf(false) }
@@ -76,22 +95,44 @@ fun PeliculaScreen(
     // controla el estado de la pelicula (0=sin ver, 1=por ver, 2=vista)
     var estadoPelicula by remember { mutableStateOf(0) }
 
-    // datos de ejemplo
-    val descripcion = "Una historia epica sobre aventuras, accion y emociones. La pelicula sigue a un grupo de heroes en su viaje para salvar el mundo de una amenaza inminente. Con efectos visuales impresionantes y una banda sonora memorable."
-
-    val reparto = listOf(
-        "Actor Principal 1",
-        "Actor Principal 2",
-        "Actriz Secundaria 1",
-        "Actor de Reparto 1",
-        "Actor de Reparto 2"
-    )
-
-    val puntuacionMedia = 8.5f
-    val totalVotos = 1234
-
+    // datos de amigos (todavía hardcodeados - se conectarán con Firebase más adelante)
     val amigosVieron = listOf("Amigo 1", "Amigo 2", "Amigo 3", "Amigo 4")
     val amigosQuierenVer = listOf("Amigo 5", "Amigo 6", "Amigo 7")
+
+    // cargar datos de la API cuando se monta el componente
+    LaunchedEffect(movieId) {
+        cargando = true
+        error = null
+
+        scope.launch {
+            try {
+                // llamadas a la API en paralelo
+                val detallesResponse = withContext(Dispatchers.IO) {
+                    RetrofitClient.instance.obtenerDetallesPelicula(movieId)
+                }
+
+                val creditosResponse = withContext(Dispatchers.IO) {
+                    RetrofitClient.instance.obtenerCreditosPelicula(movieId)
+                }
+
+                if (detallesResponse.isSuccessful && detallesResponse.body() != null) {
+                    movieDetails = detallesResponse.body()
+                } else {
+                    error = "No se pudieron cargar los detalles de la película"
+                }
+
+                if (creditosResponse.isSuccessful && creditosResponse.body() != null) {
+                    // tomamos solo los primeros 10 actores para no sobrecargar la pantalla
+                    reparto = creditosResponse.body()!!.cast.take(10)
+                }
+
+                cargando = false
+            } catch (e: Exception) {
+                error = "Error al cargar la película: ${e.message}"
+                cargando = false
+            }
+        }
+    }
 
     // maneja el boton atras del dispositivo
     BackHandler(onBack = onVolverClick)
@@ -99,43 +140,161 @@ fun PeliculaScreen(
     // caja principal con degradado de fondo
     Box(modifier = Modifier.fillMaxSize().background(brush)) {
 
-        // columna con scroll para todo el contenido
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(top = 70.dp, start = 25.dp, end = 25.dp, bottom = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            // caratula de la pelicula
-            Card(
-                modifier = Modifier.width(200.dp).height(300.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Caratula",
+        // mostrar loading, error, o contenido
+        when {
+            cargando -> {
+                // pantalla de carga
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
                         color = Color.White,
-                        fontSize = 16.sp,
-                        fontFamily = font,
-                        textAlign = TextAlign.Center
+                        modifier = Modifier.size(50.dp)
                     )
                 }
             }
+            error != null -> {
+                // pantalla de error
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Error",
+                            fontSize = 24.sp,
+                            color = Color.White,
+                            fontFamily = font,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = error ?: "Error desconocido",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontFamily = font,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 40.dp)
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        Button(
+                            onClick = onVolverClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
+                        ) {
+                            Text("Volver", fontFamily = font)
+                        }
+                    }
+                }
+            }
+            movieDetails != null -> {
+                // columna con scroll para todo el contenido
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(top = 70.dp, start = 25.dp, end = 25.dp, bottom = 30.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-            Spacer(Modifier.height(24.dp))
+                    // caratula de la pelicula con imagen real desde TMDB
+                    Card(
+                        modifier = Modifier.width(200.dp).height(300.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
+                    ) {
+                        if (movieDetails!!.posterPath != null) {
+                            AsyncImage(
+                                model = "https://image.tmdb.org/t/p/w500${movieDetails!!.posterPath}",
+                                contentDescription = "Carátula de ${movieDetails!!.title}",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    "Sin carátula",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontFamily = font,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
 
-            // titulo de la pelicula
-            Text(
-                nombrePelicula,
-                fontSize = 28.sp,
-                color = Color.White,
-                fontFamily = font,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+                    Spacer(Modifier.height(24.dp))
+
+                    // titulo de la pelicula
+                    Text(
+                        movieDetails!!.title,
+                        fontSize = 28.sp,
+                        color = Color.White,
+                        fontFamily = font,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    // año de lanzamiento y duración
+                    if (movieDetails!!.releaseDate != null || movieDetails!!.runtime != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (movieDetails!!.releaseDate != null && movieDetails!!.releaseDate!!.isNotEmpty()) {
+                                Text(
+                                    movieDetails!!.releaseDate!!.split("-")[0], // solo el año
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontFamily = font
+                                )
+                            }
+                            if (movieDetails!!.runtime != null && movieDetails!!.runtime!! > 0) {
+                                if (movieDetails!!.releaseDate != null && movieDetails!!.releaseDate!!.isNotEmpty()) {
+                                    Text(
+                                        " • ",
+                                        fontSize = 14.sp,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontFamily = font
+                                    )
+                                }
+                                Text(
+                                    "${movieDetails!!.runtime} min",
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontFamily = font
+                                )
+                            }
+                        }
+                    }
+
+                    // géneros
+                    if (movieDetails!!.genres.isNotEmpty()) {
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            movieDetails!!.genres.take(3).forEach { genre ->
+                                Card(
+                                    modifier = Modifier.padding(horizontal = 4.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFF6C63FF).copy(alpha = 0.3f)
+                                    )
+                                ) {
+                                    Text(
+                                        genre.name,
+                                        fontSize = 12.sp,
+                                        color = Color.White,
+                                        fontFamily = font,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
 
             Spacer(Modifier.height(24.dp))
 
@@ -195,7 +354,7 @@ fun PeliculaScreen(
                 font = font
             ) {
                 Text(
-                    descripcion,
+                    if (movieDetails!!.overview.isNotEmpty()) movieDetails!!.overview else "No hay descripción disponible",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.9f),
                     fontFamily = font,
@@ -213,15 +372,26 @@ fun PeliculaScreen(
                 onToggle = { repartoExpandido = !repartoExpandido },
                 font = font
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    reparto.forEach { actor ->
-                        Text(
-                            "• $actor",
-                            fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontFamily = font,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                if (reparto.isEmpty()) {
+                    Text(
+                        "No hay información del reparto disponible",
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontFamily = font,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                } else {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        reparto.forEach { actor ->
+                            Text(
+                                "• ${actor.name} (${actor.character})",
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontFamily = font,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -248,7 +418,7 @@ fun PeliculaScreen(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            puntuacionMedia.toString(),
+                            String.format("%.1f", movieDetails!!.voteAverage),
                             fontSize = 36.sp,
                             color = Color.White,
                             fontFamily = font,
@@ -264,7 +434,7 @@ fun PeliculaScreen(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "$totalVotos votos",
+                        "${movieDetails!!.voteCount} votos",
                         fontSize = 12.sp,
                         color = Color.White.copy(alpha = 0.6f),
                         fontFamily = font
@@ -367,9 +537,11 @@ fun PeliculaScreen(
             }
 
             Spacer(Modifier.height(32.dp))
+                }
+            }
         }
 
-        // boton de volver arriba izquierda
+        // boton de volver arriba izquierda (siempre visible)
         IconButton(
             onClick = onVolverClick,
             modifier = Modifier
@@ -438,5 +610,6 @@ fun SeccionDesplegable(
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
 @Composable
 fun PeliculaScreenPreview() {
-    PeliculaScreen()
+    // ID de una película popular para preview (550 = Fight Club)
+    PeliculaScreen(movieId = 550)
 }

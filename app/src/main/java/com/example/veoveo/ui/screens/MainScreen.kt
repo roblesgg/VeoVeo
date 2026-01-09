@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,7 +53,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,12 +69,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import com.example.veoveo.R
 import kotlinx.coroutines.withContext
 import com.example.veoveo.conexion.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import com.example.veoveo.model.Movie
+import com.example.veoveo.utils.PreferencesHelper
 
 // pantalla principal con 4 pestanas: descubrir, biblioteca, tierlists, social
 @Composable
@@ -95,8 +97,19 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
     // variable para controlar si se muestra la pantalla de pelicula
     var mostrarPelicula by remember { mutableStateOf(false) }
 
-    // variable para guardar el nombre de la pelicula seleccionada
-    var peliculaSeleccionada by remember { mutableStateOf("") }
+    // variable para guardar el ID de la pelicula seleccionada
+    var peliculaIdSeleccionada by remember { mutableIntStateOf(0) }
+
+    // obtener contexto y helper de preferencias
+    val context = LocalContext.current
+    val preferencesHelper = remember { PreferencesHelper(context) }
+
+    // carruseles activos de la pestaña Descubrir (persistente entre cambios de pestaña y cierres de app)
+    val carruselesActivos = remember {
+        mutableStateListOf<String>().apply {
+            addAll(preferencesHelper.cargarCarruselesActivos())
+        }
+    }
 
     // degradado de fondo morado oscuro
     val brush = Brush.verticalGradient(
@@ -111,31 +124,31 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
             // muestra la pantalla de pelicula si esta activa
             if (mostrarPelicula) {
                 PeliculaScreen(
-                    nombrePelicula = peliculaSeleccionada,
+                    movieId = peliculaIdSeleccionada,
                     onVolverClick = { mostrarPelicula = false }
                 )
             } else {
                 // muestra las pestanas normales
                 when (paginaActual) {
-                    0 -> DescubrirTab(montserratFont) { pelicula ->
-                        peliculaSeleccionada = pelicula
+                    0 -> DescubrirTab(montserratFont, carruselesActivos, preferencesHelper) { movieId ->
+                        peliculaIdSeleccionada = movieId
                         mostrarPelicula = true
                     }
-                    1 -> BibliotecaTab(montserratFont) { pelicula ->
-                        peliculaSeleccionada = pelicula
+                    1 -> BibliotecaTab(montserratFont) { movieId ->
+                        peliculaIdSeleccionada = movieId
                         mostrarPelicula = true
                     }
                     2 -> TierListsTab(montserratFont, pantallaTierList,
                         onPantallaChange = { pantallaTierList = it },
-                        onPeliculaClick = { pelicula ->
-                            peliculaSeleccionada = pelicula
+                        onPeliculaClick = { movieId ->
+                            peliculaIdSeleccionada = movieId
                             mostrarPelicula = true
                         }
                     )
                     3 -> SocialTab(montserratFont,
                         onContactoClick = { mostrarContactoSocial = it },
-                        onPeliculaClick = { pelicula ->
-                            peliculaSeleccionada = pelicula
+                        onPeliculaClick = { movieId ->
+                            peliculaIdSeleccionada = movieId
                             mostrarPelicula = true
                         }
                     )
@@ -220,7 +233,12 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
 // pestana descubrir
 @Composable
-fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
+fun DescubrirTab(
+    font: FontFamily,
+    carruselesActivos: MutableList<String>,
+    preferencesHelper: PreferencesHelper,
+    onPeliculaClick: (Int) -> Unit = {}
+) {
 
     // controla si se muestra el campo de busqueda
     var buscar by remember { mutableStateOf(false) }
@@ -234,19 +252,70 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
     // controla si se muestra el dialogo para anadir nuevos carruseles
     var mostrarDialogo by remember { mutableStateOf(false) }
 
-    // lista de todos los carruseles disponibles
+    // resultados de la búsqueda
+    var resultadosBusqueda by remember { mutableStateOf<List<Movie>>(emptyList()) }
+    var buscando by remember { mutableStateOf(false) }
+
+    // lista de TODOS los carruseles disponibles (24 géneros completos)
     val carruselesDisponibles = remember {
-        listOf("Terror", "Más vistas del año", "Películas de los 2000",
-               "Comedias clasicas", "Basado en amigos", "Accion y aventuras")
+        listOf(
+            "Acción",
+            "Animación",
+            "Anime",
+            "Aventura",
+            "Bélica",
+            "Ciencia Ficción",
+            "Cine Negro",
+            "Comedia",
+            "Comedia Romántica",
+            "Crimen",
+            "Documental",
+            "Drama",
+            "Familia",
+            "Fantasía",
+            "Historia",
+            "Misterio",
+            "Musical",
+            "Música",
+            "Películas de TV",
+            "Romance",
+            "Suspense",
+            "Terror",
+            "Thriller Psicológico",
+            "Western"
+        )
     }
 
-    // lista de carruseles que se muestran actualmente en pantalla
-    val carruselesActivos = remember {
-        mutableStateListOf("Terror", "Comedia", "Acción")
+    // realizar búsqueda cuando cambia el texto
+    LaunchedEffect(textoBuscar) {
+        if (textoBuscar.isNotEmpty() && textoBuscar.length >= 3) {
+            buscando = true
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.instance.buscarPeliculas(textoBuscar)
+                }
+                if (response.isSuccessful && response.body() != null) {
+                    resultadosBusqueda = response.body()?.results ?: emptyList()
+                }
+                buscando = false
+            } catch (e: Exception) {
+                buscando = false
+            }
+        } else {
+            resultadosBusqueda = emptyList()
+        }
     }
 
     // maneja el boton atras del dispositivo
-    BackHandler(onBack = { if (buscar) buscar = false else if (modoEdicion) modoEdicion = false })
+    BackHandler(onBack = {
+        if (buscar) {
+            buscar = false
+            textoBuscar = ""
+            resultadosBusqueda = emptyList()
+        } else if (modoEdicion) {
+            modoEdicion = false
+        }
+    })
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -282,16 +351,81 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
             )
         }
 
-        // lista vertical con todos los carruseles de peliculas
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp),
-            contentPadding = PaddingValues(bottom = 110.dp)
-        ) {
-            // muestra cada carrusel activo
-            items(carruselesActivos.toList()) { carrusel ->
-                CarruselPeliculas(carrusel, modoEdicion, { carruselesActivos.remove(carrusel) }, font, onPeliculaClick)
-                Spacer(Modifier.height(16.dp))
+        // Si hay texto en el buscador y resultados, mostrar vista mosaico
+        if (textoBuscar.isNotEmpty() && textoBuscar.length >= 3) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(top = 175.dp, start = 25.dp, end = 25.dp),
+                contentPadding = PaddingValues(bottom = 110.dp)
+            ) {
+                if (buscando) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
+                } else if (resultadosBusqueda.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp), contentAlignment = Alignment.Center) {
+                            Text("No se encontraron resultados", color = Color.White, fontFamily = font, fontSize = 16.sp)
+                        }
+                    }
+                } else {
+                    // Mostrar resultados en mosaico (3 columnas)
+                    val filas = resultadosBusqueda.chunked(3)
+                    items(filas) { fila ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            fila.forEach { movie ->
+                                Card(
+                                    modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movie.id) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
+                                ) {
+                                    if (movie.posterPath != null) {
+                                        AsyncImage(
+                                            model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                                            contentDescription = movie.title,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Text(movie.title, color = Color.White, fontSize = 12.sp, fontFamily = font, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
+                                        }
+                                    }
+                                }
+                            }
+                            // Rellenar espacios vacíos en la última fila
+                            repeat(3 - fila.size) {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                    }
+                }
             }
+        } else {
+            // Vista normal con carruseles
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp),
+                contentPadding = PaddingValues(bottom = 110.dp)
+            ) {
+                // muestra cada carrusel activo
+                items(carruselesActivos.toList()) { carrusel ->
+                    CarruselPeliculas(
+                        carrusel,
+                        modoEdicion,
+                        {
+                            carruselesActivos.remove(carrusel)
+                            preferencesHelper.guardarCarruselesActivos(carruselesActivos.toList())
+                        },
+                        font,
+                        onPeliculaClick
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
 
             // boton para activar o desactivar el modo edicion
             item {
@@ -301,7 +435,7 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (modoEdicion) Color(0xFFFF5252) else Color(0xFF6C63FF)
                     ),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp)
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 50.dp)
                 ) {
                     Icon(if (modoEdicion) Icons.Default.Close else Icons.Default.Edit, null, tint = Color.White)
                     Spacer(Modifier.width(8.dp))
@@ -324,15 +458,33 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
                     }
                 }
             }
+            }
         }
 
         // dialogo modal para seleccionar carruseles disponibles
         if (mostrarDialogo) {
             DialogoAnadirLista(
                 carruselesDisponibles,
-                carruselesActivos,
-                { mostrarDialogo = false },
-                { if (!carruselesActivos.contains(it)) carruselesActivos.add(it) },
+                carruselesActivos.toList(),
+                onDismiss = {
+                    mostrarDialogo = false
+                },
+                onAnadir = { carrusel ->
+                    if (!carruselesActivos.contains(carrusel)) {
+                        carruselesActivos.add(carrusel)
+                    }
+                },
+                onConfirm = { listasSeleccionadas ->
+                    // Limpiamos y añadimos solo las seleccionadas
+                    carruselesActivos.clear()
+                    carruselesActivos.addAll(listasSeleccionadas)
+                    // Guardamos en SharedPreferences
+                    preferencesHelper.guardarCarruselesActivos(carruselesActivos.toList())
+                    // Salimos del modo editar
+                    modoEdicion = false
+                    // Cerramos el diálogo
+                    mostrarDialogo = false
+                },
                 font
             )
         }
@@ -341,13 +493,14 @@ fun DescubrirTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
 // pestana biblioteca
 @Composable
-fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
+fun BibliotecaTab(font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var seccion by remember { mutableIntStateOf(0) }
 
-    val peliculasPorVer = remember { listOf("Pelicula 1", "Pelicula 2", "Pelicula 3", "Pelicula 4", "Pelicula 5", "Pelicula 6", "Pelicula 7", "Pelicula 8", "Pelicula 9") }
-    val peliculasVistas = remember { listOf("Vista 1", "Vista 2", "Vista 3", "Vista 4", "Vista 5", "Vista 6") }
+    // IDs de películas reales de TMDB (temporal hasta conectar con Firebase)
+    val peliculasPorVer = remember { listOf(550, 278, 680, 155, 13, 122, 497, 11, 98) }
+    val peliculasVistas = remember { listOf(603, 27205, 157336, 346, 475, 680) }
 
     BackHandler(onBack = { if (buscar) buscar = false })
 
@@ -416,14 +569,14 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
             items(filas) { fila ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    fila.forEach { pelicula ->
+                    fila.forEach { movieId ->
                         Card(
-                            modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
+                            modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movieId) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font,
+                                Text("Película $movieId", color = Color.White, fontSize = 14.sp, fontFamily = font,
                                     textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
                             }
                         }
@@ -438,7 +591,7 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
 
 // pestana tierlists
 @Composable
-fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit, onPeliculaClick: (String) -> Unit = {}) {
+fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit, onPeliculaClick: (Int) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var tierListSeleccionada by remember { mutableStateOf("") }
@@ -543,7 +696,7 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
 
 // pestana social
 @Composable
-fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaClick: (String) -> Unit = {}) {
+fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaClick: (Int) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var mostrarMensaje by remember { mutableStateOf(false) }
@@ -650,13 +803,31 @@ fun SocialTab(font: FontFamily, onContactoClick: (Boolean) -> Unit, onPeliculaCl
 
 fun obtenerIdGenero(titulo: String): String {
     return when {
-        titulo.contains("Terror", ignoreCase = true) -> "27"
-        titulo.contains("Comedia", ignoreCase = true) -> "35"
-        titulo.contains("Acción", ignoreCase = true) -> "28"
+        titulo.contains("Acción", ignoreCase = true) && !titulo.contains("Comedia", ignoreCase = true) -> "28"
         titulo.contains("Aventura", ignoreCase = true) -> "12"
-        titulo.contains("Ciencia Ficción", ignoreCase = true) || titulo.contains("Sci-Fi") -> "878"
+        titulo.contains("Anime", ignoreCase = true) -> "16"  // Usamos animación para anime
         titulo.contains("Animación", ignoreCase = true) -> "16"
-        // Si no coincide, devolvemos '28' (Acción) por defecto o una cadena vacía para manejarlo
+        titulo.contains("Bélica", ignoreCase = true) || titulo.contains("Guerra", ignoreCase = true) -> "10752"
+        titulo.contains("Ciencia Ficción", ignoreCase = true) || titulo.contains("Sci-Fi", ignoreCase = true) -> "878"
+        titulo.contains("Cine Negro", ignoreCase = true) -> "80"  // Usamos Crimen para Cine Negro
+        titulo.contains("Comedia Romántica", ignoreCase = true) -> "10749,35"  // Romance + Comedia
+        titulo.contains("Comedia", ignoreCase = true) -> "35"
+        titulo.contains("Crimen", ignoreCase = true) -> "80"
+        titulo.contains("Documental", ignoreCase = true) -> "99"
+        titulo.contains("Drama", ignoreCase = true) -> "18"
+        titulo.contains("Familia", ignoreCase = true) -> "10751"
+        titulo.contains("Fantasía", ignoreCase = true) -> "14"
+        titulo.contains("Historia", ignoreCase = true) -> "36"
+        titulo.contains("Películas de TV", ignoreCase = true) || titulo.contains("TV", ignoreCase = true) -> "10770"
+        titulo.contains("Misterio", ignoreCase = true) -> "9648"
+        titulo.contains("Musical", ignoreCase = true) -> "10402"
+        titulo.contains("Música", ignoreCase = true) -> "10402"
+        titulo.contains("Romance", ignoreCase = true) -> "10749"
+        titulo.contains("Thriller Psicológico", ignoreCase = true) -> "53,9648"  // Suspense + Misterio
+        titulo.contains("Suspense", ignoreCase = true) || titulo.contains("Thriller", ignoreCase = true) -> "53"
+        titulo.contains("Terror", ignoreCase = true) -> "27"
+        titulo.contains("Western", ignoreCase = true) -> "37"
+        // Si no coincide, devolvemos '28' (Acción) por defecto
         else -> "28"
     }
 }
@@ -668,7 +839,7 @@ fun CarruselPeliculas(
     modoEdicion: Boolean,
     onEliminar: () -> Unit,
     font: FontFamily,
-    onPeliculaClick: (String) -> Unit = {}
+    onPeliculaClick: (Int) -> Unit = {}
 ) {
     // 1. Estado para guardar las películas que vienen de la API
     var listaPeliculas by remember { mutableStateOf(emptyList<Movie>()) }
@@ -712,8 +883,8 @@ fun CarruselPeliculas(
         ) {
             items(listaPeliculas) { movie ->
                 Card(
-                    // Pasamos el título o el ID al hacer click
-                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.title) },
+                    // Pasamos el ID de la película al hacer click
+                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.id) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
@@ -737,38 +908,40 @@ fun DialogoAnadirLista(
     activos: List<String>,
     onDismiss: () -> Unit,
     onAnadir: (String) -> Unit,
+    onConfirm: (List<String>) -> Unit,
     font: FontFamily
 ) {
-    val seleccionadas = remember { mutableStateListOf<String>() }
+    // Inicializamos con los carruseles que ya están activos marcados
+    val seleccionadas = remember { mutableStateListOf<String>().apply { addAll(activos) } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Anadir Listas", fontFamily = font, fontSize = 20.sp, color = Color.White) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                disponibles.forEach { carrusel ->
-                    if (!activos.contains(carrusel)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                if (seleccionadas.contains(carrusel)) seleccionadas.remove(carrusel)
-                                else seleccionadas.add(carrusel)
-                            }.padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = seleccionadas.contains(carrusel),
-                                onCheckedChange = { if (it) seleccionadas.add(carrusel) else seleccionadas.remove(carrusel) },
-                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF6C63FF), uncheckedColor = Color.White)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(carrusel, fontFamily = font, fontSize = 16.sp, color = Color.White)
-                        }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().height(400.dp)
+            ) {
+                items(disponibles) { carrusel ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            if (seleccionadas.contains(carrusel)) seleccionadas.remove(carrusel)
+                            else seleccionadas.add(carrusel)
+                        }.padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = seleccionadas.contains(carrusel),
+                            onCheckedChange = { if (it) seleccionadas.add(carrusel) else seleccionadas.remove(carrusel) },
+                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF6C63FF), uncheckedColor = Color.White)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(carrusel, fontFamily = font, fontSize = 16.sp, color = Color.White)
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { seleccionadas.forEach { onAnadir(it) }; onDismiss() }) {
+            TextButton(onClick = { onConfirm(seleccionadas.toList()) }) {
                 Text("Anadir", fontFamily = font, color = Color(0xFF6C63FF))
             }
         },
