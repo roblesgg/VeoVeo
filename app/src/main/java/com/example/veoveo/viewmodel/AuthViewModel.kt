@@ -190,6 +190,30 @@ class AuthViewModel : ViewModel() {
     fun resetState() {
         _authState.value = AuthState.Initial
     }
+
+    /**
+     * ===== BORRAR CUENTA =====
+     *
+     * Elimina permanentemente la cuenta del usuario actual.
+     * ADVERTENCIA: Esta acción es irreversible.
+     */
+    fun deleteAccount() {
+        _authState.value = AuthState.Loading
+
+        viewModelScope.launch {
+            val result = repository.deleteAccount()
+
+            if (result.isSuccess) {
+                // limpiamos el usuario y el estado
+                _currentUser.value = null
+                _authState.value = AuthState.Initial
+            } else {
+                _authState.value = AuthState.Error(
+                    result.exceptionOrNull()?.message ?: "Error al eliminar cuenta"
+                )
+            }
+        }
+    }
 }
 
 /**
