@@ -55,7 +55,7 @@ fun ContactoScreen(
     nombreContacto: String = "Amigo 1",
     onVolverClick: () -> Unit = {},
     onBloquearClick: () -> Unit = {},
-    onPeliculaClick: (String) -> Unit = {}
+    onPeliculaClick: (Int) -> Unit = {}
 ) {
     val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
     val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
@@ -64,8 +64,9 @@ fun ContactoScreen(
 
     var seccion by remember { mutableIntStateOf(0) }
 
-    val peliculasVistas = remember { listOf("Vista 1", "Vista 2", "Vista 3", "Vista 4", "Vista 5") }
-    val peliculasPorVer = remember { listOf("Por Ver 1", "Por Ver 2", "Por Ver 3") }
+    // IDs de películas reales de TMDB (temporal hasta conectar con Firebase)
+    val peliculasVistas = remember { listOf(550, 278, 680, 155, 13) }
+    val peliculasPorVer = remember { listOf(122, 497, 11) }
     val tierLists = remember { listOf("TierList 1", "TierList 2") }
 
     Box(modifier = Modifier.fillMaxSize().background(brush)) {
@@ -118,14 +119,14 @@ fun ContactoScreen(
                         val filas = peliculasVistas.chunked(3)
                         items(filas) { fila ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                fila.forEach { pelicula ->
+                                fila.forEach { movieId ->
                                     Card(
-                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
+                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movieId) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
                                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                            Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font, textAlign = TextAlign.Center)
+                                            Text("Película $movieId", color = Color.White, fontSize = 14.sp, fontFamily = font, textAlign = TextAlign.Center)
                                         }
                                     }
                                 }
@@ -138,14 +139,14 @@ fun ContactoScreen(
                         val filas = peliculasPorVer.chunked(3)
                         items(filas) { fila ->
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                fila.forEach { pelicula ->
+                                fila.forEach { movieId ->
                                     Card(
-                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula) },
+                                        modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movieId) },
                                         shape = RoundedCornerShape(12.dp),
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
                                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                            Text(pelicula, color = Color.White, fontSize = 14.sp, fontFamily = font, textAlign = TextAlign.Center)
+                                            Text("Película $movieId", color = Color.White, fontSize = 14.sp, fontFamily = font, textAlign = TextAlign.Center)
                                         }
                                     }
                                 }

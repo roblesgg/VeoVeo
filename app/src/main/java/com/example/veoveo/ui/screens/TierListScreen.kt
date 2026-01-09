@@ -53,7 +53,7 @@ fun TierListScreen(
     onVolverClick: () -> Unit = {},
     onEditarClick: () -> Unit = {},
     onEliminarClick: () -> Unit = {},
-    onPeliculaClick: (String) -> Unit = {}
+    onPeliculaClick: (Int) -> Unit = {}
 ) {
     val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
     val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
@@ -136,7 +136,7 @@ fun TierListScreenPreview() {
 
 // componente que muestra una fila de tier con titulo y peliculas
 @Composable
-fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: FontFamily, onPeliculaClick: (String) -> Unit = {}) {
+fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
     Row(
         modifier = Modifier.fillMaxWidth().height(100.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -161,7 +161,8 @@ fun TierRow(titulo: String, colorFondo: Color, peliculas: List<String>, font: Fo
                 ) {
                     items(peliculas) { pelicula ->
                         Card(
-                            modifier = Modifier.width(60.dp).aspectRatio(0.7f).clickable { onPeliculaClick(pelicula) },
+                            // Temporalmente sin clickable hasta conectar con datos reales
+                            modifier = Modifier.width(60.dp).aspectRatio(0.7f),
                             shape = RoundedCornerShape(4.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
