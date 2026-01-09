@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew build:*)",
-      "Bash(./gradlew assembleDebug:*)"
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(if [ -f \"app/google-services.json\" ])",
+      "Bash(then echo \"El archivo google-services.json existe\")",
+      "Bash(else echo \"El archivo google-services.json NO existe\")",
+      "Bash(fi)"
     ]
   }
 }

@@ -135,4 +135,22 @@ class AuthRepository {
     fun isUserLoggedIn(): Boolean {
         return currentUser != null
     }
+
+    /**
+     * ===== BORRAR CUENTA =====
+     *
+     * Elimina permanentemente la cuenta del usuario actual.
+     * ADVERTENCIA: Esta acción es irreversible.
+     *
+     * @return Result<Unit>: Success si se eliminó la cuenta, Failure si hay error
+     */
+    suspend fun deleteAccount(): Result<Unit> {
+        return try {
+            // eliminamos la cuenta del usuario actual
+            currentUser?.delete()?.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -70,6 +70,10 @@ fun AppNavigation(
                 // cuando le den a la flecha de volver
                 onVolverClick = {
                     pantallaApp = "perfil"
+                },
+                // cuando se elimine la cuenta, cerrar sesión
+                onCuentaEliminada = {
+                    onCerrarSesion()
                 }
             )
         }

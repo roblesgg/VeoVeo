@@ -41,6 +41,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.veoveo.R
 import com.example.veoveo.viewmodel.AuthState
 import com.example.veoveo.viewmodel.AuthViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 /**
  * ===== LOGINSCREEN - PANTALLA DE LOGIN =====
@@ -68,6 +74,45 @@ fun LoginScreen(
     // ===== observamos el estado de autenticación =====
     val authState by viewModel.authState.collectAsState()
 
+    // ===== variables para lo que escribe el usuario =====
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+
+    // ===== contexto para Google Sign-In =====
+    val context = LocalContext.current
+
+    // ===== configuración de Google Sign-In =====
+    val googleSignInClient = remember {
+        try {
+            val webClientId = context.resources.getIdentifier(
+                "default_web_client_id", "string", context.packageName
+            )
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(if (webClientId != 0) context.getString(webClientId) else "")
+                .requestEmail()
+                .build()
+            GoogleSignIn.getClient(context, gso)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // ===== launcher para el intent de Google Sign-In =====
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            account.idToken?.let { token ->
+                viewModel.loginWithGoogle(token)
+            }
+        } catch (e: ApiException) {
+            errorMessage = "Error al iniciar sesión con Google: ${e.message}"
+        }
+    }
+
     // ===== colores del fondo =====
     // creamos un degradado de azul oscuro a morado
     // estos colores vienen del diseño de figma
@@ -81,13 +126,6 @@ fun LoginScreen(
     val montserratFontFamily = FontFamily(
         Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
     )
-
-    // ===== variables para lo que escribe el usuario =====
-    // remember y mutableStateOf se usan para guardar lo que el usuario escribe
-    // cuando el usuario escribe algo, la variable cambia y la pantalla se actualiza
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
 
     // ===== reaccionar cuando el usuario se autentica =====
     // cuando el estado cambia a Authenticated, llamamos a logueado()
@@ -231,11 +269,16 @@ fun LoginScreen(
 
             // ===== boton de google =====
             // boton alternativo para iniciar sesion con google
-            // por ahora no hace nada (onClick vacio)
             Button(
                 onClick = {
-                    // en el futuro aqui ira la logica de google sign in
+                    if (googleSignInClient != null) {
+                        // lanzamos el intent de Google Sign-In
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    } else {
+                        errorMessage = "Google Sign-In no configurado. Ver GOOGLE_SIGNIN_SETUP.md"
+                    }
                 },
+                enabled = authState !is AuthState.Loading,  // deshabilitamos mientras carga
                 modifier = Modifier
                     .fillMaxWidth()   // ocupa todo el ancho
                     .height(50.dp),   // altura de 50dp
