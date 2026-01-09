@@ -433,7 +433,7 @@ fun DescubrirTab(
                 Button(
                     onClick = { modoEdicion = !modoEdicion },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (modoEdicion) Color(0xFFFF5252) else Color(0xFF6C63FF)
+                        containerColor = if (modoEdicion) Color(0xFF98FB98) else Color(0xFF6C63FF)
                     ),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 50.dp)
                 ) {
