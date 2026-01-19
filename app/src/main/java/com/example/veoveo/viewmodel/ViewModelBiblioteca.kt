@@ -39,19 +39,27 @@ class ViewModelBiblioteca : ViewModel() {
         _cargando.value = true
 
         viewModelScope.launch {
-            // Cargar películas por ver
-            val resultadoPorVer = repositorio.obtenerPeliculasPorEstado("por_ver")
-            if (resultadoPorVer.isSuccess) {
-                _peliculasPorVer.value = resultadoPorVer.getOrNull() ?: emptyList()
-            }
+            try {
+                // Cargar películas por ver
+                val resultadoPorVer = repositorio.obtenerPeliculasPorEstado("por_ver")
+                if (resultadoPorVer.isSuccess) {
+                    _peliculasPorVer.value = resultadoPorVer.getOrNull() ?: emptyList()
+                } else {
+                    _error.value = "Error al cargar películas por ver"
+                }
 
-            // Cargar películas vistas
-            val resultadoVistas = repositorio.obtenerPeliculasPorEstado("vista")
-            if (resultadoVistas.isSuccess) {
-                _peliculasVistas.value = resultadoVistas.getOrNull() ?: emptyList()
+                // Cargar películas vistas
+                val resultadoVistas = repositorio.obtenerPeliculasPorEstado("vista")
+                if (resultadoVistas.isSuccess) {
+                    _peliculasVistas.value = resultadoVistas.getOrNull() ?: emptyList()
+                } else {
+                    _error.value = "Error al cargar películas vistas"
+                }
+            } catch (e: Exception) {
+                _error.value = "Error de conexión: ${e.message}"
+            } finally {
+                _cargando.value = false
             }
-
-            _cargando.value = false
         }
     }
 

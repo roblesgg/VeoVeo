@@ -4,6 +4,7 @@ import com.example.veoveo.model.PeliculaUsuario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 
 /**
  * Repositorio simple para gestionar las películas del usuario en Firestore
@@ -25,15 +26,18 @@ class RepositorioPeliculasUsuario {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
-            val snapshot = firestore.collection("usuarios")
-                .document(idUsuario)
-                .collection("peliculas")
-                .whereEqualTo("estado", estado)
-                .get()
-                .await()
+            // Timeout de 10 segundos para evitar bloqueos indefinidos
+            withTimeout(10000) {
+                val snapshot = firestore.collection("usuarios")
+                    .document(idUsuario)
+                    .collection("peliculas")
+                    .whereEqualTo("estado", estado)
+                    .get()
+                    .await()
 
-            val peliculas = snapshot.documents.mapNotNull { it.toObject(PeliculaUsuario::class.java) }
-            Result.success(peliculas)
+                val peliculas = snapshot.documents.mapNotNull { it.toObject(PeliculaUsuario::class.java) }
+                Result.success(peliculas)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
