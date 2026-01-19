@@ -6,7 +6,6 @@ import com.example.veoveo.model.SolicitudAmistad
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -17,7 +16,6 @@ class RepositorioUsuarios {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val storage = FirebaseStorage.getInstance()
 
     /**
      * Obtiene el ID del usuario actual
@@ -33,6 +31,33 @@ class RepositorioUsuarios {
                 .document(usuario.uid)
                 .set(usuario)
                 .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Crea un perfil por defecto para el usuario actual
+     */
+    suspend fun crearPerfilPorDefecto(): Result<Unit> {
+        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+        val email = auth.currentUser?.email ?: "sin_email"
+
+        return try {
+            val usuario = Usuario(
+                uid = uid,
+                username = "Usuario_${uid.take(6)}", // Username temporal único
+                email = email,
+                fotoPerfil = null,
+                amigos = emptyList()
+            )
+
+            firestore.collection("usuarios")
+                .document(uid)
+                .set(usuario)
+                .await()
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -84,24 +109,12 @@ class RepositorioUsuarios {
     }
 
     /**
-     * Actualiza el username (verifica que sea único)
+     * Actualiza el username (versión simplificada sin verificación de duplicados)
      */
     suspend fun actualizarUsername(nuevoUsername: String): Result<Unit> {
         val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
-            // Verificar que el username no esté en uso
-            val usuariosConMismoUsername = firestore.collection("usuarios")
-                .whereEqualTo("username", nuevoUsername)
-                .get()
-                .await()
-
-            // Si existe otro usuario con el mismo username, error
-            if (!usuariosConMismoUsername.isEmpty && usuariosConMismoUsername.documents[0].id != uid) {
-                return Result.failure(Exception("Este nombre de usuario ya está en uso"))
-            }
-
-            // Actualizar el username
             firestore.collection("usuarios")
                 .document(uid)
                 .update("username", nuevoUsername)
@@ -114,25 +127,18 @@ class RepositorioUsuarios {
     }
 
     /**
-     * Sube una foto de perfil a Firebase Storage y actualiza el usuario
+     * Actualiza la URL de la foto de perfil
      */
-    suspend fun subirFotoPerfil(uri: Uri): Result<String> {
+    suspend fun actualizarFotoPerfil(url: String): Result<Unit> {
         val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
-            val nombreArchivo = "perfil_${uid}_${UUID.randomUUID()}.jpg"
-            val ref = storage.reference.child("fotos_perfil/$nombreArchivo")
-
-            ref.putFile(uri).await()
-            val url = ref.downloadUrl.await().toString()
-
-            // Actualizar en Firestore
             firestore.collection("usuarios")
                 .document(uid)
                 .update("fotoPerfil", url)
                 .await()
 
-            Result.success(url)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

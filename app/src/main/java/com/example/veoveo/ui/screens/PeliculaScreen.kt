@@ -97,8 +97,6 @@ fun PeliculaScreen(
     var descripcionExpandida by remember { mutableStateOf(false) }
     var repartoExpandido by remember { mutableStateOf(false) }
     var puntuacionExpandida by remember { mutableStateOf(false) }
-    var amigosVieronExpandido by remember { mutableStateOf(false) }
-    var amigosQuierenVerExpandido by remember { mutableStateOf(false) }
 
     // Estado para el diálogo de valoración
     var mostrarDialogoValoracion by remember { mutableStateOf(false) }
@@ -129,10 +127,6 @@ fun PeliculaScreen(
     LaunchedEffect(peliculasPorVer, peliculasVistas) {
         // Forzar recomposición cuando cambien las listas
     }
-
-    // datos de amigos (todavía hardcodeados - se conectarán con Firebase más adelante)
-    val amigosVieron = listOf("Amigo 1", "Amigo 2", "Amigo 3", "Amigo 4")
-    val amigosQuierenVer = listOf("Amigo 5", "Amigo 6", "Amigo 7")
 
     // cargar datos de la API cuando se monta el componente
     LaunchedEffect(movieId) {
@@ -530,100 +524,6 @@ fun PeliculaScreen(
                         color = Color.White.copy(alpha = 0.6f),
                         fontFamily = font
                     )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // seccion amigos que la vieron
-            SeccionDesplegable(
-                titulo = "Amigos que la vieron",
-                expandida = amigosVieronExpandido,
-                onToggle = { amigosVieronExpandido = !amigosVieronExpandido },
-                font = font
-            ) {
-                if (amigosVieron.isEmpty()) {
-                    Text(
-                        "Ningun amigo ha visto esta pelicula aun",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontFamily = font,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        amigosVieron.forEach { amigo ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Image(
-                                    painterResource(R.drawable.ic_perfil),
-                                    contentDescription = "perfil",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .border(2.dp, Color.White, CircleShape)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    amigo,
-                                    fontSize = 14.sp,
-                                    color = Color.White,
-                                    fontFamily = font
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // seccion amigos que quieren verla
-            SeccionDesplegable(
-                titulo = "Amigos que quieren verla",
-                expandida = amigosQuierenVerExpandido,
-                onToggle = { amigosQuierenVerExpandido = !amigosQuierenVerExpandido },
-                font = font
-            ) {
-                if (amigosQuierenVer.isEmpty()) {
-                    Text(
-                        "Ningun amigo quiere ver esta pelicula aun",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontFamily = font,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        amigosQuierenVer.forEach { amigo ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Image(
-                                    painterResource(R.drawable.ic_perfil),
-                                    contentDescription = "perfil",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .border(2.dp, Color.White, CircleShape)
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(
-                                    amigo,
-                                    fontSize = 14.sp,
-                                    color = Color.White,
-                                    fontFamily = font
-                                )
-                            }
-                        }
-                    }
                 }
             }
 

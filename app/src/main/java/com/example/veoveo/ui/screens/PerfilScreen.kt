@@ -1,6 +1,5 @@
 package com.example.veoveo.ui.screens
 
-// ===== importaciones necesarias =====
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,11 +21,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,163 +55,223 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.veoveo.R
+import com.example.veoveo.viewmodel.ViewModelPerfil
 
-/**
- * ===== PERFILSCREEN - PANTALLA DE PERFIL =====
- *
- * esta pantalla muestra la informacion del usuario y sus opciones
- * estructura super simple:
- *
- * Box principal {
- *   Column (todo el contenido) {
- *     - foto de perfil circular
- *     - nombre de usuario
- *     - Row con estadisticas
- *     - opciones (ajustes, bloqueados, desconectar)
- *   }
- *   IconButton (boton atras encima)
- * }
- *
- * componentes basicos que usa:
- * - Box: contenedor principal
- * - Column: para poner cosas en vertical
- * - Row: para poner cosas en horizontal
- * - Image: para la foto de perfil
- * - Text: para textos
- * - Spacer: para dar espacio entre elementos
- * - HorizontalDivider: lineas divisoras
- */
 @Composable
 fun PerfilScreen(
-    onAjustesClick: () -> Unit = {},        // cuando pulsan ajustes
-    onBloqueadosClick: () -> Unit = {},     // cuando pulsan bloqueados
-    onDesconectarClick: () -> Unit = {},    // cuando pulsan desconectar
-    onVolverClick: () -> Unit = {}          // cuando pulsan la flecha de volver
+    onAjustesClick: () -> Unit = {},
+    onBloqueadosClick: () -> Unit = {},
+    onDesconectarClick: () -> Unit = {},
+    onVolverClick: () -> Unit = {},
+    viewModel: ViewModelPerfil = viewModel()
 ) {
+    // Estados del ViewModel
+    val usuario by viewModel.usuario.collectAsState()
+    val cargando by viewModel.cargando.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
 
-    // volver atras con boton del movil
-    BackHandler(onBack = { onVolverClick() })
+    // Estados locales
+    var mostrarDialogoUsername by remember { mutableStateOf(false) }
+    var nuevoUsername by remember { mutableStateOf("") }
 
-    // fuente montserrat
-    val montserratFontFamily = FontFamily(
-        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
-    )
+    // TODO: Implementar selector de imagen cuando se agregue Firebase Storage
+    // Por ahora la funcionalidad de cambiar foto está deshabilitada
 
-    // ===== colores del fondo =====
-    // el mismo degradado de siempre
-    val brush = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF1A1A2E), // azul oscuro arriba
-            Color(0xFF4B0082)  // morado abajo
-        )
-    )
+    // Cargar perfil al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarPerfil()
+    }
 
-    // ===== contenedor principal =====
-    // Box es un contenedor donde puedes poner elementos uno encima del otro
+    // Volver atrás con botón del dispositivo
+    BackHandler(onBack = onVolverClick)
+
+    // Fuente
+    val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
+
+    // Degradado de fondo
+    val brush = Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF4B0082)))
+
     Box(
         modifier = Modifier
-            .fillMaxSize()              // ocupa toda la pantalla
-            .background(brush = brush)  // le ponemos el degradado
+            .fillMaxSize()
+            .background(brush = brush)
     ) {
-
-        // ===== columna con todo el contenido del perfil =====
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally  // centra todo horizontalmente
-        ) {
-
-            // espacio arriba para no chocar con el boton de atras
-            Spacer(modifier = Modifier.height(60.dp))
-
-            // ===== foto de perfil =====
-            // imagen circular con borde blanco
-            Image(
-                painter = painterResource(id = R.drawable.ic_perfil),
-                contentDescription = "Foto Perfil",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(110.dp)
-                    .clip(CircleShape)
-                    .border(3.dp, Color.White, CircleShape)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // ===== nombre de usuario =====
-            Text(
-                text = "User",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = montserratFontFamily
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ===== fila de estadisticas =====
-            // Row pone las 3 estadisticas en horizontal
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                EstadisticaItem("0", "Peliculas\nVistas")
-                EstadisticaItem("0", "Seguidores")
-                EstadisticaItem("0", "Reseñas")
+        if (cargando) {
+            // Pantalla de carga inicial
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color.White)
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // ===== seccion de opciones =====
-            // ahora sin Card, solo un Box con fondo semi-transparente
-            Box(
+        } else if (usuario == null) {
+            // Si no hay usuario y no está cargando, mostrar error
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = error ?: "Error al cargar el perfil",
+                        color = Color(0xFFFF5252),
+                        fontSize = 16.sp,
+                        fontFamily = font,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.cargarPerfil() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
+                    ) {
+                        Text("Reintentar", fontFamily = font)
+                    }
+                }
+            }
+        } else {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))  // esquinas redondeadas
-                    .background(Color.Black.copy(alpha = 0.4f))  // fondo negro semi-transparente
-                    .padding(16.dp)  // padding dentro del box
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column {
+                Spacer(modifier = Modifier.height(60.dp))
 
-                    // ===== opcion 1: ajustes =====
-                    OpcionPerfil(
-                        texto = "Ajustes",
-                        icono = Icons.Default.Settings,
-                        onClick = onAjustesClick
+                // Foto de perfil
+                if (usuario?.fotoPerfil != null) {
+                    AsyncImage(
+                        model = usuario?.fotoPerfil,
+                        contentDescription = "Foto Perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(CircleShape)
+                            .border(3.dp, Color.White, CircleShape)
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // ===== opcion 2: bloqueados =====
-                    OpcionPerfil(
-                        texto = "Bloqueados",
-                        icono = Icons.Default.Close,
-                        onClick = onBloqueadosClick
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_perfil),
+                        contentDescription = "Foto Perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(110.dp)
+                            .clip(CircleShape)
+                            .border(3.dp, Color.White, CircleShape)
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    // ===== opcion 3: desconectar =====
-                    OpcionPerfil(
-                        texto = "Desconectar",
-                        icono = Icons.Default.ArrowForward,
-                        esDestructivo = true,  // texto rojo
-                        onClick = onDesconectarClick
+                // Nombre de usuario con opción de editar
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        nuevoUsername = usuario?.username ?: ""
+                        mostrarDialogoUsername = true
+                    }
+                ) {
+                    Text(
+                        text = usuario?.username ?: "Usuario",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = font
                     )
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Editar nombre",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Estadísticas
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    EstadisticaItem("0", "Peliculas\nVistas")
+                    EstadisticaItem("0", "Amigos")
+                    EstadisticaItem("0", "Reseñas")
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // Opciones
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.Black.copy(alpha = 0.4f))
+                        .padding(16.dp)
+                ) {
+                    Column {
+                        OpcionPerfil(
+                            texto = "Ajustes",
+                            icono = Icons.Default.Settings,
+                            onClick = onAjustesClick
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OpcionPerfil(
+                            texto = "Bloqueados",
+                            icono = Icons.Default.Close,
+                            onClick = onBloqueadosClick
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OpcionPerfil(
+                            texto = "Desconectar",
+                            icono = Icons.Default.ArrowForward,
+                            esDestructivo = true,
+                            onClick = onDesconectarClick
+                        )
+                    }
+                }
+
+                // Mensajes de error/éxito
+                error?.let {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = it,
+                        color = Color(0xFFFF5252),
+                        fontSize = 14.sp,
+                        fontFamily = font,
+                        textAlign = TextAlign.Center
+                    )
+                    LaunchedEffect(it) {
+                        kotlinx.coroutines.delay(3000)
+                        viewModel.limpiarMensajes()
+                    }
+                }
+
+                mensaje?.let {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = it,
+                        color = Color(0xFF4CAF50),
+                        fontSize = 14.sp,
+                        fontFamily = font,
+                        textAlign = TextAlign.Center
+                    )
+                    LaunchedEffect(it) {
+                        kotlinx.coroutines.delay(3000)
+                        viewModel.limpiarMensajes()
+                    }
                 }
             }
         }
 
-        // ===== boton de atras arriba a la izquierda =====
-        // este boton va ENCIMA de todo
+        // Botón de volver
         IconButton(
-            onClick = { onVolverClick() },
+            onClick = onVolverClick,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(start = 20.dp, top = 50.dp)
@@ -210,21 +283,51 @@ fun PerfilScreen(
             )
         }
     }
+
+    // Diálogo para editar username
+    if (mostrarDialogoUsername) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoUsername = false },
+            title = {
+                Text("Cambiar nombre de usuario", fontFamily = font)
+            },
+            text = {
+                OutlinedTextField(
+                    value = nuevoUsername,
+                    onValueChange = { nuevoUsername = it },
+                    label = { Text("Nuevo nombre", fontFamily = font) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6C63FF),
+                        unfocusedBorderColor = Color.Gray
+                    ),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.actualizarUsername(nuevoUsername)
+                        mostrarDialogoUsername = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
+                ) {
+                    Text("Guardar", fontFamily = font)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoUsername = false }) {
+                    Text("Cancelar", fontFamily = font)
+                }
+            }
+        )
+    }
 }
 
-/**
- * ===== ESTADISTICAITEM - COMPONENTE PARA CADA ESTADISTICA =====
- *
- * muestra un numero grande arriba y una etiqueta pequeña abajo
- */
 @Composable
 fun EstadisticaItem(numero: String, etiqueta: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // fuente montserrat
-        val montserratFontFamily = FontFamily(
-            Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
-        )
+    val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
 
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = numero,
             color = Color.White,
@@ -237,16 +340,11 @@ fun EstadisticaItem(numero: String, etiqueta: String) {
             fontSize = 12.sp,
             lineHeight = 14.sp,
             textAlign = TextAlign.Center,
-            fontFamily = montserratFontFamily
+            fontFamily = font
         )
     }
 }
 
-/**
- * ===== OPCIONPERFIL - COMPONENTE PARA CADA OPCION =====
- *
- * fila con texto a la izquierda e icono a la derecha
- */
 @Composable
 fun OpcionPerfil(
     texto: String,
@@ -254,10 +352,7 @@ fun OpcionPerfil(
     esDestructivo: Boolean = false,
     onClick: () -> Unit = {}
 ) {
-    // fuente montserrat
-    val montserratFontFamily = FontFamily(
-        Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
-    )
+    val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
 
     Row(
         modifier = Modifier
@@ -272,8 +367,7 @@ fun OpcionPerfil(
             color = if (esDestructivo) Color(0xFFFF5252) else Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            fontFamily = montserratFontFamily
-
+            fontFamily = font
         )
         Icon(
             imageVector = icono,
@@ -284,14 +378,8 @@ fun OpcionPerfil(
     }
 }
 
-// ===== vista previa =====
 @Preview(showBackground = true)
 @Composable
 fun PerfilScreenPreview() {
-    PerfilScreen(
-        onAjustesClick = {},
-        onBloqueadosClick = {},
-        onDesconectarClick = {},
-        onVolverClick = {}
-    )
+    PerfilScreen()
 }

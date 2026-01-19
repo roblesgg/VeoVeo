@@ -100,6 +100,11 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
     // variable para mostrar u ocultar pantalla de contacto en social
     var mostrarContactoSocial by remember { mutableStateOf(false) }
 
+    // variables para navegación en Social
+    var mostrarBibliotecaAmigo by remember { mutableStateOf(false) }
+    var amigoUidSeleccionado by remember { mutableStateOf("") }
+    var mostrarSolicitudes by remember { mutableStateOf(false) }
+
     // variable para controlar si se muestra la pantalla de pelicula
     var mostrarPelicula by remember { mutableStateOf(false) }
 
@@ -155,20 +160,37 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
                             mostrarPelicula = true
                         }
                     )
-                    3 -> SocialTab(montserratFont,
-                        onContactoClick = { mostrarContactoSocial = it },
-                        onPeliculaClick = { movieId ->
-                            peliculaIdSeleccionada = movieId
-                            mostrarPelicula = true
+                    3 -> {
+                        if (mostrarSolicitudes) {
+                            SolicitudesScreen(
+                                onVolverClick = { mostrarSolicitudes = false }
+                            )
+                        } else if (mostrarBibliotecaAmigo) {
+                            BibliotecaAmigoScreen(
+                                amigoUid = amigoUidSeleccionado,
+                                onVolverClick = { mostrarBibliotecaAmigo = false },
+                                onPeliculaClick = { movieId ->
+                                    peliculaIdSeleccionada = movieId
+                                    mostrarPelicula = true
+                                }
+                            )
+                        } else {
+                            SocialScreen(
+                                onUsuarioClick = { uid ->
+                                    amigoUidSeleccionado = uid
+                                    mostrarBibliotecaAmigo = true
+                                },
+                                onSolicitudesClick = { mostrarSolicitudes = true }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
 
         // barra de navegacion suelta encima del contenido (solo visible en pantallas principales)
-        // Se oculta si: está viendo película, viendo perfil de amigo, o dentro de una tierlist (crear/ver/editar)
-        if (!mostrarPelicula && !mostrarContactoSocial && !(paginaActual == 2 && pantallaTierList != 0)) {
+        // Se oculta si: está viendo película, viendo perfil de amigo, solicitudes, biblioteca amigo, o dentro de una tierlist (crear/ver/editar)
+        if (!mostrarPelicula && !mostrarContactoSocial && !mostrarBibliotecaAmigo && !mostrarSolicitudes && !(paginaActual == 2 && pantallaTierList != 0)) {
             NavigationBar(
                 containerColor = Color.Transparent,
                 tonalElevation = 0.dp,
