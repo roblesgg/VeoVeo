@@ -83,10 +83,11 @@ fun PerfilScreen(
     // TODO: Implementar selector de imagen cuando se agregue Firebase Storage
     // Por ahora la funcionalidad de cambiar foto está deshabilitada
 
-    // Cargar perfil al iniciar
-    LaunchedEffect(Unit) {
-        viewModel.cargarPerfil()
-    }
+    // DESHABILITADO TEMPORALMENTE: Cargar perfil al iniciar
+    // Comentado porque Firebase no está conectado y causa bloqueos
+    // LaunchedEffect(Unit) {
+    //     viewModel.cargarPerfil()
+    // }
 
     // Volver atrás con botón del dispositivo
     BackHandler(onBack = onVolverClick)

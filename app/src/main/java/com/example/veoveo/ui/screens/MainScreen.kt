@@ -549,10 +549,11 @@ fun BibliotecaTab(
     val peliculasVistas by viewModel.peliculasVistas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
 
-    // Cargar películas al iniciar
-    LaunchedEffect(Unit) {
-        viewModel.cargarPeliculas()
-    }
+    // DESHABILITADO TEMPORALMENTE: Cargar películas al iniciar
+    // Comentado porque Firebase no está conectado y causa bloqueos
+    // LaunchedEffect(Unit) {
+    //     viewModel.cargarPeliculas()
+    // }
 
     BackHandler(onBack = { if (buscar) buscar = false })
 

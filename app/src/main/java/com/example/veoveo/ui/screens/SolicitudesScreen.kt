@@ -40,9 +40,11 @@ fun SolicitudesScreen(
     val mensaje by viewModel.mensaje.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    LaunchedEffect(Unit) {
-        viewModel.cargarSolicitudesPendientes()
-    }
+    // DESHABILITADO TEMPORALMENTE: Cargar solicitudes al iniciar
+    // Comentado porque Firebase no está conectado y causa bloqueos
+    // LaunchedEffect(Unit) {
+    //     viewModel.cargarSolicitudesPendientes()
+    // }
 
     BackHandler(onBack = onVolverClick)
 
