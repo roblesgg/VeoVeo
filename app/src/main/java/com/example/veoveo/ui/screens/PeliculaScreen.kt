@@ -107,20 +107,27 @@ fun PeliculaScreen(
     val peliculasPorVer by viewModel.peliculasPorVer.collectAsState()
     val peliculasVistas by viewModel.peliculasVistas.collectAsState()
 
-    // Determinar el estado actual de la película
-    val peliculaEnBiblioteca = remember(peliculasPorVer, peliculasVistas) {
+    // Determinar el estado actual de la película (recalcula cuando cambian las listas)
+    val peliculaEnBiblioteca = remember(peliculasPorVer, peliculasVistas, movieId) {
         peliculasPorVer.find { it.idPelicula == movieId } ?: peliculasVistas.find { it.idPelicula == movieId }
     }
 
-    val estadoPelicula = when {
-        peliculaEnBiblioteca?.estado == "por_ver" -> 1
-        peliculaEnBiblioteca?.estado == "vista" -> 2
-        else -> 0
+    val estadoPelicula = remember(peliculasPorVer, peliculasVistas, movieId) {
+        when {
+            peliculasPorVer.any { it.idPelicula == movieId } -> 1
+            peliculasVistas.any { it.idPelicula == movieId } -> 2
+            else -> 0
+        }
     }
 
-    // Cargar películas al iniciar
+    // Cargar películas al iniciar y cuando cambie el movieId
     LaunchedEffect(Unit) {
         viewModel.cargarPeliculas()
+    }
+
+    // Recargar cuando cambien las listas
+    LaunchedEffect(peliculasPorVer, peliculasVistas) {
+        // Forzar recomposición cuando cambien las listas
     }
 
     // datos de amigos (todavía hardcodeados - se conectarán con Firebase más adelante)
@@ -379,13 +386,12 @@ fun PeliculaScreen(
                                 // Si está en "Por Ver", cambiar el estado
                                 viewModel.marcarComoVista(movieId)
                             } else {
-                                // Si no está en la biblioteca, agregarla como vista
-                                viewModel.agregarAPorVer(
+                                // Si no está en la biblioteca, agregarla directamente como vista
+                                viewModel.agregarAVistas(
                                     idPelicula = movieId,
                                     titulo = movieDetails?.title ?: "",
                                     rutaPoster = movieDetails?.posterPath
                                 )
-                                viewModel.marcarComoVista(movieId)
                             }
                             mostrarDialogoValoracion = true
                         }
