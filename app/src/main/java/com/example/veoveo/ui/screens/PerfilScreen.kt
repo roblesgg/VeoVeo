@@ -167,6 +167,7 @@ fun PerfilScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable {
                         nuevoUsername = usuario?.username ?: ""
+                        viewModel.limpiarMensajes() // Limpiar mensajes antes de abrir el diálogo
                         mostrarDialogoUsername = true
                     }
                 ) {
