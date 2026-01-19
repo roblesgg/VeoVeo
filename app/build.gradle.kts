@@ -74,7 +74,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
 
     // Firebase BoM (Bill of Materials) - maneja las versiones automáticamente
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
 
     // Firebase Authentication
     implementation("com.google.firebase:firebase-auth-ktx")

@@ -25,7 +25,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,10 +36,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -54,11 +59,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.veoveo.R
 import com.example.veoveo.conexion.RetrofitClient
 import com.example.veoveo.model.CastMember
 import com.example.veoveo.model.MovieDetails
+import com.example.veoveo.viewmodel.ViewModelBiblioteca
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,7 +74,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun PeliculaScreen(
     movieId: Int,
-    onVolverClick: () -> Unit = {}
+    onVolverClick: () -> Unit = {},
+    viewModel: ViewModelBiblioteca = viewModel()
 ) {
 
     // fuente personalizada montserrat
@@ -92,8 +100,28 @@ fun PeliculaScreen(
     var amigosVieronExpandido by remember { mutableStateOf(false) }
     var amigosQuierenVerExpandido by remember { mutableStateOf(false) }
 
-    // controla el estado de la pelicula (0=sin ver, 1=por ver, 2=vista)
-    var estadoPelicula by remember { mutableStateOf(0) }
+    // Estado para el diálogo de valoración
+    var mostrarDialogoValoracion by remember { mutableStateOf(false) }
+
+    // Cargar películas del usuario para verificar el estado
+    val peliculasPorVer by viewModel.peliculasPorVer.collectAsState()
+    val peliculasVistas by viewModel.peliculasVistas.collectAsState()
+
+    // Determinar el estado actual de la película
+    val peliculaEnBiblioteca = remember(peliculasPorVer, peliculasVistas) {
+        peliculasPorVer.find { it.idPelicula == movieId } ?: peliculasVistas.find { it.idPelicula == movieId }
+    }
+
+    val estadoPelicula = when {
+        peliculaEnBiblioteca?.estado == "por_ver" -> 1
+        peliculaEnBiblioteca?.estado == "vista" -> 2
+        else -> 0
+    }
+
+    // Cargar películas al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarPeliculas()
+    }
 
     // datos de amigos (todavía hardcodeados - se conectarán con Firebase más adelante)
     val amigosVieron = listOf("Amigo 1", "Amigo 2", "Amigo 3", "Amigo 4")
@@ -305,7 +333,23 @@ fun PeliculaScreen(
             ) {
                 // boton por ver
                 Button(
-                    onClick = { estadoPelicula = if (estadoPelicula == 1) 0 else 1 },
+                    onClick = {
+                        if (estadoPelicula == 1) {
+                            // Eliminar de "Por Ver"
+                            viewModel.eliminarPelicula(movieId)
+                        } else {
+                            // Añadir a "Por Ver"
+                            if (estadoPelicula == 2) {
+                                // Si está en "Vista", primero eliminarla
+                                viewModel.eliminarPelicula(movieId)
+                            }
+                            viewModel.agregarAPorVer(
+                                idPelicula = movieId,
+                                titulo = movieDetails?.title ?: "",
+                                rutaPoster = movieDetails?.posterPath
+                            )
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (estadoPelicula == 1) Color(0xFF6C63FF) else Color(0xFF2A2A3E)
                     ),
@@ -325,7 +369,27 @@ fun PeliculaScreen(
 
                 // boton vista
                 Button(
-                    onClick = { estadoPelicula = if (estadoPelicula == 2) 0 else 2 },
+                    onClick = {
+                        if (estadoPelicula == 2) {
+                            // Eliminar de "Vista"
+                            viewModel.eliminarPelicula(movieId)
+                        } else {
+                            // Marcar como vista
+                            if (estadoPelicula == 1) {
+                                // Si está en "Por Ver", cambiar el estado
+                                viewModel.marcarComoVista(movieId)
+                            } else {
+                                // Si no está en la biblioteca, agregarla como vista
+                                viewModel.agregarAPorVer(
+                                    idPelicula = movieId,
+                                    titulo = movieDetails?.title ?: "",
+                                    rutaPoster = movieDetails?.posterPath
+                                )
+                                viewModel.marcarComoVista(movieId)
+                            }
+                            mostrarDialogoValoracion = true
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (estadoPelicula == 2) Color(0xFF4CAF50) else Color(0xFF2A2A3E)
                     ),
@@ -337,6 +401,27 @@ fun PeliculaScreen(
                     }
                     Text(
                         if (estadoPelicula == 2) "Marcada Vista" else "Marcar como Vista",
+                        color = Color.White,
+                        fontFamily = font,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            // Botón para cambiar valoración si ya está marcada como vista
+            if (estadoPelicula == 2 && peliculaEnBiblioteca != null) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { mostrarDialogoValoracion = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFD700).copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                ) {
+                    Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (peliculaEnBiblioteca.valoracion > 0) "Cambiar Valoracion (${peliculaEnBiblioteca.valoracion} ⭐)" else "Valorar Pelicula",
                         color = Color.White,
                         fontFamily = font,
                         fontSize = 14.sp
@@ -539,6 +624,21 @@ fun PeliculaScreen(
             Spacer(Modifier.height(32.dp))
                 }
             }
+        }
+
+        // Diálogo de valoración
+        if (mostrarDialogoValoracion) {
+            DialogoValorarPelicula(
+                tituloPelicula = movieDetails?.title ?: "",
+                onDismiss = {
+                    mostrarDialogoValoracion = false
+                },
+                onValorar = { valoracion ->
+                    viewModel.actualizarValoracion(movieId, valoracion)
+                    mostrarDialogoValoracion = false
+                },
+                font = font
+            )
         }
 
         // boton de volver arriba izquierda (siempre visible)
