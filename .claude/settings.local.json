@@ -6,7 +6,11 @@
       "Bash(if [ -f \"app/google-services.json\" ])",
       "Bash(then echo \"El archivo google-services.json existe\")",
       "Bash(else echo \"El archivo google-services.json NO existe\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(./gradlew signingReport:*)",
+      "Bash(where keytool:*)",
+      "Bash(dir \"C:\\\\Repositorios\\\\VeoVeo\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\veoveo\\\\model\")",
+      "Bash(findstr:*)"
     ]
   }
 }

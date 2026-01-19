@@ -25,8 +25,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -77,6 +80,9 @@ import com.example.veoveo.conexion.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import com.example.veoveo.model.Movie
 import com.example.veoveo.utils.PreferencesHelper
+import com.example.veoveo.viewmodel.ViewModelBiblioteca
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
 
 // pantalla principal con 4 pestanas: descubrir, biblioteca, tierlists, social
 @Composable
@@ -111,6 +117,9 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
         }
     }
 
+    // ViewModel compartido para gestionar biblioteca
+    val viewModelBiblioteca: ViewModelBiblioteca = viewModel()
+
     // degradado de fondo morado oscuro
     val brush = Brush.verticalGradient(
         colors = listOf(Color(0xFF1A1A2E), Color(0xFF4B0082))
@@ -130,11 +139,11 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
             } else {
                 // muestra las pestanas normales
                 when (paginaActual) {
-                    0 -> DescubrirTab(montserratFont, carruselesActivos, preferencesHelper) { movieId ->
+                    0 -> DescubrirTab(montserratFont, carruselesActivos, preferencesHelper, viewModelBiblioteca) { movieId ->
                         peliculaIdSeleccionada = movieId
                         mostrarPelicula = true
                     }
-                    1 -> BibliotecaTab(montserratFont) { movieId ->
+                    1 -> BibliotecaTab(montserratFont, viewModelBiblioteca) { movieId ->
                         peliculaIdSeleccionada = movieId
                         mostrarPelicula = true
                     }
@@ -237,6 +246,7 @@ fun DescubrirTab(
     font: FontFamily,
     carruselesActivos: MutableList<String>,
     preferencesHelper: PreferencesHelper,
+    viewModel: ViewModelBiblioteca,
     onPeliculaClick: (Int) -> Unit = {}
 ) {
 
@@ -379,20 +389,56 @@ fun DescubrirTab(
                         ) {
                             fila.forEach { movie ->
                                 Card(
-                                    modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movie.id) },
+                                    modifier = Modifier.weight(1f).height(180.dp),
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                 ) {
-                                    if (movie.posterPath != null) {
-                                        AsyncImage(
-                                            model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
-                                            contentDescription = movie.title,
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier.fillMaxSize()
-                                        )
-                                    } else {
-                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                            Text(movie.title, color = Color.White, fontSize = 12.sp, fontFamily = font, textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        // Poster de la película
+                                        if (movie.posterPath != null) {
+                                            AsyncImage(
+                                                model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                                                contentDescription = movie.title,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) }
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) },
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    movie.title,
+                                                    color = Color.White,
+                                                    fontSize = 12.sp,
+                                                    fontFamily = font,
+                                                    textAlign = TextAlign.Center,
+                                                    modifier = Modifier.padding(8.dp)
+                                                )
+                                            }
+                                        }
+
+                                        // Botón de agregar a biblioteca
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.agregarAPorVer(
+                                                    idPelicula = movie.id,
+                                                    titulo = movie.title,
+                                                    rutaPoster = movie.posterPath
+                                                )
+                                            },
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(4.dp)
+                                                .size(32.dp)
+                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Add,
+                                                contentDescription = "Agregar a Por Ver",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -422,6 +468,7 @@ fun DescubrirTab(
                             preferencesHelper.guardarCarruselesActivos(carruselesActivos.toList())
                         },
                         font,
+                        viewModel,
                         onPeliculaClick
                     )
                     Spacer(Modifier.height(16.dp))
@@ -493,14 +540,28 @@ fun DescubrirTab(
 
 // pestana biblioteca
 @Composable
-fun BibliotecaTab(font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
+fun BibliotecaTab(
+    font: FontFamily,
+    viewModel: ViewModelBiblioteca,
+    onPeliculaClick: (Int) -> Unit = {}
+) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
     var seccion by remember { mutableIntStateOf(0) }
 
-    // IDs de películas reales de TMDB (temporal hasta conectar con Firebase)
-    val peliculasPorVer = remember { listOf(550, 278, 680, 155, 13, 122, 497, 11, 98) }
-    val peliculasVistas = remember { listOf(603, 27205, 157336, 346, 475, 680) }
+    // Estados para diálogo de valoración
+    var mostrarDialogoValoracion by remember { mutableStateOf(false) }
+    var peliculaParaValorar by remember { mutableStateOf<Pair<Int, String>?>(null) }
+
+    // Cargar películas del usuario
+    val peliculasPorVer by viewModel.peliculasPorVer.collectAsState()
+    val peliculasVistas by viewModel.peliculasVistas.collectAsState()
+    val cargando by viewModel.cargando.collectAsState()
+
+    // Cargar películas al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarPeliculas()
+    }
 
     BackHandler(onBack = { if (buscar) buscar = false })
 
@@ -556,6 +617,14 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
             )
         }
 
+        // Indicador de carga
+        if (cargando) {
+            CircularProgressIndicator(
+                color = Color.White,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(
                 top = if (buscar) 185.dp else 140.dp,
@@ -565,19 +634,137 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
             contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             val peliculas = if (seccion == 0) peliculasPorVer else peliculasVistas
+
+            // Mostrar mensaje si no hay películas
+            if (peliculas.isEmpty() && !cargando) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (seccion == 0) "No tienes películas por ver" else "No has marcado películas como vistas",
+                            color = Color.Gray,
+                            fontSize = 16.sp,
+                            fontFamily = font,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
             val filas = peliculas.chunked(3)
 
             items(filas) { fila ->
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    fila.forEach { movieId ->
+                    fila.forEach { pelicula ->
                         Card(
-                            modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movieId) },
+                            modifier = Modifier.weight(1f).height(180.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Película $movieId", color = Color.White, fontSize = 14.sp, fontFamily = font,
-                                    textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                // Poster de la película
+                                if (pelicula.rutaPoster != null) {
+                                    AsyncImage(
+                                        model = "https://image.tmdb.org/t/p/w200${pelicula.rutaPoster}",
+                                        contentDescription = pelicula.titulo,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(pelicula.idPelicula) }
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(pelicula.idPelicula) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            pelicula.titulo,
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontFamily = font,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(8.dp)
+                                        )
+                                    }
+                                }
+
+                                // Botones de acción en la esquina superior derecha
+                                Row(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    // Botón de eliminar
+                                    IconButton(
+                                        onClick = { viewModel.eliminarPelicula(pelicula.idPelicula) },
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Eliminar",
+                                            tint = Color(0xFFFF5252),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+
+                                    // Botón de marcar como vista (solo en "Por Ver")
+                                    if (pelicula.estado == "por_ver") {
+                                        IconButton(
+                                            onClick = {
+                                                viewModel.marcarComoVista(pelicula.idPelicula)
+                                                peliculaParaValorar = Pair(pelicula.idPelicula, pelicula.titulo)
+                                                mostrarDialogoValoracion = true
+                                            },
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = "Marcar como vista",
+                                                tint = Color(0xFF4CAF50),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+
+                                    // Botón de valorar (solo en "Vistas")
+                                    if (pelicula.estado == "vista") {
+                                        IconButton(
+                                            onClick = {
+                                                peliculaParaValorar = Pair(pelicula.idPelicula, pelicula.titulo)
+                                                mostrarDialogoValoracion = true
+                                            },
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Star,
+                                                contentDescription = "Valorar",
+                                                tint = Color(0xFFFFD700),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Mostrar estrellas si está vista y tiene valoración
+                                if (pelicula.estado == "vista" && pelicula.valoracion > 0) {
+                                    Row(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .background(Color.Black.copy(alpha = 0.7f))
+                                            .padding(4.dp)
+                                    ) {
+                                        repeat(pelicula.valoracion) {
+                                            Text("⭐", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -585,6 +772,23 @@ fun BibliotecaTab(font: FontFamily, onPeliculaClick: (Int) -> Unit = {}) {
                 }
                 Spacer(Modifier.height(12.dp))
             }
+        }
+
+        // Diálogo de valoración
+        if (mostrarDialogoValoracion && peliculaParaValorar != null) {
+            DialogoValorarPelicula(
+                tituloPelicula = peliculaParaValorar!!.second,
+                onDismiss = {
+                    mostrarDialogoValoracion = false
+                    peliculaParaValorar = null
+                },
+                onValorar = { valoracion ->
+                    viewModel.actualizarValoracion(peliculaParaValorar!!.first, valoracion)
+                    mostrarDialogoValoracion = false
+                    peliculaParaValorar = null
+                },
+                font = font
+            )
         }
     }
 }
@@ -839,6 +1043,7 @@ fun CarruselPeliculas(
     modoEdicion: Boolean,
     onEliminar: () -> Unit,
     font: FontFamily,
+    viewModel: ViewModelBiblioteca,
     onPeliculaClick: (Int) -> Unit = {}
 ) {
     // 1. Estado para guardar las películas que vienen de la API
@@ -883,18 +1088,42 @@ fun CarruselPeliculas(
         ) {
             items(listaPeliculas) { movie ->
                 Card(
-                    // Pasamos el ID de la película al hacer click
-                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.id) },
+                    modifier = Modifier.width(120.dp).height(180.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
-                    // Usamos el posterPath que viene de la API
-                    AsyncImage(
-                        model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
-                        contentDescription = movie.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        // Usamos el posterPath que viene de la API
+                        AsyncImage(
+                            model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                            contentDescription = movie.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) }
+                        )
+
+                        // Botón de agregar a biblioteca
+                        IconButton(
+                            onClick = {
+                                viewModel.agregarAPorVer(
+                                    idPelicula = movie.id,
+                                    titulo = movie.title,
+                                    rutaPoster = movie.posterPath
+                                )
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(28.dp)
+                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Agregar a Por Ver",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -943,6 +1172,81 @@ fun DialogoAnadirLista(
         confirmButton = {
             TextButton(onClick = { onConfirm(seleccionadas.toList()) }) {
                 Text("Anadir", fontFamily = font, color = Color(0xFF6C63FF))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar", fontFamily = font, color = Color.White)
+            }
+        },
+        containerColor = Color(0xFF1A1A2E),
+        textContentColor = Color.White
+    )
+}
+
+// dialogo para valorar pelicula
+@Composable
+fun DialogoValorarPelicula(
+    tituloPelicula: String,
+    onDismiss: () -> Unit,
+    onValorar: (Int) -> Unit,
+    font: FontFamily
+) {
+    var valoracionSeleccionada by remember { mutableIntStateOf(0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Valorar: $tituloPelicula",
+                fontFamily = font,
+                fontSize = 18.sp,
+                color = Color.White,
+                maxLines = 2
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Selecciona tu valoración:",
+                    fontFamily = font,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    repeat(5) { index ->
+                        IconButton(
+                            onClick = { valoracionSeleccionada = index + 1 },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = "Estrella ${index + 1}",
+                                tint = if (index < valoracionSeleccionada) Color(0xFFFFD700) else Color.Gray,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (valoracionSeleccionada > 0) {
+                        onValorar(valoracionSeleccionada)
+                    }
+                },
+                enabled = valoracionSeleccionada > 0
+            ) {
+                Text("Guardar", fontFamily = font, color = Color(0xFF6C63FF))
             }
         },
         dismissButton = {
