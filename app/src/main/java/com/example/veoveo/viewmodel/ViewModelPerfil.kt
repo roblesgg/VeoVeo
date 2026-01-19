@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  * ViewModel para gestionar el perfil del usuario
@@ -44,24 +46,28 @@ class ViewModelPerfil : ViewModel() {
         _cargando.value = true
         viewModelScope.launch {
             try {
-                val resultado = repositorio.obtenerPerfilUsuario()
-                if (resultado.isSuccess) {
-                    _usuario.value = resultado.getOrNull()
-                } else {
-                    // Si no existe, crear perfil por defecto
-                    val resultadoCrear = repositorio.crearPerfilPorDefecto()
-                    if (resultadoCrear.isSuccess) {
-                        // Intentar cargar de nuevo
-                        val resultadoNuevo = repositorio.obtenerPerfilUsuario()
-                        if (resultadoNuevo.isSuccess) {
-                            _usuario.value = resultadoNuevo.getOrNull()
-                        } else {
-                            _error.value = "No se pudo cargar el perfil. Verifica tu conexión."
-                        }
+                withTimeout(10000L) {
+                    val resultado = repositorio.obtenerPerfilUsuario()
+                    if (resultado.isSuccess) {
+                        _usuario.value = resultado.getOrNull()
                     } else {
-                        _error.value = "No se pudo crear el perfil. Verifica tu conexión."
+                        // Si no existe, crear perfil por defecto
+                        val resultadoCrear = repositorio.crearPerfilPorDefecto()
+                        if (resultadoCrear.isSuccess) {
+                            // Intentar cargar de nuevo
+                            val resultadoNuevo = repositorio.obtenerPerfilUsuario()
+                            if (resultadoNuevo.isSuccess) {
+                                _usuario.value = resultadoNuevo.getOrNull()
+                            } else {
+                                _error.value = "No se pudo cargar el perfil. Verifica tu conexión."
+                            }
+                        } else {
+                            _error.value = "No se pudo crear el perfil. Verifica tu conexión."
+                        }
                     }
                 }
+            } catch (e: TimeoutCancellationException) {
+                _error.value = "La conexión está tardando demasiado. Inténtalo de nuevo."
             } catch (e: Exception) {
                 _error.value = "Error de conexión: ${e.message}"
             } finally {
@@ -87,25 +93,34 @@ class ViewModelPerfil : ViewModel() {
         _actualizandoUsername.value = true
         viewModelScope.launch {
             try {
-                // Actualizar localmente primero
-                val usuarioActual = _usuario.value
-                if (usuarioActual != null) {
-                    _usuario.value = usuarioActual.copy(username = nuevoUsername)
-                }
-
-                // Actualizar en Firebase
-                val resultado = repositorio.actualizarUsername(nuevoUsername)
-                if (resultado.isSuccess) {
-                    _mensaje.value = "Nombre actualizado"
-                } else {
-                    _error.value = "Error al actualizar"
-                    // Revertir si falla
+                // Timeout de 10 segundos
+                withTimeout(10000L) {
+                    // Actualizar localmente primero
+                    val usuarioActual = _usuario.value
                     if (usuarioActual != null) {
-                        _usuario.value = usuarioActual
+                        _usuario.value = usuarioActual.copy(username = nuevoUsername)
+                    }
+
+                    // Actualizar en Firebase
+                    val resultado = repositorio.actualizarUsername(nuevoUsername)
+                    if (resultado.isSuccess) {
+                        _mensaje.value = "Nombre actualizado"
+                    } else {
+                        // Extraer mensaje de error real si existe
+                        _error.value = resultado.exceptionOrNull()?.message ?: "Error al actualizar"
+                        // Revertir si falla
+                        if (usuarioActual != null) {
+                            _usuario.value = usuarioActual
+                        }
                     }
                 }
+            } catch (e: TimeoutCancellationException) {
+                _error.value = "La conexión está tardando demasiado. Inténtalo de nuevo."
+                // Recargar perfil para obtener el valor original
+                cargarPerfil()
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
+                cargarPerfil()
             } finally {
                 _actualizandoUsername.value = false
             }
