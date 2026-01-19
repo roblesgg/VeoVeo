@@ -67,11 +67,44 @@ class ViewModelBiblioteca : ViewModel() {
                 estado = "por_ver"
             )
 
+            // Actualizar UI inmediatamente
+            _peliculasPorVer.value = _peliculasPorVer.value + pelicula
+
             val resultado = repositorio.agregarPelicula(pelicula)
             if (resultado.isSuccess) {
-                cargarPeliculas() // Recargar lista
+                // Ya actualizado localmente, solo recargar para sincronizar
+                cargarPeliculas()
             } else {
                 _error.value = "Error al añadir película"
+                // Revertir cambio local si falla
+                _peliculasPorVer.value = _peliculasPorVer.value.filter { it.idPelicula != idPelicula }
+            }
+        }
+    }
+
+    /**
+     * Añade una película directamente a "Vista"
+     */
+    fun agregarAVistas(idPelicula: Int, titulo: String, rutaPoster: String?) {
+        viewModelScope.launch {
+            val pelicula = PeliculaUsuario(
+                idPelicula = idPelicula,
+                titulo = titulo,
+                rutaPoster = rutaPoster,
+                estado = "vista"
+            )
+
+            // Actualizar UI inmediatamente
+            _peliculasVistas.value = _peliculasVistas.value + pelicula
+
+            val resultado = repositorio.agregarPelicula(pelicula)
+            if (resultado.isSuccess) {
+                // Ya actualizado localmente, solo recargar para sincronizar
+                cargarPeliculas()
+            } else {
+                _error.value = "Error al añadir película"
+                // Revertir cambio local si falla
+                _peliculasVistas.value = _peliculasVistas.value.filter { it.idPelicula != idPelicula }
             }
         }
     }
@@ -81,11 +114,26 @@ class ViewModelBiblioteca : ViewModel() {
      */
     fun marcarComoVista(idPelicula: Int) {
         viewModelScope.launch {
+            // Encontrar la película en "Por Ver"
+            val pelicula = _peliculasPorVer.value.find { it.idPelicula == idPelicula }
+
+            if (pelicula != null) {
+                // Actualizar UI inmediatamente
+                _peliculasPorVer.value = _peliculasPorVer.value.filter { it.idPelicula != idPelicula }
+                _peliculasVistas.value = _peliculasVistas.value + pelicula.copy(estado = "vista")
+            }
+
             val resultado = repositorio.actualizarEstadoPelicula(idPelicula, "vista")
             if (resultado.isSuccess) {
-                cargarPeliculas() // Recargar listas
+                // Ya actualizado localmente, solo recargar para sincronizar
+                cargarPeliculas()
             } else {
                 _error.value = "Error al actualizar película"
+                // Revertir cambio local si falla
+                if (pelicula != null) {
+                    _peliculasVistas.value = _peliculasVistas.value.filter { it.idPelicula != idPelicula }
+                    _peliculasPorVer.value = _peliculasPorVer.value + pelicula
+                }
             }
         }
     }
@@ -109,11 +157,27 @@ class ViewModelBiblioteca : ViewModel() {
      */
     fun eliminarPelicula(idPelicula: Int) {
         viewModelScope.launch {
+            // Guardar copia para posible reversión
+            val peliculaPorVer = _peliculasPorVer.value.find { it.idPelicula == idPelicula }
+            val peliculaVista = _peliculasVistas.value.find { it.idPelicula == idPelicula }
+
+            // Actualizar UI inmediatamente
+            _peliculasPorVer.value = _peliculasPorVer.value.filter { it.idPelicula != idPelicula }
+            _peliculasVistas.value = _peliculasVistas.value.filter { it.idPelicula != idPelicula }
+
             val resultado = repositorio.eliminarPelicula(idPelicula)
             if (resultado.isSuccess) {
-                cargarPeliculas() // Recargar listas
+                // Ya actualizado localmente, solo recargar para sincronizar
+                cargarPeliculas()
             } else {
                 _error.value = "Error al eliminar película"
+                // Revertir cambio local si falla
+                if (peliculaPorVer != null) {
+                    _peliculasPorVer.value = _peliculasPorVer.value + peliculaPorVer
+                }
+                if (peliculaVista != null) {
+                    _peliculasVistas.value = _peliculasVistas.value + peliculaVista
+                }
             }
         }
     }
