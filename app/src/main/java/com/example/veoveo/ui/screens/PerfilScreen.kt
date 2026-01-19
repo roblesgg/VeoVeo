@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -287,39 +288,72 @@ fun PerfilScreen(
     // Diálogo para editar username
     if (mostrarDialogoUsername) {
         AlertDialog(
-            onDismissRequest = { mostrarDialogoUsername = false },
+            onDismissRequest = {
+                if (!cargando) mostrarDialogoUsername = false
+            },
             title = {
                 Text("Cambiar nombre de usuario", fontFamily = font)
             },
             text = {
-                OutlinedTextField(
-                    value = nuevoUsername,
-                    onValueChange = { nuevoUsername = it },
-                    label = { Text("Nuevo nombre", fontFamily = font) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF6C63FF),
-                        unfocusedBorderColor = Color.Gray
-                    ),
-                    singleLine = true
-                )
+                Column {
+                    OutlinedTextField(
+                        value = nuevoUsername,
+                        onValueChange = { nuevoUsername = it },
+                        label = { Text("Nuevo nombre", fontFamily = font) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF6C63FF),
+                            unfocusedBorderColor = Color.Gray
+                        ),
+                        singleLine = true,
+                        enabled = !cargando
+                    )
+
+                    if (cargando) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color(0xFF6C63FF),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Guardando...", fontFamily = font, fontSize = 14.sp)
+                        }
+                    }
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.actualizarUsername(nuevoUsername)
-                        mostrarDialogoUsername = false
+                        // No cerramos el diálogo aquí, se cerrará cuando termine la carga
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                    enabled = !cargando && nuevoUsername.length >= 3
                 ) {
                     Text("Guardar", fontFamily = font)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { mostrarDialogoUsername = false }) {
+                TextButton(
+                    onClick = { mostrarDialogoUsername = false },
+                    enabled = !cargando
+                ) {
                     Text("Cancelar", fontFamily = font)
                 }
             }
         )
+    }
+
+    // Cerrar diálogo automáticamente cuando termine la carga y haya un mensaje de éxito
+    LaunchedEffect(cargando, mensaje) {
+        if (!cargando && mensaje != null && mostrarDialogoUsername) {
+            mostrarDialogoUsername = false
+        }
     }
 }
 
