@@ -138,4 +138,23 @@ class RepositorioPeliculasUsuario {
             Result.failure(e)
         }
     }
+
+    /**
+     * Obtiene películas de otro usuario por estado
+     */
+    suspend fun obtenerPeliculasPorEstadoDeUsuario(uid: String, estado: String): Result<List<PeliculaUsuario>> {
+        return try {
+            val snapshot = firestore.collection("usuarios")
+                .document(uid)
+                .collection("peliculas")
+                .whereEqualTo("estado", estado)
+                .get()
+                .await()
+
+            val peliculas = snapshot.documents.mapNotNull { it.toObject(PeliculaUsuario::class.java) }
+            Result.success(peliculas)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
