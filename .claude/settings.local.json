@@ -11,7 +11,9 @@
       "Bash(where keytool:*)",
       "Bash(dir \"C:\\\\Repositorios\\\\VeoVeo\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\veoveo\\\\model\")",
       "Bash(findstr:*)",
-      "Bash(./gradlew clean:*)"
+      "Bash(./gradlew clean:*)",
+      "Bash(gradlew clean:*)",
+      "Bash(.\\\\gradlew.bat clean:*)"
     ]
   }
 }
