@@ -72,6 +72,7 @@ fun PerfilScreen(
     // Estados del ViewModel
     val usuario by viewModel.usuario.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+    val actualizandoUsername by viewModel.actualizandoUsername.collectAsState()
     val error by viewModel.error.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
 
@@ -289,7 +290,7 @@ fun PerfilScreen(
     if (mostrarDialogoUsername) {
         AlertDialog(
             onDismissRequest = {
-                if (!cargando) mostrarDialogoUsername = false
+                if (!actualizandoUsername) mostrarDialogoUsername = false
             },
             title = {
                 Text("Cambiar nombre de usuario", fontFamily = font)
@@ -305,10 +306,10 @@ fun PerfilScreen(
                             unfocusedBorderColor = Color.Gray
                         ),
                         singleLine = true,
-                        enabled = !cargando
+                        enabled = !actualizandoUsername
                     )
 
-                    if (cargando) {
+                    if (actualizandoUsername) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -333,7 +334,7 @@ fun PerfilScreen(
                         // No cerramos el diálogo aquí, se cerrará cuando termine la carga
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
-                    enabled = !cargando && nuevoUsername.length >= 3
+                    enabled = !actualizandoUsername && nuevoUsername.length >= 3
                 ) {
                     Text("Guardar", fontFamily = font)
                 }
@@ -341,7 +342,7 @@ fun PerfilScreen(
             dismissButton = {
                 TextButton(
                     onClick = { mostrarDialogoUsername = false },
-                    enabled = !cargando
+                    enabled = !actualizandoUsername
                 ) {
                     Text("Cancelar", fontFamily = font)
                 }
@@ -349,9 +350,9 @@ fun PerfilScreen(
         )
     }
 
-    // Cerrar diálogo automáticamente cuando termine la carga y haya un mensaje de éxito
-    LaunchedEffect(cargando, mensaje) {
-        if (!cargando && mensaje != null && mostrarDialogoUsername) {
+    // Cerrar diálogo automáticamente cuando termine la actualización y haya un mensaje de éxito
+    LaunchedEffect(actualizandoUsername, mensaje) {
+        if (!actualizandoUsername && mensaje != null && mostrarDialogoUsername) {
             mostrarDialogoUsername = false
         }
     }

@@ -21,9 +21,13 @@ class ViewModelPerfil : ViewModel() {
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario.asStateFlow()
 
-    // Estado de carga
+    // Estado de carga general
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+
+    // Estado de carga específico para actualizar username
+    private val _actualizandoUsername = MutableStateFlow(false)
+    val actualizandoUsername: StateFlow<Boolean> = _actualizandoUsername.asStateFlow()
 
     // Mensajes de error
     private val _error = MutableStateFlow<String?>(null)
@@ -80,7 +84,7 @@ class ViewModelPerfil : ViewModel() {
             return
         }
 
-        _cargando.value = true
+        _actualizandoUsername.value = true
         viewModelScope.launch {
             try {
                 // Actualizar localmente primero
@@ -103,7 +107,7 @@ class ViewModelPerfil : ViewModel() {
             } catch (e: Exception) {
                 _error.value = "Error: ${e.message}"
             } finally {
-                _cargando.value = false
+                _actualizandoUsername.value = false
             }
         }
     }
