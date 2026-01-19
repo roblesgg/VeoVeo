@@ -118,10 +118,11 @@ fun PeliculaScreen(
         }
     }
 
-    // Cargar películas al iniciar y cuando cambie el movieId
-    LaunchedEffect(Unit) {
-        viewModel.cargarPeliculas()
-    }
+    // DESHABILITADO TEMPORALMENTE: Cargar películas al iniciar
+    // Comentado porque Firebase no está conectado y causa bloqueos
+    // LaunchedEffect(Unit) {
+    //     viewModel.cargarPeliculas()
+    // }
 
     // Recargar cuando cambien las listas
     LaunchedEffect(peliculasPorVer, peliculasVistas) {
