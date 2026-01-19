@@ -134,7 +134,8 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
             if (mostrarPelicula) {
                 PeliculaScreen(
                     movieId = peliculaIdSeleccionada,
-                    onVolverClick = { mostrarPelicula = false }
+                    onVolverClick = { mostrarPelicula = false },
+                    viewModel = viewModelBiblioteca
                 )
             } else {
                 // muestra las pestanas normales
@@ -389,55 +390,27 @@ fun DescubrirTab(
                         ) {
                             fila.forEach { movie ->
                                 Card(
-                                    modifier = Modifier.weight(1f).height(180.dp),
+                                    modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(movie.id) },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                 ) {
-                                    Box(modifier = Modifier.fillMaxSize()) {
-                                        // Poster de la película
-                                        if (movie.posterPath != null) {
-                                            AsyncImage(
-                                                model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
-                                                contentDescription = movie.title,
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) }
-                                            )
-                                        } else {
-                                            Box(
-                                                modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) },
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    movie.title,
-                                                    color = Color.White,
-                                                    fontSize = 12.sp,
-                                                    fontFamily = font,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.padding(8.dp)
-                                                )
-                                            }
-                                        }
-
-                                        // Botón de agregar a biblioteca
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.agregarAPorVer(
-                                                    idPelicula = movie.id,
-                                                    titulo = movie.title,
-                                                    rutaPoster = movie.posterPath
-                                                )
-                                            },
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(4.dp)
-                                                .size(32.dp)
-                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Add,
-                                                contentDescription = "Agregar a Por Ver",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(20.dp)
+                                    // Poster de la película
+                                    if (movie.posterPath != null) {
+                                        AsyncImage(
+                                            model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                                            contentDescription = movie.title,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                movie.title,
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontFamily = font,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.padding(8.dp)
                                             )
                                         }
                                     }
@@ -549,10 +522,6 @@ fun BibliotecaTab(
     var textoBuscar by remember { mutableStateOf("") }
     var seccion by remember { mutableIntStateOf(0) }
 
-    // Estados para diálogo de valoración
-    var mostrarDialogoValoracion by remember { mutableStateOf(false) }
-    var peliculaParaValorar by remember { mutableStateOf<Pair<Int, String>?>(null) }
-
     // Cargar películas del usuario
     val peliculasPorVer by viewModel.peliculasPorVer.collectAsState()
     val peliculasVistas by viewModel.peliculasVistas.collectAsState()
@@ -659,7 +628,7 @@ fun BibliotecaTab(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     fila.forEach { pelicula ->
                         Card(
-                            modifier = Modifier.weight(1f).height(180.dp),
+                            modifier = Modifier.weight(1f).height(180.dp).clickable { onPeliculaClick(pelicula.idPelicula) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                         ) {
@@ -670,11 +639,11 @@ fun BibliotecaTab(
                                         model = "https://image.tmdb.org/t/p/w200${pelicula.rutaPoster}",
                                         contentDescription = pelicula.titulo,
                                         contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(pelicula.idPelicula) }
+                                        modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
                                     Box(
-                                        modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(pelicula.idPelicula) },
+                                        modifier = Modifier.fillMaxSize(),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
@@ -685,70 +654,6 @@ fun BibliotecaTab(
                                             textAlign = TextAlign.Center,
                                             modifier = Modifier.padding(8.dp)
                                         )
-                                    }
-                                }
-
-                                // Botones de acción en la esquina superior derecha
-                                Row(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    // Botón de eliminar
-                                    IconButton(
-                                        onClick = { viewModel.eliminarPelicula(pelicula.idPelicula) },
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "Eliminar",
-                                            tint = Color(0xFFFF5252),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-
-                                    // Botón de marcar como vista (solo en "Por Ver")
-                                    if (pelicula.estado == "por_ver") {
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.marcarComoVista(pelicula.idPelicula)
-                                                peliculaParaValorar = Pair(pelicula.idPelicula, pelicula.titulo)
-                                                mostrarDialogoValoracion = true
-                                            },
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = "Marcar como vista",
-                                                tint = Color(0xFF4CAF50),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-
-                                    // Botón de valorar (solo en "Vistas")
-                                    if (pelicula.estado == "vista") {
-                                        IconButton(
-                                            onClick = {
-                                                peliculaParaValorar = Pair(pelicula.idPelicula, pelicula.titulo)
-                                                mostrarDialogoValoracion = true
-                                            },
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Star,
-                                                contentDescription = "Valorar",
-                                                tint = Color(0xFFFFD700),
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
                                     }
                                 }
 
@@ -772,23 +677,6 @@ fun BibliotecaTab(
                 }
                 Spacer(Modifier.height(12.dp))
             }
-        }
-
-        // Diálogo de valoración
-        if (mostrarDialogoValoracion && peliculaParaValorar != null) {
-            DialogoValorarPelicula(
-                tituloPelicula = peliculaParaValorar!!.second,
-                onDismiss = {
-                    mostrarDialogoValoracion = false
-                    peliculaParaValorar = null
-                },
-                onValorar = { valoracion ->
-                    viewModel.actualizarValoracion(peliculaParaValorar!!.first, valoracion)
-                    mostrarDialogoValoracion = false
-                    peliculaParaValorar = null
-                },
-                font = font
-            )
         }
     }
 }
@@ -1088,42 +976,17 @@ fun CarruselPeliculas(
         ) {
             items(listaPeliculas) { movie ->
                 Card(
-                    modifier = Modifier.width(120.dp).height(180.dp),
+                    modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.id) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // Usamos el posterPath que viene de la API
-                        AsyncImage(
-                            model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
-                            contentDescription = movie.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clickable { onPeliculaClick(movie.id) }
-                        )
-
-                        // Botón de agregar a biblioteca
-                        IconButton(
-                            onClick = {
-                                viewModel.agregarAPorVer(
-                                    idPelicula = movie.id,
-                                    titulo = movie.title,
-                                    rutaPoster = movie.posterPath
-                                )
-                            },
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(4.dp)
-                                .size(28.dp)
-                                .background(Color.Black.copy(alpha = 0.6f), CircleShape)
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Agregar a Por Ver",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
+                    // Usamos el posterPath que viene de la API
+                    AsyncImage(
+                        model = "https://image.tmdb.org/t/p/w200${movie.posterPath}",
+                        contentDescription = movie.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
