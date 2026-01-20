@@ -191,55 +191,66 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
         // barra de navegacion suelta encima del contenido (solo visible en pantallas principales)
         // Se oculta si: está viendo película, viendo perfil de amigo, solicitudes, biblioteca amigo, o dentro de una tierlist (crear/ver/editar)
         if (!mostrarPelicula && !mostrarContactoSocial && !mostrarBibliotecaAmigo && !mostrarSolicitudes && !(paginaActual == 2 && pantallaTierList != 0)) {
-            Box(
+            Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 30.dp, vertical = 30.dp)
-            ) {
-                NavigationBar(
-                    containerColor = Color.Transparent,
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0xFF1A1A1A).copy(alpha = 0.95f),
-                                    Color(0xFF0D0D0D).copy(alpha = 0.98f)
-                                )
+                    .height(70.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF1A1A1A).copy(alpha = 0.95f),
+                                Color(0xFF0D0D0D).copy(alpha = 0.98f)
                             )
                         )
+                    ),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { paginaActual = 0 },
+                    modifier = Modifier.size(50.dp)
                 ) {
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_descubrir), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 0,
-                        onClick = { paginaActual = 0 },
-                        colors = navBarColors()
+                    Icon(
+                        painterResource(R.drawable.ic_descubrir),
+                        contentDescription = "Descubrir",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_biblioteca), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 1,
-                        onClick = { paginaActual = 1 },
-                        colors = navBarColors()
+                }
+                IconButton(
+                    onClick = { paginaActual = 1 },
+                    modifier = Modifier.size(50.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_biblioteca),
+                        contentDescription = "Biblioteca",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_tierlist), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 2,
-                        onClick = { paginaActual = 2 },
-                        colors = navBarColors()
+                }
+                IconButton(
+                    onClick = { paginaActual = 2 },
+                    modifier = Modifier.size(50.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_tierlist),
+                        contentDescription = "TierLists",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
-                    NavigationBarItem(
-                        icon = { Icon(painterResource(R.drawable.ic_social), null, Modifier.size(28.dp)) },
-                        label = null,
-                        selected = paginaActual == 3,
-                        onClick = { paginaActual = 3 },
-                        colors = navBarColors()
+                }
+                IconButton(
+                    onClick = { paginaActual = 3 },
+                    modifier = Modifier.size(50.dp)
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_social),
+                        contentDescription = "Social",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
