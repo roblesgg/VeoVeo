@@ -1,12 +1,15 @@
 package com.example.veoveo.data
 
 import android.net.Uri
+import android.util.Log
 import com.example.veoveo.model.Usuario
 import com.example.veoveo.model.SolicitudAmistad
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
@@ -25,8 +28,8 @@ class RepositorioUsuarios {
     /**
      * Crea o actualiza el perfil de usuario
      */
-    suspend fun crearOActualizarUsuario(usuario: Usuario): Result<Unit> {
-        return try {
+    suspend fun crearOActualizarUsuario(usuario: Usuario): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
             firestore.collection("usuarios")
                 .document(usuario.uid)
                 .set(usuario)
@@ -40,11 +43,19 @@ class RepositorioUsuarios {
     /**
      * Crea un perfil por defecto para el usuario actual
      */
-    suspend fun crearPerfilPorDefecto(): Result<Unit> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
-        val email = auth.currentUser?.email ?: "sin_email"
+    suspend fun crearPerfilPorDefecto(): Result<Unit> = withContext(Dispatchers.IO) {
+        Log.d("RepositorioUsuarios", "=== crearPerfilPorDefecto ===")
+        val uid = obtenerIdUsuario()
 
-        return try {
+        if (uid == null) {
+            Log.e("RepositorioUsuarios", "Usuario no autenticado al crear perfil")
+            return@withContext Result.failure(Exception("Usuario no autenticado"))
+        }
+
+        val email = auth.currentUser?.email ?: "sin_email"
+        Log.d("RepositorioUsuarios", "Creando perfil para UID: $uid, Email: $email")
+
+        return@withContext try {
             val usuario = Usuario(
                 uid = uid,
                 username = "Usuario_${uid.take(6)}", // Username temporal único
@@ -53,13 +64,16 @@ class RepositorioUsuarios {
                 amigos = emptyList()
             )
 
+            Log.d("RepositorioUsuarios", "Guardando usuario en Firestore: ${usuario.username}")
             firestore.collection("usuarios")
                 .document(uid)
                 .set(usuario)
                 .await()
 
+            Log.d("RepositorioUsuarios", "Perfil creado exitosamente")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("RepositorioUsuarios", "Error al crear perfil por defecto", e)
             Result.failure(e)
         }
     }
@@ -67,22 +81,36 @@ class RepositorioUsuarios {
     /**
      * Obtiene el perfil del usuario actual
      */
-    suspend fun obtenerPerfilUsuario(): Result<Usuario> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun obtenerPerfilUsuario(): Result<Usuario> = withContext(Dispatchers.IO) {
+        Log.d("RepositorioUsuarios", "=== obtenerPerfilUsuario ===")
+        val uid = obtenerIdUsuario()
 
-        return try {
+        if (uid == null) {
+            Log.e("RepositorioUsuarios", "Usuario no autenticado")
+            return@withContext Result.failure(Exception("Usuario no autenticado"))
+        }
+
+        Log.d("RepositorioUsuarios", "UID del usuario: $uid")
+
+        return@withContext try {
+            Log.d("RepositorioUsuarios", "Consultando Firestore: usuarios/$uid")
             val doc = firestore.collection("usuarios")
                 .document(uid)
                 .get()
                 .await()
 
+            Log.d("RepositorioUsuarios", "Documento existe: ${doc.exists()}")
+
             val usuario = doc.toObject(Usuario::class.java)
             if (usuario != null) {
+                Log.d("RepositorioUsuarios", "Usuario obtenido: ${usuario.username}")
                 Result.success(usuario)
             } else {
+                Log.w("RepositorioUsuarios", "Usuario no encontrado en Firestore")
                 Result.failure(Exception("Usuario no encontrado"))
             }
         } catch (e: Exception) {
+            Log.e("RepositorioUsuarios", "Error al obtener perfil", e)
             Result.failure(e)
         }
     }
@@ -111,17 +139,22 @@ class RepositorioUsuarios {
     /**
      * Actualiza el username (versión simplificada sin verificación de duplicados)
      */
-    suspend fun actualizarUsername(nuevoUsername: String): Result<Unit> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun actualizarUsername(nuevoUsername: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
+            Log.d("RepositorioUsuarios", "Actualizando username a: $nuevoUsername para UID: $uid")
+
+            // Usar set con merge para asegurar que funcione aunque el documento no exista
             firestore.collection("usuarios")
                 .document(uid)
-                .update("username", nuevoUsername)
+                .set(mapOf("username" to nuevoUsername), com.google.firebase.firestore.SetOptions.merge())
                 .await()
 
+            Log.d("RepositorioUsuarios", "Username actualizado exitosamente")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("RepositorioUsuarios", "Error al actualizar username", e)
             Result.failure(e)
         }
     }
@@ -129,10 +162,10 @@ class RepositorioUsuarios {
     /**
      * Actualiza la URL de la foto de perfil
      */
-    suspend fun actualizarFotoPerfil(url: String): Result<Unit> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun actualizarFotoPerfil(url: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
             firestore.collection("usuarios")
                 .document(uid)
                 .update("fotoPerfil", url)
@@ -147,10 +180,10 @@ class RepositorioUsuarios {
     /**
      * Busca usuarios por username (búsqueda parcial)
      */
-    suspend fun buscarUsuariosPorUsername(query: String): Result<List<Usuario>> {
-        if (query.isBlank()) return Result.success(emptyList())
+    suspend fun buscarUsuariosPorUsername(query: String): Result<List<Usuario>> = withContext(Dispatchers.IO) {
+        if (query.isBlank()) return@withContext Result.success(emptyList())
 
-        return try {
+        return@withContext try {
             // Firestore no tiene búsqueda parcial nativa, así que obtenemos todos y filtramos
             val snapshot = firestore.collection("usuarios")
                 .get()
