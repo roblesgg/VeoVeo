@@ -241,7 +241,7 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
         }
 
         // boton de perfil arriba derecha (se oculta en algunas pantallas)
-        if (!(paginaActual == 2 && pantallaTierList != 0) && !mostrarContactoSocial && !mostrarPelicula) {
+        if (!(paginaActual == 2 && pantallaTierList != 0) && !mostrarContactoSocial && !mostrarPelicula && !mostrarBibliotecaAmigo && !mostrarSolicitudes) {
             IconButton(
                 onClick = onNavigateToPerfil,
                 modifier = Modifier

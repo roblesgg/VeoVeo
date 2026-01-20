@@ -285,6 +285,23 @@ class RepositorioUsuarios {
     }
 
     /**
+     * Rechaza una solicitud de amistad
+     */
+    suspend fun rechazarSolicitudAmistad(solicitudId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            // Actualizar estado de la solicitud a "rechazada"
+            firestore.collection("solicitudes_amistad")
+                .document(solicitudId)
+                .update("estado", "rechazada")
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Obtiene las solicitudes de amistad pendientes del usuario actual
      */
     suspend fun obtenerSolicitudesPendientes(): Result<List<SolicitudAmistad>> = withContext(Dispatchers.IO) {
@@ -353,6 +370,36 @@ class RepositorioUsuarios {
             firestore.collection("usuarios")
                 .document(amigoUid)
                 .update("amigos", FieldValue.arrayRemove(uid))
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Bloquea a un usuario
+     */
+    suspend fun bloquearUsuario(usuarioUid: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
+
+        return@withContext try {
+            // Primero eliminar de amigos si lo son
+            firestore.collection("usuarios")
+                .document(uid)
+                .update("amigos", FieldValue.arrayRemove(usuarioUid))
+                .await()
+
+            firestore.collection("usuarios")
+                .document(usuarioUid)
+                .update("amigos", FieldValue.arrayRemove(uid))
+                .await()
+
+            // Añadir a lista de bloqueados (crear el campo si no existe)
+            firestore.collection("usuarios")
+                .document(uid)
+                .set(mapOf("bloqueados" to FieldValue.arrayUnion(usuarioUid)), com.google.firebase.firestore.SetOptions.merge())
                 .await()
 
             Result.success(Unit)

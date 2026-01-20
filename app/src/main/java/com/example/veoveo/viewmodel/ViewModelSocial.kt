@@ -94,6 +94,21 @@ class ViewModelSocial : ViewModel() {
     }
 
     /**
+     * Rechaza una solicitud de amistad
+     */
+    fun rechazarSolicitud(solicitudId: String) {
+        viewModelScope.launch {
+            val resultado = repositorioUsuarios.rechazarSolicitudAmistad(solicitudId)
+            if (resultado.isSuccess) {
+                _mensaje.value = "Solicitud rechazada"
+                cargarSolicitudesPendientes()
+            } else {
+                _error.value = resultado.exceptionOrNull()?.message
+            }
+        }
+    }
+
+    /**
      * Carga la lista de amigos
      */
     fun cargarAmigos() {
@@ -129,6 +144,21 @@ class ViewModelSocial : ViewModel() {
             val resultado = repositorioUsuarios.eliminarAmigo(amigoUid)
             if (resultado.isSuccess) {
                 _mensaje.value = "Amigo eliminado"
+                cargarAmigos()
+            } else {
+                _error.value = resultado.exceptionOrNull()?.message
+            }
+        }
+    }
+
+    /**
+     * Bloquea a un usuario
+     */
+    fun bloquearUsuario(usuarioUid: String) {
+        viewModelScope.launch {
+            val resultado = repositorioUsuarios.bloquearUsuario(usuarioUid)
+            if (resultado.isSuccess) {
+                _mensaje.value = "Usuario bloqueado"
                 cargarAmigos()
             } else {
                 _error.value = resultado.exceptionOrNull()?.message
