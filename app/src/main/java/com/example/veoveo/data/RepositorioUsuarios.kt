@@ -118,8 +118,8 @@ class RepositorioUsuarios {
     /**
      * Obtiene el perfil de un usuario por UID
      */
-    suspend fun obtenerUsuarioPorUid(uid: String): Result<Usuario> {
-        return try {
+    suspend fun obtenerUsuarioPorUid(uid: String): Result<Usuario> = withContext(Dispatchers.IO) {
+        return@withContext try {
             val doc = firestore.collection("usuarios")
                 .document(uid)
                 .get()
@@ -203,16 +203,16 @@ class RepositorioUsuarios {
     /**
      * Envía una solicitud de amistad
      */
-    suspend fun enviarSolicitudAmistad(paraUid: String): Result<Unit> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun enviarSolicitudAmistad(paraUid: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
             // Verificar que no sean ya amigos
             val usuarioActual = obtenerPerfilUsuario().getOrNull()
-                ?: return Result.failure(Exception("Error al obtener perfil"))
+                ?: return@withContext Result.failure(Exception("Error al obtener perfil"))
 
             if (usuarioActual.amigos.contains(paraUid)) {
-                return Result.failure(Exception("Ya son amigos"))
+                return@withContext Result.failure(Exception("Ya son amigos"))
             }
 
             // Verificar que no exista ya una solicitud pendiente
@@ -224,7 +224,7 @@ class RepositorioUsuarios {
                 .await()
 
             if (!solicitudesExistentes.isEmpty) {
-                return Result.failure(Exception("Ya enviaste una solicitud a este usuario"))
+                return@withContext Result.failure(Exception("Ya enviaste una solicitud a este usuario"))
             }
 
             // Crear la solicitud
@@ -250,8 +250,8 @@ class RepositorioUsuarios {
     /**
      * Acepta una solicitud de amistad
      */
-    suspend fun aceptarSolicitudAmistad(solicitudId: String): Result<Unit> {
-        return try {
+    suspend fun aceptarSolicitudAmistad(solicitudId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
             // Obtener la solicitud
             val solicitudDoc = firestore.collection("solicitudes_amistad")
                 .document(solicitudId)
@@ -259,7 +259,7 @@ class RepositorioUsuarios {
                 .await()
 
             val solicitud = solicitudDoc.toObject(SolicitudAmistad::class.java)
-                ?: return Result.failure(Exception("Solicitud no encontrada"))
+                ?: return@withContext Result.failure(Exception("Solicitud no encontrada"))
 
             // Añadir a la lista de amigos de ambos usuarios
             firestore.collection("usuarios")
@@ -287,10 +287,10 @@ class RepositorioUsuarios {
     /**
      * Obtiene las solicitudes de amistad pendientes del usuario actual
      */
-    suspend fun obtenerSolicitudesPendientes(): Result<List<SolicitudAmistad>> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun obtenerSolicitudesPendientes(): Result<List<SolicitudAmistad>> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
             val snapshot = firestore.collection("solicitudes_amistad")
                 .whereEqualTo("paraUid", uid)
                 .whereEqualTo("estado", "pendiente")
@@ -307,15 +307,15 @@ class RepositorioUsuarios {
     /**
      * Obtiene la lista de amigos del usuario actual con sus datos completos
      */
-    suspend fun obtenerAmigos(): Result<List<Usuario>> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun obtenerAmigos(): Result<List<Usuario>> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
             val usuarioActual = obtenerPerfilUsuario().getOrNull()
-                ?: return Result.failure(Exception("Error al obtener perfil"))
+                ?: return@withContext Result.failure(Exception("Error al obtener perfil"))
 
             if (usuarioActual.amigos.isEmpty()) {
-                return Result.success(emptyList())
+                return@withContext Result.success(emptyList())
             }
 
             // Obtener datos de cada amigo
@@ -340,10 +340,10 @@ class RepositorioUsuarios {
     /**
      * Elimina un amigo
      */
-    suspend fun eliminarAmigo(amigoUid: String): Result<Unit> {
-        val uid = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
+    suspend fun eliminarAmigo(amigoUid: String): Result<Unit> = withContext(Dispatchers.IO) {
+        val uid = obtenerIdUsuario() ?: return@withContext Result.failure(Exception("Usuario no autenticado"))
 
-        return try {
+        return@withContext try {
             // Eliminar de ambas listas
             firestore.collection("usuarios")
                 .document(uid)

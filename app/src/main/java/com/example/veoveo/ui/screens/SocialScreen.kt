@@ -53,12 +53,11 @@ fun SocialScreen(
     var busqueda by remember { mutableStateOf("") }
     var pestanaSeleccionada by remember { mutableStateOf(0) } // 0: Amigos, 1: Buscar
 
-    // DESHABILITADO TEMPORALMENTE: Cargar datos al iniciar
-    // Comentado porque Firebase no está conectado y causa bloqueos
-    // LaunchedEffect(Unit) {
-    //     viewModel.cargarAmigos()
-    //     viewModel.cargarSolicitudesPendientes()
-    // }
+    // Cargar datos al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarAmigos()
+        viewModel.cargarSolicitudesPendientes()
+    }
 
     // Fuente
     val font = FontFamily(Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold))
