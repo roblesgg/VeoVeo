@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,11 +41,10 @@ fun SolicitudesScreen(
     val mensaje by viewModel.mensaje.collectAsState()
     val error by viewModel.error.collectAsState()
 
-    // DESHABILITADO TEMPORALMENTE: Cargar solicitudes al iniciar
-    // Comentado porque Firebase no está conectado y causa bloqueos
-    // LaunchedEffect(Unit) {
-    //     viewModel.cargarSolicitudesPendientes()
-    // }
+    // Cargar solicitudes al iniciar
+    LaunchedEffect(Unit) {
+        viewModel.cargarSolicitudesPendientes()
+    }
 
     BackHandler(onBack = onVolverClick)
 
@@ -103,6 +103,9 @@ fun SolicitudesScreen(
                             username = solicitud.deUsername,
                             onAceptar = {
                                 viewModel.aceptarSolicitud(solicitud.id)
+                            },
+                            onRechazar = {
+                                viewModel.rechazarSolicitud(solicitud.id)
                             },
                             font = font
                         )
@@ -165,6 +168,7 @@ fun SolicitudesScreen(
 fun SolicitudCard(
     username: String,
     onAceptar: () -> Unit,
+    onRechazar: () -> Unit,
     font: FontFamily
 ) {
     Card(
@@ -211,19 +215,41 @@ fun SolicitudCard(
                 }
             }
 
-            Button(
-                onClick = onAceptar,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(12.dp)
+            // Botones de aceptar y rechazar
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Aceptar", fontFamily = font, fontSize = 16.sp)
+                // Botón rechazar
+                IconButton(
+                    onClick = onRechazar,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFFF5252)
+                    ),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Rechazar",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                // Botón aceptar
+                IconButton(
+                    onClick = onAceptar,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFF4CAF50)
+                    ),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Aceptar",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

@@ -13,7 +13,11 @@
       "Bash(findstr:*)",
       "Bash(./gradlew clean:*)",
       "Bash(gradlew clean:*)",
-      "Bash(.\\\\gradlew.bat clean:*)"
+      "Bash(.\\\\gradlew.bat clean:*)",
+      "Bash(gradlew.bat build:*)",
+      "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD SUCCESSFUL|BUILD FAILED\" -Context 2,2)",
+      "Bash(gradlew.bat assembleDebug:*)",
+      "Bash(ls:*)"
     ]
   }
 }

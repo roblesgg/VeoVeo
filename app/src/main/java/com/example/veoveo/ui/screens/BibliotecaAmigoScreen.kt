@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,6 +49,8 @@ fun BibliotecaAmigoScreen(
     // Estados
     val peliculasAmigo by viewModel.peliculasAmigo.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     // Datos del amigo
     var nombreAmigo by remember { mutableStateOf("Amigo") }
@@ -56,6 +60,10 @@ fun BibliotecaAmigoScreen(
 
     // Filtro
     var filtroSeleccionado by remember { mutableStateOf(0) } // 0: Todas, 1: Por Ver, 2: Vistas
+
+    // Diálogos de confirmación
+    var mostrarDialogoCancelarAmistad by remember { mutableStateOf(false) }
+    var mostrarDialogoBloquear by remember { mutableStateOf(false) }
 
     // Cargar datos
     LaunchedEffect(amigoUid) {
@@ -188,6 +196,80 @@ fun BibliotecaAmigoScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Botones de acción
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Botón cancelar amistad
+                Button(
+                    onClick = { mostrarDialogoCancelarAmistad = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800)),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Cancelar amistad",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Cancelar amistad", fontFamily = font, fontSize = 14.sp)
+                }
+
+                // Botón bloquear
+                Button(
+                    onClick = { mostrarDialogoBloquear = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252)),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Bloquear",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Bloquear", fontFamily = font, fontSize = 14.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Mensajes
+            mensaje?.let {
+                Text(
+                    text = it,
+                    color = Color(0xFF4CAF50),
+                    fontSize = 14.sp,
+                    fontFamily = font,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                LaunchedEffect(it) {
+                    kotlinx.coroutines.delay(2000)
+                    viewModel.limpiarMensajes()
+                    onVolverClick() // Volver a la pantalla anterior después de la acción
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            error?.let {
+                Text(
+                    text = it,
+                    color = Color(0xFFFF5252),
+                    fontSize = 14.sp,
+                    fontFamily = font,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                LaunchedEffect(it) {
+                    kotlinx.coroutines.delay(3000)
+                    viewModel.limpiarMensajes()
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // Grid de películas
             if (cargando) {
                 Box(
@@ -240,6 +322,70 @@ fun BibliotecaAmigoScreen(
                 modifier = Modifier.size(28.dp)
             )
         }
+    }
+
+    // Diálogo de confirmación para cancelar amistad
+    if (mostrarDialogoCancelarAmistad) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoCancelarAmistad = false },
+            title = {
+                Text("Cancelar amistad", fontFamily = font)
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres eliminar a $nombreAmigo de tus amigos?",
+                    fontFamily = font
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.eliminarAmigo(amigoUid)
+                        mostrarDialogoCancelarAmistad = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF9800))
+                ) {
+                    Text("Cancelar amistad", fontFamily = font)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoCancelarAmistad = false }) {
+                    Text("Volver", fontFamily = font)
+                }
+            }
+        )
+    }
+
+    // Diálogo de confirmación para bloquear
+    if (mostrarDialogoBloquear) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoBloquear = false },
+            title = {
+                Text("Bloquear usuario", fontFamily = font)
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que quieres bloquear a $nombreAmigo? Esta acción también cancelará la amistad.",
+                    fontFamily = font
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.bloquearUsuario(amigoUid)
+                        mostrarDialogoBloquear = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252))
+                ) {
+                    Text("Bloquear", fontFamily = font)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoBloquear = false }) {
+                    Text("Cancelar", fontFamily = font)
+                }
+            }
+        )
     }
 }
 
