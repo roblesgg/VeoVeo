@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,15 +42,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -79,8 +80,10 @@ import kotlinx.coroutines.withContext
 import com.example.veoveo.conexion.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import com.example.veoveo.model.Movie
+import com.example.veoveo.model.TierList
 import com.example.veoveo.utils.PreferencesHelper
 import com.example.veoveo.viewmodel.ViewModelBiblioteca
+import com.example.veoveo.viewmodel.ViewModelTierLists
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.collectAsState
 
@@ -93,6 +96,9 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
     // variable para controlar que pestaña esta activa (0=descubrir, 1=biblioteca, 2=tierlists, 3=social)
     var paginaActual by remember { mutableIntStateOf(0) }
+
+    // ViewModel para la pestaña Descubrir
+    val viewModelDescubrir: com.example.veoveo.viewmodel.ViewModelDescubrir = viewModel()
 
     // variable para controlar subpantallas en tierlists
     var pantallaTierList by remember { mutableIntStateOf(0) }
@@ -135,56 +141,64 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 
         // contenido principal que ocupa toda la pantalla
         Box(modifier = Modifier.fillMaxSize()) {
-            // muestra la pantalla de pelicula si esta activa
+            // muestra las pestanas normales (siempre en el fondo para mantener estado)
+            when (paginaActual) {
+                0 -> DescubrirTab(
+                    font = montserratFont,
+                    carruselesActivos = carruselesActivos,
+                    preferencesHelper = preferencesHelper,
+                    viewModelBiblioteca = viewModelBiblioteca,
+                    viewModelDescubrir = viewModelDescubrir,
+                    estaActiva = !mostrarPelicula,
+                    onPeliculaClick = { movieId ->
+                        peliculaIdSeleccionada = movieId
+                        mostrarPelicula = true
+                    }
+                )
+                1 -> BibliotecaTab(montserratFont, viewModelBiblioteca) { movieId ->
+                    peliculaIdSeleccionada = movieId
+                    mostrarPelicula = true
+                }
+                2 -> TierListsTab(montserratFont, pantallaTierList,
+                    onPantallaChange = { pantallaTierList = it },
+                    onPeliculaClick = { movieId ->
+                        peliculaIdSeleccionada = movieId
+                        mostrarPelicula = true
+                    }
+                )
+                3 -> {
+                    if (mostrarSolicitudes) {
+                        SolicitudesScreen(
+                            onVolverClick = { mostrarSolicitudes = false }
+                        )
+                    } else if (mostrarBibliotecaAmigo) {
+                        BibliotecaAmigoScreen(
+                            amigoUid = amigoUidSeleccionado,
+                            onVolverClick = { mostrarBibliotecaAmigo = false },
+                            onPeliculaClick = { movieId ->
+                                peliculaIdSeleccionada = movieId
+                                mostrarPelicula = true
+                            }
+                        )
+                    } else {
+                        SocialScreen(
+                            onUsuarioClick = { uid ->
+                                amigoUidSeleccionado = uid
+                                mostrarBibliotecaAmigo = true
+                            },
+                            onSolicitudesClick = { mostrarSolicitudes = true }
+                        )
+                    }
+                }
+            }
+
+            // muestra la pantalla de pelicula ENCIMA si esta activa
             if (mostrarPelicula) {
                 PeliculaScreen(
                     movieId = peliculaIdSeleccionada,
                     onVolverClick = { mostrarPelicula = false },
                     viewModel = viewModelBiblioteca
                 )
-            } else {
-                // muestra las pestanas normales
-                when (paginaActual) {
-                    0 -> DescubrirTab(montserratFont, carruselesActivos, preferencesHelper, viewModelBiblioteca) { movieId ->
-                        peliculaIdSeleccionada = movieId
-                        mostrarPelicula = true
-                    }
-                    1 -> BibliotecaTab(montserratFont, viewModelBiblioteca) { movieId ->
-                        peliculaIdSeleccionada = movieId
-                        mostrarPelicula = true
-                    }
-                    2 -> TierListsTab(montserratFont, pantallaTierList,
-                        onPantallaChange = { pantallaTierList = it },
-                        onPeliculaClick = { movieId ->
-                            peliculaIdSeleccionada = movieId
-                            mostrarPelicula = true
-                        }
-                    )
-                    3 -> {
-                        if (mostrarSolicitudes) {
-                            SolicitudesScreen(
-                                onVolverClick = { mostrarSolicitudes = false }
-                            )
-                        } else if (mostrarBibliotecaAmigo) {
-                            BibliotecaAmigoScreen(
-                                amigoUid = amigoUidSeleccionado,
-                                onVolverClick = { mostrarBibliotecaAmigo = false },
-                                onPeliculaClick = { movieId ->
-                                    peliculaIdSeleccionada = movieId
-                                    mostrarPelicula = true
-                                }
-                            )
-                        } else {
-                            SocialScreen(
-                                onUsuarioClick = { uid ->
-                                    amigoUidSeleccionado = uid
-                                    mostrarBibliotecaAmigo = true
-                                },
-                                onSolicitudesClick = { mostrarSolicitudes = true }
-                            )
-                        }
-                    }
-                }
             }
         }
 
@@ -285,7 +299,9 @@ fun DescubrirTab(
     font: FontFamily,
     carruselesActivos: MutableList<String>,
     preferencesHelper: PreferencesHelper,
-    viewModel: ViewModelBiblioteca,
+    viewModelBiblioteca: ViewModelBiblioteca,
+    viewModelDescubrir: com.example.veoveo.viewmodel.ViewModelDescubrir,
+    estaActiva: Boolean = true,
     onPeliculaClick: (Int) -> Unit = {}
 ) {
 
@@ -304,6 +320,10 @@ fun DescubrirTab(
     // resultados de la búsqueda
     var resultadosBusqueda by remember { mutableStateOf<List<Movie>>(emptyList()) }
     var buscando by remember { mutableStateOf(false) }
+
+    // Estado para el pull-to-refresh desde el ViewModel
+    val isRefreshing by viewModelDescubrir.cargando.collectAsState()
+    val peliculasPorCarrusel by viewModelDescubrir.peliculasPorCarrusel.collectAsState()
 
     // lista de TODOS los carruseles disponibles (24 géneros completos)
     val carruselesDisponibles = remember {
@@ -464,58 +484,37 @@ fun DescubrirTab(
                 }
             }
         } else {
-            // Vista normal con carruseles
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp),
-                contentPadding = PaddingValues(bottom = 110.dp)
+            // Vista normal con carruseles con pull-to-refresh
+            SwipeRefresh(
+                state = rememberSwipeRefreshState(isRefreshing),
+                onRefresh = {
+                    // Recargar TODOS los carruseles activos
+                    viewModelDescubrir.recargarTodosLosCarruseles(carruselesActivos.toList(), ::obtenerIdGenero)
+                }
             ) {
-                // muestra cada carrusel activo
-                items(carruselesActivos.toList()) { carrusel ->
-                    CarruselPeliculas(
-                        carrusel,
-                        modoEdicion,
-                        {
-                            carruselesActivos.remove(carrusel)
-                            preferencesHelper.guardarCarruselesActivos(carruselesActivos.toList())
-                        },
-                        font,
-                        viewModel,
-                        onPeliculaClick
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-
-            // boton para activar o desactivar el modo edicion
-            item {
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = { modoEdicion = !modoEdicion },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (modoEdicion) Color(0xFF98FB98) else Color(0xFF6C63FF)
-                    ),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 50.dp)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(top = if (buscar) 175.dp else 105.dp),
+                    contentPadding = PaddingValues(bottom = 110.dp)
                 ) {
-                    Icon(if (modoEdicion) Icons.Default.Close else Icons.Default.Edit, null, tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (modoEdicion) "Listo" else "Editar Listas", color = Color.White, fontFamily = font, fontSize = 16.sp)
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // boton para anadir nuevos carruseles (solo visible en modo edicion)
-            if (modoEdicion) {
-                item {
-                    Button(
-                        onClick = { mostrarDialogo = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 25.dp)
-                    ) {
-                        Icon(Icons.Default.Add, null, tint = Color.White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Anadir Lista", color = Color.White, fontFamily = font, fontSize = 16.sp)
+                    // muestra cada carrusel activo
+                    items(carruselesActivos.toList(), key = { it }) { carrusel ->
+                        CarruselPeliculas(
+                            titulo = carrusel,
+                            modoEdicion = modoEdicion,
+                            onEliminar = {
+                                carruselesActivos.remove(carrusel)
+                                preferencesHelper.guardarCarruselesActivos(carruselesActivos.toList())
+                                viewModelDescubrir.limpiarCarrusel(carrusel)
+                            },
+                            font = font,
+                            viewModelBiblioteca = viewModelBiblioteca,
+                            viewModelDescubrir = viewModelDescubrir,
+                            peliculasDelCarrusel = peliculasPorCarrusel[carrusel] ?: emptyList(),
+                            onPeliculaClick = onPeliculaClick
+                        )
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
-            }
             }
         }
 
@@ -546,6 +545,44 @@ fun DescubrirTab(
                 font
             )
         }
+
+        // Botones flotantes para modo edición y refresh
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Botón añadir lista (solo visible en modo edición)
+            if (modoEdicion) {
+                FloatingActionButton(
+                    onClick = { mostrarDialogo = true },
+                    containerColor = Color(0xFF6C63FF),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Añadir lista",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            // Botón modo edición (siempre visible)
+            FloatingActionButton(
+                onClick = { modoEdicion = !modoEdicion },
+                containerColor = if (modoEdicion) Color(0xFF4CAF50) else Color(0xFF6C63FF),
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(
+                    if (modoEdicion) Icons.Default.Check else Icons.Default.Edit,
+                    contentDescription = if (modoEdicion) "Listo" else "Editar",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
     }
 }
 
@@ -565,11 +602,10 @@ fun BibliotecaTab(
     val peliculasVistas by viewModel.peliculasVistas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
 
-    // DESHABILITADO TEMPORALMENTE: Cargar películas al iniciar
-    // Comentado porque Firebase no está conectado y causa bloqueos
-    // LaunchedEffect(Unit) {
-    //     viewModel.cargarPeliculas()
-    // }
+    // Cargar películas al entrar a la biblioteca
+    LaunchedEffect(Unit) {
+        viewModel.cargarPeliculas()
+    }
 
     BackHandler(onBack = { if (buscar) buscar = false })
 
@@ -696,16 +732,25 @@ fun BibliotecaTab(
                                     }
                                 }
 
-                                // Mostrar estrellas si está vista y tiene valoración
-                                if (pelicula.estado == "vista" && pelicula.valoracion > 0) {
-                                    Row(
+                                // Mostrar estrellas o emoji si está vista y tiene valoración
+                                if (pelicula.estado == "vista" && pelicula.valoracion != 0) {
+                                    Box(
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)
-                                            .background(Color.Black.copy(alpha = 0.7f))
+                                            .background(
+                                                if (pelicula.valoracion == -1) Color(0xFF8B4513).copy(alpha = 0.9f)
+                                                else Color.Black.copy(alpha = 0.7f)
+                                            )
                                             .padding(4.dp)
                                     ) {
-                                        repeat(pelicula.valoracion) {
-                                            Text("⭐", fontSize = 12.sp)
+                                        if (pelicula.valoracion == -1) {
+                                            Text("💩", fontSize = 16.sp)
+                                        } else {
+                                            Row {
+                                                repeat(pelicula.valoracion) {
+                                                    Text("⭐", fontSize = 12.sp)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -725,9 +770,18 @@ fun BibliotecaTab(
 fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Unit, onPeliculaClick: (Int) -> Unit = {}) {
     var buscar by remember { mutableStateOf(false) }
     var textoBuscar by remember { mutableStateOf("") }
-    var tierListSeleccionada by remember { mutableStateOf("") }
+    var tierListIdSeleccionada by remember { mutableStateOf("") }
 
-    val tierLists = remember { listOf("Mis Favoritas", "Terror Clasico", "Accion 2024", "Comedias", "Sci-Fi") }
+    // ViewModels
+    val viewModelTierLists: ViewModelTierLists = viewModel()
+    val viewModelBiblioteca: ViewModelBiblioteca = viewModel()
+    val tierLists by viewModelTierLists.tierLists.collectAsState()
+    val cargando by viewModelTierLists.cargando.collectAsState()
+
+    // Cargar TierLists al entrar
+    LaunchedEffect(Unit) {
+        viewModelTierLists.cargarTierLists()
+    }
 
     BackHandler(onBack = {
         if (buscar) buscar = false
@@ -766,6 +820,36 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                     )
                 }
 
+                // Indicador de carga
+                if (cargando) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                // Mensaje si no hay TierLists
+                if (!cargando && tierLists.isEmpty()) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "No tienes TierLists",
+                            color = Color.Gray,
+                            fontSize = 18.sp,
+                            fontFamily = font
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Crea una para organizar tus películas",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            fontFamily = font
+                        )
+                    }
+                }
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(
                         top = if (buscar) 175.dp else 105.dp,
@@ -780,7 +864,8 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                             fila.forEach { tierlist ->
                                 Column(
                                     modifier = Modifier.weight(1f).clickable {
-                                        tierListSeleccionada = tierlist
+                                        tierListIdSeleccionada = tierlist.id
+                                        viewModelTierLists.setTierListActual(tierlist)
                                         onPantallaChange(1)
                                     },
                                     horizontalAlignment = Alignment.CenterHorizontally
@@ -791,12 +876,30 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
                                     ) {
                                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                            Text(tierlist, color = Color.White, fontSize = 16.sp, fontFamily = font,
-                                                textAlign = TextAlign.Center, modifier = Modifier.padding(8.dp))
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier.padding(8.dp)
+                                            ) {
+                                                Text(
+                                                    tierlist.nombre,
+                                                    color = Color.White,
+                                                    fontSize = 16.sp,
+                                                    fontFamily = font,
+                                                    textAlign = TextAlign.Center,
+                                                    maxLines = 2
+                                                )
+                                                Spacer(Modifier.height(4.dp))
+                                                Text(
+                                                    "${tierlist.cantidadPeliculas()} películas",
+                                                    color = Color.Gray,
+                                                    fontSize = 12.sp,
+                                                    fontFamily = font
+                                                )
+                                            }
                                         }
                                     }
                                     Spacer(Modifier.height(8.dp))
-                                    Text(tierlist, color = Color.White, fontSize = 14.sp, fontFamily = font,
+                                    Text(tierlist.nombre, color = Color.White, fontSize = 14.sp, fontFamily = font,
                                         textAlign = TextAlign.Center, maxLines = 2)
                                 }
                             }
@@ -816,12 +919,35 @@ fun TierListsTab(font: FontFamily, pantalla: Int, onPantallaChange: (Int) -> Uni
                 }
             }
         }
-        1 -> TierListScreen({ onPantallaChange(0) }, { onPantallaChange(2) }, { onPantallaChange(0) }, onPeliculaClick)
+        1 -> TierListScreen({ onPantallaChange(0) }, { onPantallaChange(3) }, { onPantallaChange(0) }, onPeliculaClick)
         2 -> CrearTierListScreen(
-            { onPantallaChange(if (tierListSeleccionada.isNotEmpty()) 1 else 0) },
-            { onPantallaChange(3) }
+            onVolverClick = { onPantallaChange(if (tierListIdSeleccionada.isNotEmpty()) 1 else 0) },
+            onSiguienteClick = { nombre, descripcion, peliculasIds ->
+                // Crear nueva TierList temporal con las películas seleccionadas en pool
+                viewModelTierLists.setTierListActual(
+                    TierList(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        tierObraMaestra = peliculasIds, // Todas las películas empiezan en pool (se organizarán en EditarTierListScreen)
+                        tierMuyBuena = emptyList(),
+                        tierBuena = emptyList(),
+                        tierMala = emptyList(),
+                        tierNefasta = emptyList()
+                    )
+                )
+                onPantallaChange(3)
+            },
+            viewModelBiblioteca = viewModelBiblioteca
         )
-        3 -> EditarTierListScreen({ onPantallaChange(2) }, { tierListSeleccionada = ""; onPantallaChange(0) })
+        3 -> EditarTierListScreen(
+            onVolverClick = { onPantallaChange(2) },
+            onGuardarClick = {
+                tierListIdSeleccionada = ""
+                onPantallaChange(0)
+            },
+            viewModelBiblioteca = viewModelBiblioteca,
+            viewModelTierLists = viewModelTierLists
+        )
     }
 }
 
@@ -970,26 +1096,16 @@ fun CarruselPeliculas(
     modoEdicion: Boolean,
     onEliminar: () -> Unit,
     font: FontFamily,
-    viewModel: ViewModelBiblioteca,
+    viewModelBiblioteca: ViewModelBiblioteca,
+    viewModelDescubrir: com.example.veoveo.viewmodel.ViewModelDescubrir,
+    peliculasDelCarrusel: List<Movie>,
     onPeliculaClick: (Int) -> Unit = {}
 ) {
-    // 1. Estado para guardar las películas que vienen de la API
-    var listaPeliculas by remember { mutableStateOf(emptyList<Movie>()) }
-
-    // 2. Llamada a la API al cargar el componente
-    LaunchedEffect(titulo) {
-        val generoId = obtenerIdGenero(titulo)
-        try {
-            // Hacemos la llamada en un hilo secundario (IO)
-            val response = withContext(Dispatchers.IO) {
-                RetrofitClient.instance.buscarPeliculasporGenero(generoId)
-            }
-            if (response.isSuccessful) {
-                // Actualizamos la lista con los resultados (si no es null)
-                listaPeliculas = (response.body()?.results?:emptyList()) as List<Movie>
-            }
-        } catch (e: Exception) {
-            e.printStackTrace() // Manejo básico de errores
+    // Cargar películas la primera vez que aparece el carrusel
+    LaunchedEffect(Unit) {
+        if (peliculasDelCarrusel.isEmpty()) {
+            val generoId = obtenerIdGenero(titulo)
+            viewModelDescubrir.cargarCarrusel(titulo, generoId)
         }
     }
 
@@ -1008,12 +1124,12 @@ fun CarruselPeliculas(
         }
         Spacer(Modifier.height(12.dp))
 
-        // 3. Mostramos la lista dinámica
+        // Mostramos la lista dinámica
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 25.dp)
         ) {
-            items(listaPeliculas) { movie ->
+            items(peliculasDelCarrusel) { movie ->
                 Card(
                     modifier = Modifier.width(120.dp).height(180.dp).clickable { onPeliculaClick(movie.id) },
                     shape = RoundedCornerShape(12.dp),
@@ -1045,35 +1161,116 @@ fun DialogoAnadirLista(
     // Inicializamos con los carruseles que ya están activos marcados
     val seleccionadas = remember { mutableStateListOf<String>().apply { addAll(activos) } }
 
+    // Estado para controlar qué categoría se está viendo (null = menú principal)
+    var categoriaActual by remember { mutableStateOf<String?>(null) }
+
+    val categorias = remember {
+        mapOf(
+            "Géneros" to listOf(
+                "Acción", "Animación", "Anime", "Aventura", "Bélica", "Ciencia Ficción",
+                "Cine Negro", "Comedia", "Comedia Romántica", "Crimen", "Documental",
+                "Drama", "Familia", "Fantasía", "Historia", "Misterio", "Musical",
+                "Música", "Películas de TV", "Romance", "Suspense", "Terror",
+                "Thriller Psicológico", "Western"
+            ),
+            "Años" to listOf(
+                "Años 2020s", "Años 2010s", "Años 2000s", "Años 1990s",
+                "Años 1980s", "Años 1970s", "Clásicas (antes 1970)"
+            ),
+            "Premios" to listOf(
+                "Más Premiadas", "Ganadoras Oscar", "Nominadas Oscar"
+            ),
+            "Amigos" to listOf(
+                "Por Ver de Amigos", "Vistas de Amigos"
+            ),
+            "Mis Valoraciones" to listOf(
+                "Mis 1⭐", "Mis 2⭐", "Mis 3⭐", "Mis 4⭐", "Mis 5⭐"
+            ),
+            "Excluir" to listOf(
+                "Sin Anime", "Sin Películas Asiáticas", "Sin Bollywood"
+            )
+        )
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Anadir Listas", fontFamily = font, fontSize = 20.sp, color = Color.White) },
+        title = {
+            Text(
+                if (categoriaActual == null) "Añadir Listas" else categoriaActual!!,
+                fontFamily = font,
+                fontSize = 20.sp,
+                color = Color.White
+            )
+        },
         text = {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().height(400.dp)
             ) {
-                items(disponibles) { carrusel ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            if (seleccionadas.contains(carrusel)) seleccionadas.remove(carrusel)
-                            else seleccionadas.add(carrusel)
-                        }.padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = seleccionadas.contains(carrusel),
-                            onCheckedChange = { if (it) seleccionadas.add(carrusel) else seleccionadas.remove(carrusel) },
-                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF6C63FF), uncheckedColor = Color.White)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(carrusel, fontFamily = font, fontSize = 16.sp, color = Color.White)
+                if (categoriaActual == null) {
+                    // Mostrar categorías principales
+                    items(categorias.keys.toList()) { categoria ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable { categoriaActual = categoria },
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A3E))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    categoria,
+                                    fontFamily = font,
+                                    fontSize = 16.sp,
+                                    color = Color.White
+                                )
+                                Text(">", fontSize = 20.sp, color = Color(0xFF6C63FF))
+                            }
+                        }
+                    }
+                } else {
+                    // Mostrar carruseles de la categoría seleccionada
+                    categorias[categoriaActual]?.let { carruseles ->
+                        items(carruseles) { carrusel ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable {
+                                    if (seleccionadas.contains(carrusel)) seleccionadas.remove(carrusel)
+                                    else seleccionadas.add(carrusel)
+                                }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = seleccionadas.contains(carrusel),
+                                    onCheckedChange = {
+                                        if (it) seleccionadas.add(carrusel)
+                                        else seleccionadas.remove(carrusel)
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = Color(0xFF6C63FF),
+                                        uncheckedColor = Color.White
+                                    )
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(carrusel, fontFamily = font, fontSize = 16.sp, color = Color.White)
+                            }
+                        }
                     }
                 }
             }
         },
         confirmButton = {
+            if (categoriaActual != null) {
+                TextButton(onClick = { categoriaActual = null }) {
+                    Text("Volver", fontFamily = font, color = Color.White)
+                }
+            }
             TextButton(onClick = { onConfirm(seleccionadas.toList()) }) {
-                Text("Anadir", fontFamily = font, color = Color(0xFF6C63FF))
+                Text("Guardar", fontFamily = font, color = Color(0xFF6C63FF))
             }
         },
         dismissButton = {
@@ -1095,6 +1292,7 @@ fun DialogoValorarPelicula(
     font: FontFamily
 ) {
     var valoracionSeleccionada by remember { mutableIntStateOf(0) }
+    var esValoracionNegativa by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1119,34 +1317,58 @@ fun DialogoValorarPelicula(
                     color = Color.White
                 )
                 Spacer(Modifier.height(16.dp))
+
+                // Fila de estrellas
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     repeat(5) { index ->
                         IconButton(
-                            onClick = { valoracionSeleccionada = index + 1 },
+                            onClick = {
+                                valoracionSeleccionada = index + 1
+                                esValoracionNegativa = false
+                            },
                             modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 Icons.Default.Star,
                                 contentDescription = "Estrella ${index + 1}",
-                                tint = if (index < valoracionSeleccionada) Color(0xFFFFD700) else Color.Gray,
+                                tint = if (!esValoracionNegativa && index < valoracionSeleccionada) Color(0xFFFFD700) else Color.Gray,
                                 modifier = Modifier.size(40.dp)
                             )
                         }
                     }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Botón de "no me gustó nada"
+                Button(
+                    onClick = {
+                        esValoracionNegativa = true
+                        valoracionSeleccionada = -1
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (esValoracionNegativa) Color(0xFF8B4513) else Color(0xFF2A2A3E)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "💩",
+                        fontSize = 24.sp
+                    )
                 }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (valoracionSeleccionada > 0) {
+                    if (valoracionSeleccionada != 0) {
                         onValorar(valoracionSeleccionada)
                     }
                 },
-                enabled = valoracionSeleccionada > 0
+                enabled = valoracionSeleccionada != 0
             ) {
                 Text("Guardar", fontFamily = font, color = Color(0xFF6C63FF))
             }
@@ -1160,14 +1382,6 @@ fun DialogoValorarPelicula(
         textContentColor = Color.White
     )
 }
-
-// colores de la navbar
-@Composable
-fun navBarColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = Color.White,
-    unselectedIconColor = Color.White,
-    indicatorColor = Color.Transparent
-)
 
 // ===== vista previa =====
 // esto sirve para ver la pantalla en android studio sin ejecutar el emulador

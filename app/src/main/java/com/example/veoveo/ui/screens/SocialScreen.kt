@@ -45,6 +45,7 @@ fun SocialScreen(
     val resultadosBusqueda by viewModel.resultadosBusqueda.collectAsState()
     val amigos by viewModel.amigos.collectAsState()
     val solicitudesPendientes by viewModel.solicitudesPendientes.collectAsState()
+    val solicitudesEnviadas by viewModel.solicitudesEnviadas.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -242,6 +243,7 @@ fun SocialScreen(
                                 ResultadoBusquedaItem(
                                     usuario = usuario,
                                     esAmigo = amigos.any { it.uid == usuario.uid },
+                                    solicitudEnviada = solicitudesEnviadas.contains(usuario.uid),
                                     onEnviarSolicitud = {
                                         viewModel.enviarSolicitudAmistad(usuario.uid)
                                     },
@@ -347,6 +349,7 @@ fun AmigoItem(
 fun ResultadoBusquedaItem(
     usuario: Usuario,
     esAmigo: Boolean,
+    solicitudEnviada: Boolean,
     onEnviarSolicitud: () -> Unit,
     font: FontFamily
 ) {
@@ -402,6 +405,24 @@ fun ResultadoBusquedaItem(
                     fontSize = 14.sp,
                     fontFamily = font
                 )
+            } else if (solicitudEnviada) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "Solicitud enviada",
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Enviada",
+                        color = Color(0xFF4CAF50),
+                        fontSize = 14.sp,
+                        fontFamily = font
+                    )
+                }
             } else {
                 IconButton(onClick = onEnviarSolicitud) {
                     Icon(

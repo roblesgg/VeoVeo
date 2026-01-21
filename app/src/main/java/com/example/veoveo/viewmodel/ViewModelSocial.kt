@@ -32,6 +32,10 @@ class ViewModelSocial : ViewModel() {
     private val _solicitudesPendientes = MutableStateFlow<List<SolicitudAmistad>>(emptyList())
     val solicitudesPendientes: StateFlow<List<SolicitudAmistad>> = _solicitudesPendientes.asStateFlow()
 
+    // Solicitudes enviadas (UIDs de usuarios a los que ya se les envió solicitud)
+    private val _solicitudesEnviadas = MutableStateFlow<Set<String>>(emptySet())
+    val solicitudesEnviadas: StateFlow<Set<String>> = _solicitudesEnviadas.asStateFlow()
+
     // Películas de un amigo específico
     private val _peliculasAmigo = MutableStateFlow<List<PeliculaUsuario>>(emptyList())
     val peliculasAmigo: StateFlow<List<PeliculaUsuario>> = _peliculasAmigo.asStateFlow()
@@ -71,6 +75,8 @@ class ViewModelSocial : ViewModel() {
             val resultado = repositorioUsuarios.enviarSolicitudAmistad(paraUid)
             if (resultado.isSuccess) {
                 _mensaje.value = "Solicitud enviada"
+                // Agregar el UID a la lista de solicitudes enviadas
+                _solicitudesEnviadas.value = _solicitudesEnviadas.value + paraUid
             } else {
                 _error.value = resultado.exceptionOrNull()?.message
             }

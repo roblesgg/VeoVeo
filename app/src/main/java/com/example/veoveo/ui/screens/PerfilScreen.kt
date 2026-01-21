@@ -75,6 +75,9 @@ fun PerfilScreen(
     val actualizandoUsername by viewModel.actualizandoUsername.collectAsState()
     val error by viewModel.error.collectAsState()
     val mensaje by viewModel.mensaje.collectAsState()
+    val peliculasVistas by viewModel.peliculasVistas.collectAsState()
+    val cantidadAmigos by viewModel.cantidadAmigos.collectAsState()
+    val cantidadResenas by viewModel.cantidadResenas.collectAsState()
 
     // Estados locales
     var mostrarDialogoUsername by remember { mutableStateOf(false) }
@@ -194,9 +197,9 @@ fun PerfilScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    EstadisticaItem("0", "Peliculas\nVistas")
-                    EstadisticaItem("0", "Amigos")
-                    EstadisticaItem("0", "Reseñas")
+                    EstadisticaItem(peliculasVistas.toString(), "Peliculas\nVistas")
+                    EstadisticaItem(cantidadAmigos.toString(), "Amigos")
+                    EstadisticaItem(cantidadResenas.toString(), "Reseñas")
                 }
 
                 Spacer(modifier = Modifier.height(40.dp))

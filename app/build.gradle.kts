@@ -91,4 +91,7 @@ dependencies {
 
     // Lifecycle ViewModel con Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+
+    // Accompanist SwipeRefresh para pull-to-refresh
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.30.1")
 }
