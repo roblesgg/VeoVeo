@@ -419,10 +419,18 @@ fun PeliculaScreen(
                     ),
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
-                    Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                    if (peliculaEnBiblioteca.valoracion == -1) {
+                        Text("💩", fontSize = 20.sp)
+                    } else {
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                    }
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        if (peliculaEnBiblioteca.valoracion > 0) "Cambiar Valoracion (${peliculaEnBiblioteca.valoracion} ⭐)" else "Valorar Pelicula",
+                        when {
+                            peliculaEnBiblioteca.valoracion == -1 -> "Cambiar Valoracion (💩)"
+                            peliculaEnBiblioteca.valoracion > 0 -> "Cambiar Valoracion (${peliculaEnBiblioteca.valoracion} ⭐)"
+                            else -> "Valorar Pelicula"
+                        },
                         color = Color.White,
                         fontFamily = font,
                         fontSize = 14.sp

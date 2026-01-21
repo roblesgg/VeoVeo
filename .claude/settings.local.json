@@ -17,7 +17,18 @@
       "Bash(gradlew.bat build:*)",
       "Bash(Select-String -Pattern \"error|Error|ERROR|BUILD SUCCESSFUL|BUILD FAILED\" -Context 2,2)",
       "Bash(gradlew.bat assembleDebug:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cmd.exe /c gradlew.bat assembleDebug)",
+      "Bash(cmd.exe /c \"gradlew.bat assembleDebug 2>&1\")",
+      "Bash(.gradlew.bat assembleDebug)",
+      "Bash(cmd.exe /c \"gradlew.bat assembleDebug\")",
+      "Bash(where:*)",
+      "Bash(C:RepositoriosVeoVeogradlew.bat assembleDebug)",
+      "Bash(powershell.exe -Command \"& ''C:\\\\Repositorios\\\\VeoVeo\\\\gradlew.bat'' assembleDebug 2>&1 | Select-Object -First 100\")",
+      "Bash(powershell.exe -Command \"cd C:\\\\Repositorios\\\\VeoVeo; .\\\\gradlew.bat assembleDebug 2>&1 | Select-Object -Last 50\")",
+      "Bash(cmd.exe /c gradlew.bat build --warning-mode all)",
+      "Bash(cmd.exe /c \"gradlew.bat assembleDebug 2>&1 | findstr /C:\"\"BUILD\"\" /C:\"\"error\"\" /C:\"\"Refresh\"\" /C:\"\"SUCCESSFUL\"\" /C:\"\"FAILED\"\"\")",
+      "Bash(powershell -Command \".\\\\gradlew.bat assembleDebug\")"
     ]
   }
 }

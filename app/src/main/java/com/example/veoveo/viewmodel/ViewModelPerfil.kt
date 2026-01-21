@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.veoveo.data.RepositorioUsuarios
+import com.example.veoveo.data.RepositorioPeliculasUsuario
 import com.example.veoveo.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,10 +20,21 @@ import kotlinx.coroutines.TimeoutCancellationException
 class ViewModelPerfil : ViewModel() {
 
     private val repositorio = RepositorioUsuarios()
+    private val repositorioPeliculas = RepositorioPeliculasUsuario()
 
     // Usuario actual
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario.asStateFlow()
+
+    // Contadores
+    private val _peliculasVistas = MutableStateFlow(0)
+    val peliculasVistas: StateFlow<Int> = _peliculasVistas.asStateFlow()
+
+    private val _cantidadAmigos = MutableStateFlow(0)
+    val cantidadAmigos: StateFlow<Int> = _cantidadAmigos.asStateFlow()
+
+    private val _cantidadResenas = MutableStateFlow(0)
+    val cantidadResenas: StateFlow<Int> = _cantidadResenas.asStateFlow()
 
     // Estado de carga general
     private val _cargando = MutableStateFlow(false)
@@ -78,6 +90,8 @@ class ViewModelPerfil : ViewModel() {
                         }
                     }
                 }
+                // Cargar contadores
+                cargarContadores()
             } catch (e: TimeoutCancellationException) {
                 Log.e("ViewModelPerfil", "TIMEOUT al cargar perfil")
                 _error.value = "La conexión está tardando demasiado. Inténtalo de nuevo."
@@ -87,6 +101,32 @@ class ViewModelPerfil : ViewModel() {
             } finally {
                 _cargando.value = false
                 Log.d("ViewModelPerfil", "=== FIN cargarPerfil ===")
+            }
+        }
+    }
+
+    /**
+     * Carga los contadores de películas vistas, amigos y reseñas
+     */
+    private fun cargarContadores() {
+        viewModelScope.launch {
+            try {
+                // Obtener películas vistas
+                val peliculasResult = repositorioPeliculas.obtenerPeliculasPorEstado("vista")
+                if (peliculasResult.isSuccess) {
+                    _peliculasVistas.value = peliculasResult.getOrNull()?.size ?: 0
+                }
+
+                // Obtener amigos
+                val amigosResult = repositorio.obtenerAmigos()
+                if (amigosResult.isSuccess) {
+                    _cantidadAmigos.value = amigosResult.getOrNull()?.size ?: 0
+                }
+
+                // TODO: Implementar conteo de reseñas cuando exista esa funcionalidad
+                _cantidadResenas.value = 0
+            } catch (e: Exception) {
+                Log.e("ViewModelPerfil", "Error al cargar contadores", e)
             }
         }
     }
