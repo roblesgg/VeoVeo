@@ -6,28 +6,21 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
 
-/**
- * Repositorio simple para gestionar las películas del usuario en Firestore
- */
+// maneja las peliculas del usuario en firebase
 class RepositorioPeliculasUsuario {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    /**
-     * Obtiene el ID del usuario actual
-     */
+    // devuelve el id del usuario actual
     private fun obtenerIdUsuario(): String? = auth.currentUser?.uid
 
-    /**
-     * Obtiene películas por estado (por_ver o vista)
-     */
+    // trae las peliculas del usuario segun el estado (por_ver o vista)
     suspend fun obtenerPeliculasPorEstado(estado: String): Result<List<PeliculaUsuario>> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
         return try {
-            // Timeout de 10 segundos para evitar bloqueos indefinidos
-            withTimeout(10000) {
+            withTimeout(10000) { // timeout de 10 segundos
                 val snapshot = firestore.collection("usuarios")
                     .document(idUsuario)
                     .collection("peliculas")
@@ -43,9 +36,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Añade una película a la biblioteca del usuario
-     */
+    // añade una pelicula a la biblioteca del usuario
     suspend fun agregarPelicula(pelicula: PeliculaUsuario): Result<Unit> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -63,9 +54,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Actualiza el estado de una película (por_ver -> vista)
-     */
+    // cambia el estado de una pelicula (de por_ver a vista por ejemplo)
     suspend fun actualizarEstadoPelicula(idPelicula: Int, nuevoEstado: String): Result<Unit> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -83,9 +72,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Actualiza la valoración de una película
-     */
+    // cambia la valoracion en estrellas de una pelicula
     suspend fun actualizarValoracion(idPelicula: Int, valoracion: Int): Result<Unit> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -103,9 +90,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Elimina una película de la biblioteca
-     */
+    // elimina una pelicula de la biblioteca
     suspend fun eliminarPelicula(idPelicula: Int): Result<Unit> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -123,9 +108,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Verifica si una película ya está en la biblioteca
-     */
+    // comprueba si una pelicula ya esta en la biblioteca
     suspend fun estaPeliculaEnBiblioteca(idPelicula: Int): Result<Boolean> {
         val idUsuario = obtenerIdUsuario() ?: return Result.failure(Exception("Usuario no autenticado"))
 
@@ -143,9 +126,7 @@ class RepositorioPeliculasUsuario {
         }
     }
 
-    /**
-     * Obtiene películas de otro usuario por estado
-     */
+    // trae las peliculas de otro usuario segun el estado
     suspend fun obtenerPeliculasPorEstadoDeUsuario(uid: String, estado: String): Result<List<PeliculaUsuario>> {
         return try {
             val snapshot = firestore.collection("usuarios")

@@ -1,6 +1,5 @@
 package com.example.veoveo.ui.screens
 
-// ===== importaciones necesarias =====
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -44,43 +43,24 @@ import com.example.veoveo.R
 import com.example.veoveo.viewmodel.AuthState
 import com.example.veoveo.viewmodel.AuthViewModel
 
-/**
- * ===== AJUSTESSCREEN - PANTALLA DE AJUSTES =====
- *
- * esta pantalla permite configurar la app y gestionar la cuenta
- *
- * tiene:
- * 1. boton para borrar cuenta (con confirmacion)
- * 2. boton de atras arriba a la izquierda para volver al perfil
- *
- * componentes basicos que usa:
- * - Box: contenedor principal
- * - Column: para organizar elementos verticalmente
- * - Button: boton de borrar cuenta
- * - AlertDialog: dialogo de confirmacion
- * - IconButton: boton con icono para volver
- */
+// pantalla de ajustes
 @Composable
 fun AjustesScreen(
-    onVolverClick: () -> Unit = {},  // funcion que se ejecuta cuando pulsan la flecha de volver
-    onCuentaEliminada: () -> Unit = {},  // funcion que se ejecuta cuando se elimina la cuenta
-    viewModel: AuthViewModel = viewModel()  // el ViewModel de autenticación
+    onVolverClick: () -> Unit = {},
+    onCuentaEliminada: () -> Unit = {},
+    viewModel: AuthViewModel = viewModel()
 ) {
-    // ===== estados =====
     val authState by viewModel.authState.collectAsState()
     var mostrarDialogoConfirmacion by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // fuente montserrat
     val font = FontFamily(
         Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
     )
 
-    // ===== reaccionar cuando se elimina la cuenta =====
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Initial -> {
-                // si volvió a Initial después de eliminar, la cuenta se eliminó exitosamente
                 if (errorMessage.isEmpty() && !mostrarDialogoConfirmacion) {
                     onCuentaEliminada()
                 }
@@ -88,31 +68,25 @@ fun AjustesScreen(
             is AuthState.Error -> {
                 errorMessage = (authState as AuthState.Error).message
             }
-            else -> {
-                // no hacemos nada en otros casos
-            }
+            else -> {}
         }
     }
 
-    //volver atras con boton del movil
     BackHandler(onBack = { onVolverClick() })
 
-    // ===== colores del fondo =====
     val brush = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF1A1A2E), // azul oscuro arriba
-            Color(0xFF4B0082)  // morado abajo
+            Color(0xFF1A1A2E),
+            Color(0xFF4B0082)
         )
     )
 
-    // ===== contenedor principal =====
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(brush = brush)
     ) {
 
-        // ===== contenido principal =====
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -120,10 +94,8 @@ fun AjustesScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // espacio arriba
             Spacer(modifier = Modifier.height(80.dp))
 
-            // ===== titulo =====
             Text(
                 text = "Ajustes",
                 fontSize = 32.sp,
@@ -134,7 +106,6 @@ fun AjustesScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // ===== mensaje de error =====
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
@@ -146,7 +117,6 @@ fun AjustesScreen(
                 )
             }
 
-            // ===== indicador de carga =====
             if (authState is AuthState.Loading) {
                 CircularProgressIndicator(
                     color = Color.White,
@@ -156,7 +126,6 @@ fun AjustesScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // ===== boton de borrar cuenta =====
             Button(
                 onClick = {
                     mostrarDialogoConfirmacion = true
@@ -164,7 +133,7 @@ fun AjustesScreen(
                 },
                 enabled = authState !is AuthState.Loading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF5252),  // rojo para acción destructiva
+                    containerColor = Color(0xFFFF5252),
                     disabledContainerColor = Color.Gray
                 ),
                 shape = RoundedCornerShape(30.dp),
@@ -184,7 +153,6 @@ fun AjustesScreen(
             Spacer(modifier = Modifier.height(40.dp))
         }
 
-        // ===== boton de atras arriba a la izquierda =====
         IconButton(
             onClick = { onVolverClick() },
             modifier = Modifier
@@ -198,7 +166,6 @@ fun AjustesScreen(
             )
         }
 
-        // ===== dialogo de confirmacion =====
         if (mostrarDialogoConfirmacion) {
             AlertDialog(
                 onDismissRequest = { mostrarDialogoConfirmacion = false },
@@ -251,8 +218,6 @@ fun AjustesScreen(
     }
 }
 
-// ===== vista previa =====
-// esto sirve para ver la pantalla en android studio sin ejecutar el emulador
 @Preview(showBackground = true)
 @Composable
 fun AjustesScreenPreview() {

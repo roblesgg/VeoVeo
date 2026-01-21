@@ -1,13 +1,11 @@
 package com.example.veoveo.model
 
-/**
- * Modelo para solicitudes de amistad
- */
+// guarda las solicitudes de amistad entre usuarios
 data class SolicitudAmistad(
-    val id: String = "",
-    val deUid: String = "",
-    val paraUid: String = "",
-    val deUsername: String = "",
-    val estado: String = "pendiente", // pendiente, aceptada, rechazada
-    val fecha: Long = System.currentTimeMillis()
+    val id: String = "", // identificador unico de la solicitud
+    val deUid: String = "", // quien envia la solicitud
+    val paraUid: String = "", // quien la recibe
+    val deUsername: String = "", // nombre de quien envia
+    val estado: String = "pendiente", // puede ser pendiente, aceptada o rechazada
+    val fecha: Long = System.currentTimeMillis() // cuando se envio
 )

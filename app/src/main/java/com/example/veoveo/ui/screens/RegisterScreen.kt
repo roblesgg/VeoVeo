@@ -39,22 +39,16 @@ import com.example.veoveo.R
 import com.example.veoveo.viewmodel.AuthState
 import com.example.veoveo.viewmodel.AuthViewModel
 
-/**
- * ===== REGISTERSCREEN - PANTALLA DE REGISTRO =====
- *
- * Pantalla para crear una nueva cuenta.
- * Similar al LoginScreen pero con validación de contraseña.
- */
+// pantalla de registro para crear cuenta nueva
 @Composable
 fun RegisterScreen(
-    onRegisterSuccess: () -> Unit,  // se ejecuta cuando el registro es exitoso
-    onBackToLogin: () -> Unit,  // vuelve al login
+    onRegisterSuccess: () -> Unit,
+    onBackToLogin: () -> Unit,
     viewModel: AuthViewModel = viewModel()
 ) {
-    // observamos el estado de autenticación
     val authState by viewModel.authState.collectAsState()
 
-    // colores del fondo (mismo degradado que login)
+    // degradado de fondo
     val brush = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF1A1A2E),
@@ -66,13 +60,11 @@ fun RegisterScreen(
         Font(R.font.montserrat_alternates_semibold, FontWeight.SemiBold)
     )
 
-    // variables para los campos
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
-    // reaccionar cuando el usuario se registra
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
@@ -96,7 +88,6 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(32.dp)
         ) {
-            // titulo
             Text(
                 text = "Crear Cuenta",
                 fontSize = 40.sp,
@@ -107,7 +98,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // campo de email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -128,7 +118,6 @@ fun RegisterScreen(
                     .padding(bottom = 16.dp)
             )
 
-            // campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -150,7 +139,6 @@ fun RegisterScreen(
                     .padding(bottom = 16.dp)
             )
 
-            // campo de confirmar contraseña
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -172,7 +160,6 @@ fun RegisterScreen(
                     .padding(bottom = 32.dp)
             )
 
-            // mensaje de error
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
@@ -183,7 +170,6 @@ fun RegisterScreen(
                 )
             }
 
-            // indicador de carga
             if (authState is AuthState.Loading) {
                 CircularProgressIndicator(
                     color = Color.White,
@@ -191,10 +177,8 @@ fun RegisterScreen(
                 )
             }
 
-            // boton de registrarse
             Button(
                 onClick = {
-                    // validar que las contraseñas coincidan
                     if (password != confirmPassword) {
                         errorMessage = "Las contraseñas no coinciden"
                     } else {
@@ -221,7 +205,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // boton para volver al login
             TextButton(onClick = onBackToLogin) {
                 Text(
                     "¿Ya tienes cuenta? Inicia sesión",

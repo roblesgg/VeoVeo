@@ -1,7 +1,6 @@
 package com.example.veoveo.viewmodel
 
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.veoveo.data.RepositorioUsuarios
@@ -14,19 +13,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 
-/**
- * ViewModel para gestionar el perfil del usuario
- */
+// maneja el perfil del usuario
 class ViewModelPerfil : ViewModel() {
 
     private val repositorio = RepositorioUsuarios()
     private val repositorioPeliculas = RepositorioPeliculasUsuario()
 
-    // Usuario actual
+    // usuario actual
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario.asStateFlow()
 
-    // Contadores
+    // contadores
     private val _peliculasVistas = MutableStateFlow(0)
     val peliculasVistas: StateFlow<Int> = _peliculasVistas.asStateFlow()
 
@@ -36,115 +33,87 @@ class ViewModelPerfil : ViewModel() {
     private val _cantidadResenas = MutableStateFlow(0)
     val cantidadResenas: StateFlow<Int> = _cantidadResenas.asStateFlow()
 
-    // Estado de carga general
+    // estado de carga general
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
-    // Estado de carga específico para actualizar username
+    // estado de carga para actualizar username
     private val _actualizandoUsername = MutableStateFlow(false)
     val actualizandoUsername: StateFlow<Boolean> = _actualizandoUsername.asStateFlow()
 
-    // Mensajes de error
+    // mensajes de error
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Mensaje de éxito
+    // mensaje de exito
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
-    /**
-     * Carga el perfil del usuario actual (o lo crea si no existe)
-     */
+    // carga el perfil del usuario o lo crea si no existe
     fun cargarPerfil() {
-        Log.d("ViewModelPerfil", "=== INICIANDO cargarPerfil ===")
         _cargando.value = true
         viewModelScope.launch {
             try {
-                Log.d("ViewModelPerfil", "Intentando cargar perfil con timeout de 10s")
                 withTimeout(10000L) {
-                    Log.d("ViewModelPerfil", "Llamando a repositorio.obtenerPerfilUsuario()")
                     val resultado = repositorio.obtenerPerfilUsuario()
                     if (resultado.isSuccess) {
                         val usuario = resultado.getOrNull()
-                        Log.d("ViewModelPerfil", "Perfil cargado exitosamente: ${usuario?.username}")
                         _usuario.value = usuario
                     } else {
-                        Log.w("ViewModelPerfil", "No se pudo cargar perfil, creando uno por defecto")
-                        // Si no existe, crear perfil por defecto
                         val resultadoCrear = repositorio.crearPerfilPorDefecto()
                         if (resultadoCrear.isSuccess) {
-                            Log.d("ViewModelPerfil", "Perfil por defecto creado, recargando...")
-                            // Intentar cargar de nuevo
                             val resultadoNuevo = repositorio.obtenerPerfilUsuario()
                             if (resultadoNuevo.isSuccess) {
                                 val usuario = resultadoNuevo.getOrNull()
-                                Log.d("ViewModelPerfil", "Perfil recargado: ${usuario?.username}")
                                 _usuario.value = usuario
                             } else {
-                                Log.e("ViewModelPerfil", "Error al recargar perfil")
                                 _error.value = "No se pudo cargar el perfil. Verifica tu conexión."
                             }
                         } else {
-                            Log.e("ViewModelPerfil", "Error al crear perfil por defecto")
                             _error.value = "No se pudo crear el perfil. Verifica tu conexión."
                         }
                     }
                 }
-                // Cargar contadores
                 cargarContadores()
             } catch (e: TimeoutCancellationException) {
-                Log.e("ViewModelPerfil", "TIMEOUT al cargar perfil")
                 _error.value = "La conexión está tardando demasiado. Inténtalo de nuevo."
             } catch (e: Exception) {
-                Log.e("ViewModelPerfil", "ERROR al cargar perfil", e)
                 _error.value = "Error de conexión: ${e.message}"
             } finally {
                 _cargando.value = false
-                Log.d("ViewModelPerfil", "=== FIN cargarPerfil ===")
             }
         }
     }
 
-    /**
-     * Carga los contadores de películas vistas, amigos y reseñas
-     */
+    // carga contadores de peliculas, amigos y resenas
     private fun cargarContadores() {
         viewModelScope.launch {
             try {
-                // Obtener películas vistas
                 val peliculasResult = repositorioPeliculas.obtenerPeliculasPorEstado("vista")
                 if (peliculasResult.isSuccess) {
                     _peliculasVistas.value = peliculasResult.getOrNull()?.size ?: 0
                 }
 
-                // Obtener amigos
                 val amigosResult = repositorio.obtenerAmigos()
                 if (amigosResult.isSuccess) {
                     _cantidadAmigos.value = amigosResult.getOrNull()?.size ?: 0
                 }
 
-                // TODO: Implementar conteo de reseñas cuando exista esa funcionalidad
                 _cantidadResenas.value = 0
             } catch (e: Exception) {
-                Log.e("ViewModelPerfil", "Error al cargar contadores", e)
+                // error silencioso en contadores
             }
         }
     }
 
-    /**
-     * Actualiza el username del usuario (versión simplificada)
-     */
+    // actualiza el username del usuario
     fun actualizarUsername(nuevoUsername: String) {
-        Log.d("ViewModelPerfil", "=== INICIANDO actualizarUsername: $nuevoUsername ===")
-
         if (nuevoUsername.isBlank()) {
-            Log.w("ViewModelPerfil", "Username vacío")
             _error.value = "El nombre de usuario no puede estar vacío"
             return
         }
 
         if (nuevoUsername.length < 3) {
-            Log.w("ViewModelPerfil", "Username muy corto")
             _error.value = "El nombre de usuario debe tener al menos 3 caracteres"
             return
         }
@@ -152,51 +121,37 @@ class ViewModelPerfil : ViewModel() {
         _actualizandoUsername.value = true
         viewModelScope.launch {
             try {
-                Log.d("ViewModelPerfil", "Intentando actualizar con timeout de 15s")
-                // Timeout de 15 segundos (más tiempo)
                 withTimeout(15000L) {
-                    // Actualizar en Firebase directamente (sin actualizar localmente primero)
-                    Log.d("ViewModelPerfil", "Llamando a repositorio.actualizarUsername()")
                     val resultado = repositorio.actualizarUsername(nuevoUsername)
                     if (resultado.isSuccess) {
-                        Log.d("ViewModelPerfil", "Actualización exitosa en Firebase")
-                        // Actualizar el estado local solo después del éxito
                         val usuarioActual = _usuario.value
                         if (usuarioActual != null) {
                             _usuario.value = usuarioActual.copy(username = nuevoUsername)
                         }
                         _mensaje.value = "Nombre actualizado"
-                        Log.d("ViewModelPerfil", "Estado local actualizado")
                     } else {
-                        // Extraer mensaje de error real
                         val errorMsg = resultado.exceptionOrNull()?.message ?: "Error al actualizar"
-                        Log.e("ViewModelPerfil", "Error al actualizar: $errorMsg")
                         _error.value = errorMsg
                     }
                 }
             } catch (e: TimeoutCancellationException) {
-                Log.e("ViewModelPerfil", "TIMEOUT al actualizar username")
                 _error.value = "Timeout: Revisa tu conexión a Internet"
             } catch (e: Exception) {
-                Log.e("ViewModelPerfil", "ERROR al actualizar username", e)
                 _error.value = "Error: ${e.message}"
             } finally {
                 _actualizandoUsername.value = false
-                Log.d("ViewModelPerfil", "=== FIN actualizarUsername ===")
             }
         }
     }
 
-    /**
-     * Actualiza la foto de perfil (por ahora solo con URL)
-     */
+    // actualiza la foto de perfil
     fun actualizarFotoPerfil(url: String) {
         _cargando.value = true
         viewModelScope.launch {
             val resultado = repositorio.actualizarFotoPerfil(url)
             if (resultado.isSuccess) {
                 _mensaje.value = "Foto de perfil actualizada"
-                cargarPerfil() // Recargar perfil
+                cargarPerfil()
             } else {
                 _error.value = resultado.exceptionOrNull()?.message
             }
@@ -204,9 +159,7 @@ class ViewModelPerfil : ViewModel() {
         }
     }
 
-    /**
-     * Limpia los mensajes
-     */
+    // limpia mensajes
     fun limpiarMensajes() {
         _error.value = null
         _mensaje.value = null

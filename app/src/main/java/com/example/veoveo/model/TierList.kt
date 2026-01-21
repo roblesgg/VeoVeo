@@ -1,28 +1,24 @@
 package com.example.veoveo.model
 
-/**
- * Modelo de TierList para organizar películas en categorías/tiers
- */
+// guarda un ranking de peliculas organizadas por niveles
 data class TierList(
     val id: String = "",
     val nombre: String = "",
     val descripcion: String = "",
-    val creadorUid: String = "",
+    val creadorUid: String = "", // quien creo esta tier list
     val fechaCreacion: Long = System.currentTimeMillis(),
     val ultimaModificacion: Long = System.currentTimeMillis(),
 
-    // IDs de películas en cada tier
+    // cada tier guarda ids de peliculas
     val tierObraMaestra: List<Int> = emptyList(),
     val tierMuyBuena: List<Int> = emptyList(),
     val tierBuena: List<Int> = emptyList(),
     val tierMala: List<Int> = emptyList(),
     val tierNefasta: List<Int> = emptyList(),
 
-    val publica: Boolean = false
+    val publica: Boolean = false // si otros usuarios pueden verla
 ) {
-    /**
-     * Convierte la TierList a un Map para guardar en Firestore
-     */
+    // convierte a mapa para guardarlo en firebase
     fun toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,
@@ -41,9 +37,7 @@ data class TierList(
     }
 
     companion object {
-        /**
-         * Crea una TierList desde un Map de Firestore
-         */
+        // crea una tier list desde los datos de firebase
         fun fromMap(id: String, map: Map<String, Any>): TierList {
             return TierList(
                 id = id,
@@ -62,15 +56,11 @@ data class TierList(
         }
     }
 
-    /**
-     * Obtiene todas las películas de todos los tiers
-     */
+    // junta todas las peliculas de todos los tiers
     fun todasLasPeliculas(): List<Int> {
         return tierObraMaestra + tierMuyBuena + tierBuena + tierMala + tierNefasta
     }
 
-    /**
-     * Cuenta total de películas en la TierList
-     */
+    // cuenta cuantas peliculas hay en total
     fun cantidadPeliculas(): Int = todasLasPeliculas().size
 }
