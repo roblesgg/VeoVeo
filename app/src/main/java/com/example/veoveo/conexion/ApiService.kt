@@ -8,15 +8,17 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+// define las llamadas que podemos hacer a la api de tmdb
 interface ApiService {
 
-    // Traducimos: https://api.themoviedb.org/3/search/movie?query=...
+    // busca peliculas por nombre
     @GET("search/movie")
     suspend fun buscarPeliculas(
         @Query("query") nombrePelicula: String,
         @Query("language") idioma: String = "es-ES"
     ): Response<MovieResponse>
 
+    // busca peliculas por genero
     @GET("discover/movie")
     suspend fun buscarPeliculasporGenero(
         @Query("with_genres") generoId: String,
@@ -25,20 +27,14 @@ interface ApiService {
         @Query("page") pagina: Int = 1
     ): Response<MovieResponse>
 
-    /**
-     * Obtiene los detalles completos de una película
-     * Endpoint: GET /movie/{movie_id}
-     */
+    // obtiene info completa de una pelicula
     @GET("movie/{movie_id}")
     suspend fun obtenerDetallesPelicula(
         @Path("movie_id") movieId: Int,
         @Query("language") idioma: String = "es-ES"
     ): Response<MovieDetails>
 
-    /**
-     * Obtiene el reparto y equipo técnico de una película
-     * Endpoint: GET /movie/{movie_id}/credits
-     */
+    // obtiene el reparto y equipo de una pelicula
     @GET("movie/{movie_id}/credits")
     suspend fun obtenerCreditosPelicula(
         @Path("movie_id") movieId: Int,

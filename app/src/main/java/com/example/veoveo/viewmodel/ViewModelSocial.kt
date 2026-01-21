@@ -12,48 +12,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel para gestionar las funciones sociales
- */
+// maneja funciones sociales
 class ViewModelSocial : ViewModel() {
 
     private val repositorioUsuarios = RepositorioUsuarios()
     private val repositorioPeliculas = RepositorioPeliculasUsuario()
 
-    // Resultados de búsqueda
+    // resultados de busqueda
     private val _resultadosBusqueda = MutableStateFlow<List<Usuario>>(emptyList())
     val resultadosBusqueda: StateFlow<List<Usuario>> = _resultadosBusqueda.asStateFlow()
 
-    // Lista de amigos
+    // lista de amigos
     private val _amigos = MutableStateFlow<List<Usuario>>(emptyList())
     val amigos: StateFlow<List<Usuario>> = _amigos.asStateFlow()
 
-    // Solicitudes de amistad pendientes
+    // solicitudes de amistad pendientes
     private val _solicitudesPendientes = MutableStateFlow<List<SolicitudAmistad>>(emptyList())
     val solicitudesPendientes: StateFlow<List<SolicitudAmistad>> = _solicitudesPendientes.asStateFlow()
 
-    // Solicitudes enviadas (UIDs de usuarios a los que ya se les envió solicitud)
+    // solicitudes enviadas
     private val _solicitudesEnviadas = MutableStateFlow<Set<String>>(emptySet())
     val solicitudesEnviadas: StateFlow<Set<String>> = _solicitudesEnviadas.asStateFlow()
 
-    // Películas de un amigo específico
+    // peliculas de un amigo
     private val _peliculasAmigo = MutableStateFlow<List<PeliculaUsuario>>(emptyList())
     val peliculasAmigo: StateFlow<List<PeliculaUsuario>> = _peliculasAmigo.asStateFlow()
 
-    // Estado de carga
+    // estado de carga
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
-    // Mensajes
+    // mensajes
     private val _mensaje = MutableStateFlow<String?>(null)
     val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    /**
-     * Busca usuarios por username
-     */
+    // busca usuarios por username
     fun buscarUsuarios(query: String) {
         viewModelScope.launch {
             _cargando.value = true
@@ -67,15 +63,12 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Envía una solicitud de amistad
-     */
+    // envia solicitud de amistad
     fun enviarSolicitudAmistad(paraUid: String) {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.enviarSolicitudAmistad(paraUid)
             if (resultado.isSuccess) {
                 _mensaje.value = "Solicitud enviada"
-                // Agregar el UID a la lista de solicitudes enviadas
                 _solicitudesEnviadas.value = _solicitudesEnviadas.value + paraUid
             } else {
                 _error.value = resultado.exceptionOrNull()?.message
@@ -83,9 +76,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Acepta una solicitud de amistad
-     */
+    // acepta solicitud de amistad
     fun aceptarSolicitud(solicitudId: String) {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.aceptarSolicitudAmistad(solicitudId)
@@ -99,9 +90,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Rechaza una solicitud de amistad
-     */
+    // rechaza solicitud de amistad
     fun rechazarSolicitud(solicitudId: String) {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.rechazarSolicitudAmistad(solicitudId)
@@ -114,9 +103,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Carga la lista de amigos
-     */
+    // carga lista de amigos
     fun cargarAmigos() {
         viewModelScope.launch {
             _cargando.value = true
@@ -130,9 +117,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Carga las solicitudes de amistad pendientes
-     */
+    // carga solicitudes pendientes
     fun cargarSolicitudesPendientes() {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.obtenerSolicitudesPendientes()
@@ -142,9 +127,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Elimina un amigo
-     */
+    // elimina un amigo
     fun eliminarAmigo(amigoUid: String) {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.eliminarAmigo(amigoUid)
@@ -157,9 +140,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Bloquea a un usuario
-     */
+    // bloquea usuario
     fun bloquearUsuario(usuarioUid: String) {
         viewModelScope.launch {
             val resultado = repositorioUsuarios.bloquearUsuario(usuarioUid)
@@ -172,14 +153,11 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Carga las películas de un amigo específico
-     */
+    // carga peliculas de un amigo
     fun cargarPeliculasAmigo(amigoUid: String) {
         viewModelScope.launch {
             _cargando.value = true
 
-            // Obtener películas por ver
             val porVerResult = repositorioPeliculas.obtenerPeliculasPorEstadoDeUsuario(amigoUid, "por_ver")
             val vistasResult = repositorioPeliculas.obtenerPeliculasPorEstadoDeUsuario(amigoUid, "vista")
 
@@ -198,9 +176,7 @@ class ViewModelSocial : ViewModel() {
         }
     }
 
-    /**
-     * Limpia mensajes
-     */
+    // limpia mensajes
     fun limpiarMensajes() {
         _mensaje.value = null
         _error.value = null

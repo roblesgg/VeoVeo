@@ -9,42 +9,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-/**
- * ===== AUTHVIEWMODEL - VIEWMODEL DE AUTENTICACIÓN =====
- *
- * Esta clase maneja el estado de la autenticación en la app.
- * Es el intermediario entre la UI (LoginScreen) y el Repository (AuthRepository).
- *
- * Usa StateFlow para que la UI se actualice automáticamente cuando cambia el estado.
- */
+// maneja autenticacion de la app
 class AuthViewModel : ViewModel() {
 
-    // instancia del repositorio
     private val repository = AuthRepository()
 
-    // ===== ESTADO DE LA AUTENTICACIÓN =====
-    // este StateFlow guarda el estado actual del login
+    // estado actual del login
     private val _authState = MutableStateFlow<AuthState>(AuthState.Initial)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // ===== USUARIO ACTUAL =====
-    // guarda el usuario que está logueado
+    // usuario logueado
     private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
-    /**
-     * Inicialización - verifica si hay un usuario ya logueado
-     */
     init {
         checkCurrentUser()
     }
 
-    /**
-     * ===== VERIFICAR SI HAY USUARIO LOGUEADO =====
-     *
-     * Al abrir la app, verifica si el usuario ya está logueado
-     * (por ejemplo, si cerró la app pero no hizo logout)
-     */
+    // verifica si ya hay usuario logueado al abrir la app
     private fun checkCurrentUser() {
         val user = repository.currentUser
         _currentUser.value = user
@@ -53,25 +35,15 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * ===== LOGIN CON EMAIL =====
-     *
-     * Intenta hacer login con email y contraseña.
-     *
-     * @param email: el email del usuario
-     * @param password: la contraseña
-     */
+    // hace login con email y password
     fun loginWithEmail(email: String, password: String) {
-        // validación básica
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email y contraseña no pueden estar vacíos")
             return
         }
 
-        // mostramos que estamos cargando
         _authState.value = AuthState.Loading
 
-        // lanzamos la operación en un coroutine (operación asíncrona)
         viewModelScope.launch {
             val result = repository.loginWithEmail(email, password)
 
@@ -85,16 +57,8 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * ===== REGISTRO CON EMAIL =====
-     *
-     * Crea una nueva cuenta con email y contraseña.
-     *
-     * @param email: el email del nuevo usuario
-     * @param password: la contraseña
-     */
+    // crea cuenta nueva con email y password
     fun registerWithEmail(email: String, password: String) {
-        // validación básica
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Email y contraseña no pueden estar vacíos")
             return
@@ -105,10 +69,8 @@ class AuthViewModel : ViewModel() {
             return
         }
 
-        // mostramos que estamos cargando
         _authState.value = AuthState.Loading
 
-        // lanzamos la operación en un coroutine
         viewModelScope.launch {
             val result = repository.registerWithEmail(email, password)
 
@@ -122,13 +84,7 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * ===== LOGIN CON GOOGLE =====
-     *
-     * Hace login con Google.
-     *
-     * @param idToken: el token que viene de Google Sign-In
-     */
+    // hace login con google
     fun loginWithGoogle(idToken: String) {
         _authState.value = AuthState.Loading
 
@@ -145,24 +101,14 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * ===== LOGOUT =====
-     *
-     * Cierra la sesión del usuario.
-     */
+    // cierra sesion
     fun logout() {
         repository.logout()
         _currentUser.value = null
         _authState.value = AuthState.Initial
     }
 
-    /**
-     * ===== RECUPERAR CONTRASEÑA =====
-     *
-     * Envía un email para resetear la contraseña.
-     *
-     * @param email: el email de la cuenta
-     */
+    // envia email para resetear password
     fun resetPassword(email: String) {
         if (email.isBlank()) {
             _authState.value = AuthState.Error("Ingresa tu email")
@@ -182,21 +128,12 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    /**
-     * ===== RESETEAR ESTADO =====
-     *
-     * Vuelve el estado a Initial (útil para limpiar errores)
-     */
+    // vuelve al estado inicial
     fun resetState() {
         _authState.value = AuthState.Initial
     }
 
-    /**
-     * ===== BORRAR CUENTA =====
-     *
-     * Elimina permanentemente la cuenta del usuario actual.
-     * ADVERTENCIA: Esta acción es irreversible.
-     */
+    // elimina la cuenta del usuario actual
     fun deleteAccount() {
         _authState.value = AuthState.Loading
 
@@ -204,7 +141,6 @@ class AuthViewModel : ViewModel() {
             val result = repository.deleteAccount()
 
             if (result.isSuccess) {
-                // limpiamos el usuario y el estado
                 _currentUser.value = null
                 _authState.value = AuthState.Initial
             } else {
@@ -216,25 +152,11 @@ class AuthViewModel : ViewModel() {
     }
 }
 
-/**
- * ===== ESTADOS DE AUTENTICACIÓN =====
- *
- * Estos son todos los estados posibles del proceso de login.
- * La UI usa estos estados para saber qué mostrar.
- */
+// estados posibles del proceso de autenticacion
 sealed class AuthState {
-    // Estado inicial (cuando abre la app o después de resetear)
     object Initial : AuthState()
-
-    // Cargando (cuando está haciendo login/registro)
     object Loading : AuthState()
-
-    // Usuario autenticado correctamente
     data class Authenticated(val user: FirebaseUser) : AuthState()
-
-    // Hubo un error
     data class Error(val message: String) : AuthState()
-
-    // Email de recuperación enviado
     object PasswordResetSent : AuthState()
 }

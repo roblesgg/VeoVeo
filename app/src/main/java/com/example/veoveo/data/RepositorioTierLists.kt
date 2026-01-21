@@ -7,27 +7,21 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 
-/**
- * Repositorio para gestionar TierLists en Firebase
- */
+// maneja tierlists en firebase
 class RepositorioTierLists {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    /**
-     * Obtiene el UID del usuario actual
-     */
+    // devuelve el uid del usuario actual
     private fun getUidActual(): String? = auth.currentUser?.uid
 
-    /**
-     * Crea una nueva TierList
-     */
+    // crea una nueva tierlist
     suspend fun crearTierList(tierList: TierList): Result<String> {
         return try {
             val uid = getUidActual() ?: return Result.failure(Exception("Usuario no autenticado"))
 
-            // Generar ID único
+            // genera id unico
             val docRef = db.collection("usuarios").document(uid)
                 .collection("tierLists").document()
 
@@ -39,17 +33,13 @@ class RepositorioTierLists {
             )
 
             docRef.set(tierListConId.toMap()).await()
-            Log.d("RepositorioTierLists", "TierList creada: ${docRef.id}")
             Result.success(docRef.id)
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al crear TierList", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Obtiene todas las TierLists del usuario actual
-     */
+    // obtiene todas las tierlists del usuario actual
     suspend fun obtenerTierLists(): Result<List<TierList>> {
         return try {
             val uid = getUidActual() ?: return Result.failure(Exception("Usuario no autenticado"))
@@ -64,22 +54,17 @@ class RepositorioTierLists {
                 try {
                     TierList.fromMap(doc.id, doc.data ?: emptyMap())
                 } catch (e: Exception) {
-                    Log.e("RepositorioTierLists", "Error al parsear TierList ${doc.id}", e)
                     null
                 }
             }
 
-            Log.d("RepositorioTierLists", "TierLists obtenidas: ${tierLists.size}")
             Result.success(tierLists)
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al obtener TierLists", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Obtiene una TierList específica por su ID
-     */
+    // obtiene una tierlist especifica por su id
     suspend fun obtenerTierList(tierListId: String): Result<TierList> {
         return try {
             val uid = getUidActual() ?: return Result.failure(Exception("Usuario no autenticado"))
@@ -97,14 +82,11 @@ class RepositorioTierLists {
                 Result.failure(Exception("TierList no encontrada"))
             }
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al obtener TierList", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Actualiza una TierList existente
-     */
+    // actualiza una tierlist existente
     suspend fun actualizarTierList(tierList: TierList): Result<Unit> {
         return try {
             val uid = getUidActual() ?: return Result.failure(Exception("Usuario no autenticado"))
@@ -119,17 +101,13 @@ class RepositorioTierLists {
                 .set(tierListActualizada.toMap())
                 .await()
 
-            Log.d("RepositorioTierLists", "TierList actualizada: ${tierList.id}")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al actualizar TierList", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Elimina una TierList
-     */
+    // elimina una tierlist
     suspend fun eliminarTierList(tierListId: String): Result<Unit> {
         return try {
             val uid = getUidActual() ?: return Result.failure(Exception("Usuario no autenticado"))
@@ -140,17 +118,13 @@ class RepositorioTierLists {
                 .delete()
                 .await()
 
-            Log.d("RepositorioTierLists", "TierList eliminada: $tierListId")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al eliminar TierList", e)
             Result.failure(e)
         }
     }
 
-    /**
-     * Obtiene las TierLists públicas de un usuario específico
-     */
+    // obtiene las tierlists publicas de un usuario especifico
     suspend fun obtenerTierListsDeUsuario(uid: String): Result<List<TierList>> {
         return try {
             val snapshot = db.collection("usuarios").document(uid)
@@ -163,15 +137,12 @@ class RepositorioTierLists {
                 try {
                     TierList.fromMap(doc.id, doc.data ?: emptyMap())
                 } catch (e: Exception) {
-                    Log.e("RepositorioTierLists", "Error al parsear TierList ${doc.id}", e)
                     null
                 }
             }
 
-            Log.d("RepositorioTierLists", "TierLists de usuario $uid obtenidas: ${tierLists.size}")
             Result.success(tierLists)
         } catch (e: Exception) {
-            Log.e("RepositorioTierLists", "Error al obtener TierLists de usuario", e)
             Result.failure(e)
         }
     }

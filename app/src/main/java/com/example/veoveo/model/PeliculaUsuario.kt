@@ -1,16 +1,14 @@
 package com.example.veoveo.model
 
-/**
- * Modelo simple para las películas guardadas por el usuario
- */
+// guarda las peliculas que el usuario ha marcado
 data class PeliculaUsuario(
-    val idPelicula: Int = 0,              // ID de TMDB
-    val titulo: String = "",              // Título de la película
-    val rutaPoster: String? = null,       // Poster de la película
-    val estado: String = "por_ver",       // "por_ver" o "vista"
-    val valoracion: Int = 0,              // Valoración del usuario (0-5 estrellas)
-    val fechaAnadido: Long = System.currentTimeMillis()  // Timestamp cuando se añadió
+    val idPelicula: Int = 0, // id de la pelicula en tmdb
+    val titulo: String = "", // nombre de la pelicula
+    val rutaPoster: String? = null, // url del poster
+    val estado: String = "por_ver", // puede ser "por_ver" o "vista"
+    val valoracion: Int = 0, // estrellas que le da el usuario (0 a 5)
+    val fechaAnadido: Long = System.currentTimeMillis() // cuando la añadio
 ) {
-    // Constructor sin parámetros requerido por Firestore
+    // firebase necesita un constructor vacio
     constructor() : this(0, "", null, "por_ver", 0, System.currentTimeMillis())
 }
