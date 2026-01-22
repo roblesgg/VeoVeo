@@ -49,8 +49,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -294,6 +294,7 @@ fun MainScreen(onNavigateToPerfil: () -> Unit = {}) {
 }
 
 // pestana descubrir
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DescubrirTab(
     font: FontFamily,
@@ -485,8 +486,8 @@ fun DescubrirTab(
             }
         } else {
             // Vista normal con carruseles con pull-to-refresh
-            SwipeRefresh(
-                state = rememberSwipeRefreshState(isRefreshing),
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
                 onRefresh = {
                     // Recargar TODOS los carruseles activos
                     viewModelDescubrir.recargarTodosLosCarruseles(carruselesActivos.toList(), ::obtenerIdGenero)
