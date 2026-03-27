@@ -21,12 +21,26 @@ export default function ChatListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFriends, setShowFriends] = useState(false);
 
   useEffect(() => {
-    return observarMisChats((newChats) => {
+    const unsub = observarMisChats((newChats) => {
       setChats(newChats);
       setLoading(false);
     });
+
+    // Timeout de seguridad para el loading (por si falta el índice de Firestore)
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        console.warn('Timeout en ChatList: Es posible que falte el índice en Firestore.');
+      }
+    }, 10000);
+
+    return () => {
+        unsub();
+        clearTimeout(timer);
+    };
   }, []);
 
   const renderChatItem = ({ item }: { item: Chat }) => {
@@ -74,8 +88,11 @@ export default function ChatListScreen({ navigation }: Props) {
             <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.title}>Mensajes</Text>
-        <Pressable style={styles.newChatBtn}>
-            <Ionicons name="add" size={28} color="#fff" />
+        <Pressable 
+            style={styles.newChatBtn} 
+            onPress={() => navigation.goBack()} // Volver a social para elegir amigo es lo más fácil ahora
+        >
+            <Ionicons name="people" size={24} color="#fff" />
         </Pressable>
       </View>
 

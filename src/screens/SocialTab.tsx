@@ -22,11 +22,12 @@ type Props = {
   onUsuarioClick: (uid: string) => void;
   onSolicitudesClick: () => void;
   onChatClick: () => void;
+  onChatConAmigo?: (uid: string) => void;
   onPerfilClick?: () => void;
   userFoto?: string | null;
 };
 
-export function SocialTab({ fontFamily, onUsuarioClick, onSolicitudesClick, onChatClick, onPerfilClick, userFoto }: Props) {
+export function SocialTab({ fontFamily, onUsuarioClick, onSolicitudesClick, onChatClick, onChatConAmigo, onPerfilClick, userFoto }: Props) {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<0 | 1>(0); // 0 amigos, 1 buscar
 
@@ -109,6 +110,7 @@ export function SocialTab({ fontFamily, onUsuarioClick, onSolicitudesClick, onCh
                   key={a.uid} 
                   amigo={a} 
                   onPress={() => onUsuarioClick(a.uid)} 
+                  onChat={() => onChatConAmigo?.(a.uid)}
                   onEliminar={() => handleEliminarAmigo(a.uid)}
                   onBloquear={() => handleBloquear(a.uid)}
                   fontFamily={fontFamily}

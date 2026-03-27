@@ -152,6 +152,11 @@ export function MainScreen() {
               }}
               onSolicitudesClick={() => setMostrarSolicitudes(true)}
               onChatClick={() => navigation.navigate('ChatList')}
+              onChatConAmigo={async (uid) => {
+                const { crearChat } = await import('../services/repositorioChats');
+                const chatId = await crearChat([uid]);
+                navigation.navigate('ChatDetail', { chatId, otherUserName: 'Chat' });
+              }}
               onPerfilClick={() => navigation.navigate('Perfil')}
               userFoto={userProfile?.fotoPerfil || user?.photoURL}
             />
