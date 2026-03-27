@@ -232,11 +232,31 @@
 
         <a href="./veoveo-v1.4.0.apk" class="cta" id="dl-btn" data-reveal>Descargar Android (v1.4.0)</a>
         <p style="margin-top: 15px; font-size: 0.9rem; color: var(--text-dim);" data-reveal>La versión más estable y completa hasta la fecha.</p>
-
-        <div style="margin-top: 40px; border-top: 1px solid var(--glass-border); padding-top: 40px;">
-            <a href="./veoveo-v1.4.1-test.apk" class="cta" style="background: linear-gradient(135deg, #38bdf8, #818cf8);" data-reveal>Probar Beta v1.4.1 (Chat & Match)</a>
-            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--accent-light);" data-reveal>Incluye el nuevo sistema de Mensajería y Juego de Match 🚀</p>
+        <!-- Zona Testers -->
+        <div id="tester-zone" style="margin-top: 80px; border-top: 1px solid var(--glass-border); padding-top: 60px; text-align: center;" data-reveal>
+            <h3 style="margin-bottom: 20px; font-weight: 700; color: var(--text-dim);">Zona Testers</h3>
+            <div id="pw-input-container" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                <input type="password" id="tester-pw" placeholder="Introduce la contraseña" 
+                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 20px; border-radius: 12px; color: #fff; width: 260px; text-align: center; font-family: inherit; font-size: 1rem;">
+                <button onclick="checkTesterPw()" class="cta" style="padding: 10px 30px; font-size: 0.9rem; min-width: auto; background: var(--bg-card);">Acceder</button>
+            </div>
+            <div id="tester-download" style="display: none;">
+                <a href="./veoveo-v1.4.1-test.apk" class="cta" style="background: linear-gradient(135deg, #38bdf8, #818cf8);">Descargar Beta v1.4.1 (Chat & Match)</a>
+                <p style="margin-top: 10px; font-size: 0.85rem; color: var(--accent-light);">Acceso concedido. ¡Prueba las nuevas funciones sociales! 🚀</p>
+            </div>
         </div>
+
+        <script>
+            function checkTesterPw() {
+                const pw = document.getElementById('tester-pw').value;
+                if (pw === 'TesTer') {
+                    document.getElementById('pw-input-container').style.display = 'none';
+                    document.getElementById('tester-download').style.display = 'block';
+                } else {
+                    alert('Acceso denegado. Contraseña incorrecta.');
+                }
+            }
+        </script>
 
         <div class="grid">
             <div class="card" data-reveal>
