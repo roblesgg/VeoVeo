@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1A1A2E;
+            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
             color: white;
             display: flex;
             flex-direction: column;
@@ -18,59 +18,76 @@
             text-align: center;
             padding: 20px;
         }
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
         .btn {
-            background-color: #38bdf8;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             color: white;
-            padding: 15px 30px;
-            border-radius: 25px;
+            padding: 16px 40px;
+            border-radius: 30px;
             text-decoration: none;
             font-weight: bold;
+            font-size: 18px;
             margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
             display: inline-block;
+            transition: transform 0.2s;
         }
+        .btn:active { transform: scale(0.95); }
         .loading {
-            width: 40px;
-            height: 40px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top: 4px solid #38bdf8;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(56, 189, 248, 0.1);
+            border-top: 3px solid #38bdf8;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        p { color: #94a3b8; margin: 10px 0; }
     </style>
 </head>
 <body>
+    <div class="logo">VeoVeo</div>
     <div class="loading"></div>
-    <h2 id="tagline">Abriendo en la app...</h2>
-    <p id="sub">Si la app no se abre automáticamente, pulsa el botón.</p>
+    <h2 id="tagline">Preparando contenido...</h2>
+    <p id="sub">Intentando abrir la aplicación directamente.</p>
     
-    <a id="appLink" href="#" class="btn">Abrir en VeoVeo</a>
-    <a href="https://veoveo-app.netlify.app#download" style="margin-top: 30px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.9em;">Descargar VeoVeo APK</a>
+    <a id="appLink" href="#" class="btn">Seguir en la App</a>
+    
+    <div style="margin-top: 50px;">
+        <p>¿Aún no tienes VeoVeo?</p>
+        <a href="https://veoveo-app-install.netlify.app#download" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Descargar APK ahora</a>
+    </div>
 
     <script>
-        // Obtener parámetros: ?type=movie&id=123
         const params = new URLSearchParams(window.location.search);
         const type = params.get('type') || 'main';
         const id = params.get('id');
 
-        // Esquema: veoveo://movie/123
         const appScheme = id ? `veoveo://${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'veoveo://main';
-        
         document.getElementById('appLink').href = appScheme;
 
         if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
-        else if (type === 'actor') document.getElementById('tagline').innerText = 'Explorando actor...';
+        else if (type === 'actor') document.getElementById('tagline').innerText = 'Abriendo perfil de actor...';
 
-        // Intento de apertura automática
-        window.location.href = appScheme;
-
-        // Fallback: Si no tiene la app, cambiar el texto después de unos segundos
+        // Intento 1: Redirección inmediata
         setTimeout(() => {
-            document.getElementById('tagline').innerText = '¿No tienes la app?';
-            document.getElementById('sub').innerText = 'Descarga el APK para ver este contenido.';
-        }, 3000);
+            window.location.href = appScheme;
+        }, 500);
+
+        // Fallback detect: si el usuario sigue aquí tras 4 segundos, mejorar el mensaje
+        setTimeout(() => {
+            document.getElementById('sub').innerText = 'Si la app no se ha abierto, pulsa el botón azul.';
+            document.querySelector('.loading').style.display = 'none';
+        }, 4000);
     </script>
 </body>
 </html>
