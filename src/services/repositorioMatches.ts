@@ -104,5 +104,7 @@ export function observarMatch(matchId: string, callback: (match: MovieMatch) => 
     if (snap.exists()) {
       callback({ ...snap.data(), id: snap.id } as MovieMatch);
     }
+  }, (err) => {
+    console.error('Error en observarMatch:', err);
   });
 }
