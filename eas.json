@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "channel": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_TMDB_READ_TOKEN": "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmYzFkZWEzNWNlZmFlNjExZmVmYjVmZjY5NDYwOGNlNyIsIm5iZiI6MTc2Mzc2MTc1NC45NTI5OTk4LCJzdWIiOiI2OTIwZGU1YTQ3MjY0OTcxZWE1ZDY0MWIiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.vizXy0O4jMudWJ8KWHbTnFNsAeO8CMp-Vtt1m6Mirds",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyB_aIn9L-uzjnh0JaB8NWTyR3jpfaZNTVs",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "veoveo-48667.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "veoveo-48667",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "veoveo-48667.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "646471274766",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:646471274766:android:ac2a9434b995d52631875f",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "646471274766-f37rkm8u6hk2jh3ri34g4o81032gr22n.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "646471274766-fo9via1cvtnn2hef1ppu3hbsdmclo43m.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "646471274766-fo9via1cvtnn2hef1ppu3hbsdmclo43m.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "autoIncrement": true
+    },
+    "test": {
+      "extends": "preview"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -11,6 +11,9 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { BloqueadosScreen } from '../screens/BloqueadosScreen';
 import { PeliculaScreen } from '../screens/PeliculaScreen';
 import { VerificationScreen } from '../screens/VerificationScreen';
+import ChatListScreen from '../screens/ChatListScreen';
+import ChatDetailScreen from '../screens/ChatDetailScreen';
+import MovieMatchScreen from '../screens/MovieMatchScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -63,6 +66,9 @@ export function RootNavigator() {
               <Stack.Screen name="Ajustes" component={AjustesScreen} />
               <Stack.Screen name="Actor" component={ActorScreen} />
               <Stack.Screen name="Pelicula" component={PeliculaScreen} />
+              <Stack.Screen name="ChatList" component={ChatListScreen} />
+              <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
+              <Stack.Screen name="MovieMatch" component={MovieMatchScreen} />
             </>
           )}
         </Stack.Navigator>

@@ -72,20 +72,29 @@
         const type = params.get('type') || 'main';
         const id = params.get('id');
 
-        const appScheme = id ? `veoveo://${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'veoveo://main';
-        document.getElementById('appLink').href = appScheme;
+        const path = id ? `${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'main';
+        const schemeTest = `veoveotest://${path}`;
+        const schemeProd = `veoveo://${path}`;
+        
+        document.getElementById('appLink').href = schemeTest;
 
         if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
         else if (type === 'actor') document.getElementById('tagline').innerText = 'Abriendo perfil de actor...';
 
-        // Intento 1: Redirección inmediata
+        // Intento 1: Redirección inmediata a TEST
         setTimeout(() => {
-            window.location.href = appScheme;
+            window.location.href = schemeTest;
         }, 500);
 
-        // Fallback detect: si el usuario sigue aquí tras 4 segundos, mejorar el mensaje
+        // Intento 2: Redirección a PROD si no abrió el anterior
         setTimeout(() => {
-            document.getElementById('sub').innerText = 'Si la app no se ha abierto, pulsa el botón azul.';
+            window.location.href = schemeProd;
+            document.getElementById('appLink').href = schemeProd;
+        }, 1500);
+
+        // Fallback detect
+        setTimeout(() => {
+            document.getElementById('sub').innerText = 'Si la app no se ha abierto, pulsa el botón.';
             document.querySelector('.loading').style.display = 'none';
         }, 4000);
     </script>

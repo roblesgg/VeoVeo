@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { doc, onSnapshot } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
 import { getFirestoreDb } from '../services/firebase';
 import { GradientBottom, AccentColor, Slate300, CardSurface } from '../theme/colors';
 
@@ -13,11 +14,34 @@ export function UpdateGuard({ children }: { children: React.ReactNode }) {
   const [minVersion, setMinVersion] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState('https://veoveo-app-install.netlify.app');
 
-  const isTest = Constants.expoConfig?.name === 'VeoVeoTest';
+  const isTest = Constants.expoConfig?.name === 'VeoVeoTest' || Constants.expoConfig?.name === 'VeoVeo Test' || __DEV__;
+  const lastNotifiedVersion = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    console.log(`[UpdateGuard] Iniciando... App: ${Constants.expoConfig?.name}, Version: ${currentVersion}, Mode: ${isTest ? 'TEST' : 'PROD'}`);
+    
+    if (minVersion && compareVersions(currentVersion, minVersion) === -1) {
+      if (lastNotifiedVersion.current !== minVersion) {
+        lastNotifiedVersion.current = minVersion;
+        void Notifications.scheduleNotificationAsync({
+          content: {
+            title: "🚀 ¡Nueva versión disponible!",
+            body: `La versión ${minVersion} ya está lista. Instálala para no perderte nada.`,
+            data: { url: downloadUrl },
+          },
+          trigger: null,
+        });
+      }
+    }
+  }, [minVersion, currentVersion, downloadUrl]);
 
   useEffect(() => {
     const db = getFirestoreDb();
-    if (!db) return;
+    if (!db) {
+      console.warn('[UpdateGuard] No se pudo obtener la base de datos Firestore');
+      setMinVersion('0.0.0'); // Desbloquear si no hay DB
+      return;
+    }
 
     const unsub = onSnapshot(doc(db, 'configuracion', 'app'), (snap) => {
       if (snap.exists()) {
@@ -32,14 +56,25 @@ export function UpdateGuard({ children }: { children: React.ReactNode }) {
         const mv = findValue(isTest ? 'min_version_test' : 'min_version');
         const du = findValue(isTest ? 'download_url_test' : 'download_url');
         
-        if (mv) setMinVersion(String(mv).trim());
+        console.log(`[UpdateGuard] Firestore sync: mv=${mv}, du=${du}`);
+
+        if (mv) {
+          setMinVersion(String(mv).trim());
+        } else {
+          setMinVersion('0.0.0'); // Fallback si el campo de test no existe aún
+        }
+        
         if (du) setDownloadUrl(String(du).trim());
+      } else {
+        console.warn('[UpdateGuard] El documento de configuración no existe');
+        setMinVersion('0.0.0');
       }
     }, (error) => {
       console.error('Error en UpdateGuard snapshot:', error);
+      setMinVersion('0.0.0'); // Desbloquear en error de permisos/red
     });
     return () => unsub();
-  }, []);
+  }, [isTest]);
 
   // Si aún no tenemos la versión mínima de Firestore, mostramos un cargando para evitar flickers
   if (!minVersion) {
