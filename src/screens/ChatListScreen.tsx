@@ -21,25 +21,37 @@ export default function ChatListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFriends, setShowFriends] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = observarMisChats((newChats) => {
-      setChats(newChats);
+    let unsub: (() => void) | undefined;
+    
+    try {
+      unsub = observarMisChats((newChats) => {
+        setChats(newChats);
+        setLoading(false);
+        setError(null);
+      }, (err) => {
+        console.error('Error en observarMisChats:', err);
+        setError('Error al cargar chats: ' + err.message);
+        setLoading(false);
+      });
+    } catch (err: any) {
+      console.error('Error fatal en ChatList:', err);
+      setError(err.message || 'Error desconocido');
       setLoading(false);
-    });
+    }
 
-    // Timeout de seguridad para el loading (por si falta el índice de Firestore)
     const timer = setTimeout(() => {
       if (loading) {
         setLoading(false);
-        console.warn('Timeout en ChatList: Es posible que falte el índice en Firestore.');
+        if (!error) setError('La carga está tardando demasiado. Verifica tu conexión o los índices de Firestore.');
       }
-    }, 10000);
+    }, 15000);
 
     return () => {
-        unsub();
-        clearTimeout(timer);
+      if (unsub) unsub();
+      clearTimeout(timer);
     };
   }, []);
 
@@ -99,6 +111,15 @@ export default function ChatListScreen({ navigation }: Props) {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#38bdf8" />
+          <Text style={[styles.emptyText, { marginTop: 20 }]}>Buscando tus mensajes...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <Ionicons name="alert-circle-outline" size={64} color="#ff8a80" />
+          <Text style={[styles.errorText, { paddingHorizontal: 40 }]}>{error}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => navigation.replace('ChatList')}>
+            <Text style={styles.retryText}>REINTENTAR</Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -142,5 +163,8 @@ const styles = StyleSheet.create({
   chatTime: { color: 'rgba(255,255,255,0.4)', fontSize: 12 },
   lastMsg: { color: 'rgba(255,255,255,0.5)', fontSize: 14 },
   empty: { marginTop: 100, alignItems: 'center' },
-  emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, marginTop: 16 },
+  emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, marginTop: 16, textAlign: 'center' },
+  errorText: { color: '#ff8a80', fontSize: 16, marginTop: 16, textAlign: 'center', lineHeight: 22 },
+  retryBtn: { marginTop: 30, backgroundColor: '#38bdf8', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16 },
+  retryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 });
