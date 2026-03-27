@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, View, Text, FlatList, Image, Pressable, 
-  ActivityIndicator, StatusBar 
+  ActivityIndicator, StatusBar, Modal, ScrollView 
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,8 +10,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 
-// Services/Types
-import { observarMisChats } from '../services/repositorioChats';
+// Services/Hooks/Types
+import { observarMisChats, crearChat } from '../services/repositorioChats';
+import { useSocialData } from '../hooks/social/useSocialData';
 import { Chat } from '../types/chat';
 import { GradientTop, GlassSurface, GlassBorder } from '../theme/colors';
 
@@ -19,9 +20,24 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ChatList'>;
 
 export default function ChatListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
+  const { amigos } = useSocialData();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFriends, setShowFriends] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleStartChat = async (uid: string, name: string) => {
+    setShowFriends(false);
+    setLoading(true);
+    try {
+        const chatId = await crearChat([uid]);
+        navigation.navigate('ChatDetail', { chatId, otherUserName: name });
+    } catch (err: any) {
+        setError('No se pudo crear el chat: ' + err.message);
+    } finally {
+        setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -102,9 +118,9 @@ export default function ChatListScreen({ navigation }: Props) {
         <Text style={styles.title}>Mensajes</Text>
         <Pressable 
             style={styles.newChatBtn} 
-            onPress={() => navigation.goBack()} // Volver a social para elegir amigo es lo más fácil ahora
+            onPress={() => setShowFriends(true)}
         >
-            <Ionicons name="people" size={24} color="#fff" />
+            <Ionicons name="add" size={28} color="#fff" />
         </Pressable>
       </View>
 
@@ -135,6 +151,50 @@ export default function ChatListScreen({ navigation }: Props) {
           }
         />
       )}
+
+      {/* Modal de Selección de Amigos */}
+      <Modal
+        visible={showFriends}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFriends(false)}
+      >
+        <BlurView intensity={80} tint="dark" style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Nuevo Mensaje</Text>
+                    <Pressable onPress={() => setShowFriends(false)} style={styles.closeBtn}>
+                        <Ionicons name="close" size={24} color="#fff" />
+                    </Pressable>
+                </View>
+                
+                <ScrollView contentContainerStyle={styles.friendsList}>
+                    {amigos.length === 0 ? (
+                        <Text style={styles.emptyText}>No tienes amigos aún para chatear</Text>
+                    ) : (
+                        amigos.map(amigo => (
+                            <Pressable 
+                                key={amigo.uid} 
+                                style={styles.friendItem}
+                                onPress={() => handleStartChat(amigo.uid, amigo.username || 'Amigo')}
+                            >
+                                <View style={styles.friendAvatar}>
+                                    {amigo.fotoPerfil ? (
+                                        <Image source={{ uri: amigo.fotoPerfil }} style={styles.avatarImg} />
+                                    ) : (
+                                        <Ionicons name="person" size={20} color="#fff" />
+                                    )}
+                                </View>
+                                <Text style={styles.friendName}>{amigo.username || amigo.email}</Text>
+                                <Ionicons name="add-circle-outline" size={24} color="#38bdf8" />
+                            </Pressable>
+                        ))
+                    )}
+                </ScrollView>
+            </View>
+        </BlurView>
+      </Modal>
+
     </View>
   );
 }
@@ -167,4 +227,16 @@ const styles = StyleSheet.create({
   errorText: { color: '#ff8a80', fontSize: 16, marginTop: 16, textAlign: 'center', lineHeight: 22 },
   retryBtn: { marginTop: 30, backgroundColor: '#38bdf8', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 16 },
   retryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  
+  // Modal Styles
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { width: '100%', maxHeight: '70%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 32, borderWidth: 1, borderColor: GlassBorder, overflow: 'hidden' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderColor: GlassBorder },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  closeBtn: { padding: 4 },
+  friendsList: { padding: 10 },
+  friendItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 20, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.03)' },
+  friendAvatar: { width: 44, height: 44, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 15, overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%' },
+  friendName: { flex: 1, color: '#fff', fontSize: 16, fontWeight: '600' },
 });
