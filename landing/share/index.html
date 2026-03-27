@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abriendo en VeoVeo...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1A1A2E;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        .btn {
+            background-color: #38bdf8;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+            display: inline-block;
+        }
+        .loading {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #38bdf8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="loading"></div>
+    <h2 id="tagline">Abriendo en la app...</h2>
+    <p id="sub">Si la app no se abre automáticamente, pulsa el botón.</p>
+    
+    <a id="appLink" href="#" class="btn">Abrir en VeoVeo</a>
+    <a href="https://veoveo-app.netlify.app#download" style="margin-top: 30px; color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.9em;">Descargar VeoVeo APK</a>
+
+    <script>
+        // Obtener parámetros: ?type=movie&id=123
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get('type') || 'main';
+        const id = params.get('id');
+
+        // Esquema: veoveo://movie/123
+        const appScheme = id ? `veoveo://${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'veoveo://main';
+        
+        document.getElementById('appLink').href = appScheme;
+
+        if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
+        else if (type === 'actor') document.getElementById('tagline').innerText = 'Explorando actor...';
+
+        // Intento de apertura automática
+        window.location.href = appScheme;
+
+        // Fallback: Si no tiene la app, cambiar el texto después de unos segundos
+        setTimeout(() => {
+            document.getElementById('tagline').innerText = '¿No tienes la app?';
+            document.getElementById('sub').innerText = 'Descarga el APK para ver este contenido.';
+        }, 3000);
+    </script>
+</body>
+</html>
