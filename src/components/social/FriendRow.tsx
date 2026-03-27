@@ -10,10 +10,11 @@ type Props = {
   onPress: () => void;
   onEliminar: () => void;
   onBloquear: () => void;
+  onChat?: () => void;
   fontFamily: string;
 };
 
-export const FriendRow = React.memo(({ amigo, onPress, onEliminar, onBloquear, fontFamily }: Props) => {
+export const FriendRow = React.memo(({ amigo, onPress, onEliminar, onBloquear, onChat, fontFamily }: Props) => {
   const statusColor = amigo.estado === 'online' ? '#7CFC9A' : amigo.estado === 'ausente' ? '#FFB74D' : '#9E9E9E';
 
   return (
@@ -34,6 +35,11 @@ export const FriendRow = React.memo(({ amigo, onPress, onEliminar, onBloquear, f
         </View>
       </Pressable>
       <View style={styles.actions}>
+        {onChat && (
+          <Pressable style={styles.iconBtn} onPress={onChat}>
+            <Ionicons name="chatbox-ellipses-outline" size={20} color="#6C63FF" />
+          </Pressable>
+        )}
         <Pressable style={styles.iconBtn} onPress={() => Alert.alert('Eliminar', '¿Seguro?', [{text:'No'}, {text:'Sí', onPress:onEliminar}])}>
           <Ionicons name="person-remove-outline" size={20} color="rgba(255,255,255,0.5)" />
         </Pressable>
