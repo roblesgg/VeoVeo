@@ -78,6 +78,8 @@ export function observarMisChats(callback: (chats: Chat[]) => void): () => void 
   return onSnapshot(q, (snap) => {
     const chats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Chat));
     callback(chats);
+  }, (err) => {
+    console.error('Error en observarMisChats:', err);
   });
 }
 
@@ -121,5 +123,7 @@ export function observarMensajes(chatId: string, callback: (mensajes: Message[])
   return onSnapshot(q, (snap) => {
     const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
     callback(msgs);
+  }, (err) => {
+    console.error('Error en observarMensajes:', err);
   });
 }
