@@ -65,7 +65,7 @@ export async function crearChat(participantes: string[], tipo: ChatType = 'indiv
 }
 
 /** Observa la lista de chats del usuario */
-export function observarMisChats(callback: (chats: Chat[]) => void): () => void {
+export function observarMisChats(callback: (chats: Chat[]) => void, errorCallback?: (err: any) => void): () => void {
   const db = dbOrThrow();
   const uidActual = uidOrThrow();
 
@@ -80,6 +80,7 @@ export function observarMisChats(callback: (chats: Chat[]) => void): () => void 
     callback(chats);
   }, (err) => {
     console.error('Error en observarMisChats:', err);
+    if (errorCallback) errorCallback(err);
   });
 }
 
@@ -112,7 +113,7 @@ export async function enviarMensaje(chatId: string, texto: string, tipo: Message
 }
 
 /** Observa los mensajes de un chat específico */
-export function observarMensajes(chatId: string, callback: (mensajes: Message[]) => void): () => void {
+export function observarMensajes(chatId: string, callback: (mensajes: Message[]) => void, errorCallback?: (err: any) => void): () => void {
   const db = dbOrThrow();
   const q = query(
     collection(db, 'chats', chatId, 'mensajes'),
@@ -125,5 +126,6 @@ export function observarMensajes(chatId: string, callback: (mensajes: Message[])
     callback(msgs);
   }, (err) => {
     console.error('Error en observarMensajes:', err);
+    if (errorCallback) errorCallback(err);
   });
 }
