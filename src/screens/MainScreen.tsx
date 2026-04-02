@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainBottomBar } from '../components/MainBottomBar';
 import type { RootStackParamList } from '../navigation/types';
@@ -11,12 +11,10 @@ import { GradientBottom, GradientTop } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { obtenerPerfilUsuario } from '../services/repositorioUsuarios';
 import { useMontserrat } from '../theme/useMontserrat';
-import { SHADOWS } from '../theme/theme';
-import { BlurView } from 'expo-blur';
+import { SplashView } from '../components/SplashView';
 import { BibliotecaAmigoScreen } from './BibliotecaAmigoScreen';
 import { BibliotecaTab } from './BibliotecaTab';
 import { DiscoverTab } from './DiscoverTab';
-import { PeliculaScreen } from './PeliculaScreen';
 import { SolicitudesScreen } from './SolicitudesScreen';
 import { SocialTab } from './SocialTab';
 import { TierListsTab } from './TierListsTab';
@@ -33,6 +31,7 @@ export function MainScreen() {
   const [amigoUidSeleccionado, setAmigoUidSeleccionado] = useState('');
   const [mostrarSolicitudes, setMostrarSolicitudes] = useState(false);
   const [bibRefresh, setBibRefresh] = useState(0);
+  const [appReady, setAppReady] = useState(false);
 
   const isFocused = useIsFocused();
   const [userProfile, setUserProfile] = useState<{ fotoPerfil?: string | null }>({});
@@ -45,6 +44,14 @@ export function MainScreen() {
       })();
     }
   }, [isFocused, user]);
+
+  // Simulate minimal loading time for Splash
+  useEffect(() => {
+    if (loaded) {
+      const timer = setTimeout(() => setAppReady(true), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [loaded]);
 
   const ff = useMemo(() => fontFamily ?? 'System', [fontFamily]);
 
@@ -73,23 +80,12 @@ export function MainScreen() {
     return () => sub.remove();
   }, [isFocused, mostrarBibliotecaAmigo, mostrarSolicitudes, paginaActual, pantallaTierList]);
 
+  if (!appReady) return <SplashView />;
+
   const showBottomBar =
     !mostrarBibliotecaAmigo &&
     !mostrarSolicitudes &&
     !(paginaActual === 2 && pantallaTierList !== 0);
-
-  const showProfileBtn =
-    !(paginaActual === 2 && pantallaTierList !== 0) &&
-    !mostrarBibliotecaAmigo &&
-    !mostrarSolicitudes;
-
-  if (!loaded) {
-    return (
-      <LinearGradient colors={[GradientTop, GradientBottom]} style={styles.flex}>
-        <View />
-      </LinearGradient>
-    );
-  }
 
   const navigatePelicula = (id: number) => {
     navigation.navigate('Pelicula', { movieId: id });
@@ -167,7 +163,8 @@ export function MainScreen() {
               onChatConAmigo={async (uid) => {
                 const { crearChat } = await import('../services/repositorioChats');
                 const chatId = await crearChat([uid]);
-                navigation.navigate('ChatDetail', { chatId, otherUserName: 'Chat' });
+                const otherUserName = (await import('../services/repositorioSocial')).buscarUsuarios(uid);
+                navigation.navigate('ChatDetail', { chatId, otherUserName: 'Amigo' });
               }}
               onPerfilClick={() => navigation.navigate('Perfil')}
               userFoto={userProfile?.fotoPerfil || user?.photoURL}
@@ -179,32 +176,10 @@ export function MainScreen() {
       {showBottomBar ? (
         <MainBottomBar onTabChange={handleTabPress} paginaActual={paginaActual} />
       ) : null}
-
-      {/* Profile button moved into tab headers */}
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  perfilBtn: {
-    position: 'absolute',
-    right: 25,
-    zIndex: 20,
-  },
-  perfilInner: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  perfilFoto: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 22,
-  },
+  flex: { flex: 1 }
 });

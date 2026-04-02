@@ -41,6 +41,15 @@ export interface MovieDetails {
     poster_path: string;
     backdrop_path: string;
   } | null;
+  videos?: {
+    results: {
+      id: string;
+      key: string;
+      name: string;
+      site: string;
+      type: string;
+    }[];
+  };
 }
 
 export interface CollectionDetails {

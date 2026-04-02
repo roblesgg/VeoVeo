@@ -73,7 +73,7 @@ export const tmdbApi = {
 
   async obtenerDetallesPelicula(movieId: number, idioma = 'es-ES') {
     const incluirAdulto = await preferences.cargarPreferenciaAdulto();
-    return tmdbFetch<MovieDetails>(`movie/${movieId}?language=${idioma}&include_adult=${incluirAdulto}`);
+    return tmdbFetch<MovieDetails>(`movie/${movieId}?language=${idioma}&include_adult=${incluirAdulto}&append_to_response=videos`);
   },
 
   async obtenerCreditosPelicula(movieId: number, idioma = 'es-ES') {

@@ -18,17 +18,17 @@ export function RatingBadge({ rating, fontFamily }: Props) {
   let textColor = '#fff';
 
   const ratingDescription = useMemo(() => {
-    if (rating >= 5) return 'Excelente';
-    if (rating >= 4) return 'Muy buena';
-    if (rating >= 3) return 'Recomendable';
-    if (rating >= 2) return 'Pasable';
-    return 'Pésima';
+    if (rating >= 5) return 'Obra Maestra';
+    if (rating >= 4) return 'Espectacular';
+    if (rating >= 3) return 'Muy buena';
+    if (rating >= 2) return 'Me gustó';
+    return 'Está bien';
   }, [rating]);
 
   if (rating >= 5) {
     iconColor = '#FFD700';
     glow = true;
-  } else if (rating >= 3) {
+  } else if (rating >= 3.5) {
     iconColor = '#FFC107'; // Amber
   } else if (rating > 0) {
     iconColor = '#FF9800'; // Orange
@@ -48,7 +48,7 @@ export function RatingBadge({ rating, fontFamily }: Props) {
               style={{ marginRight: 2 }} 
             />
             <Text style={[styles.text, { fontFamily, color: textColor }]}>
-              {ratingDescription} • {rating}
+              {ratingDescription} • {rating.toFixed(1)}
             </Text>
           </>
         )}

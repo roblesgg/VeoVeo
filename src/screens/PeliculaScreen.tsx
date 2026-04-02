@@ -27,6 +27,7 @@ import { MovieCast } from '../components/movie/MovieCast';
 import { MovieProviders } from '../components/movie/MovieProviders';
 import { CollectionSaga } from '../components/movie/CollectionSaga';
 import { MovieRatingModal } from '../components/movie/MovieRatingModal';
+import { MovieSocialProof } from '../components/movie/MovieSocialProof';
 
 export function PeliculaScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'Pelicula'>>();
@@ -147,12 +148,13 @@ export function PeliculaScreen() {
             onVista={() => (estadoPelicula === 2 ? onToggleVista(0) : setShowRatingModal(true))}
             fontFamily={fontFamily}
           />
-
           <MovieRatingButton 
             peliculaUsuario={peliculaBib}
             onPress={() => setShowRatingModal(true)}
             fontFamily={fontFamily}
           />
+
+          <MovieSocialProof movieId={movieId} fontFamily={fontFamily} />
 
           <Text style={[styles.sectionTitle, { fontFamily }]}>Sinopsis</Text>
           <Text

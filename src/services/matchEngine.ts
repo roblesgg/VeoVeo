@@ -1,86 +1,102 @@
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, serverTimestamp } from 'firebase/firestore';
-import { getFirestoreDb } from '../services/firebase';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, arrayUnion, query, where } from 'firebase/firestore';
+import { getFirestoreDb } from './firebase';
+import { listarPeliculasPorEstadoDeUsuario } from './repositorioPeliculasUsuario';
 
 const db = getFirestoreDb()!;
 
-export interface MatchSession {
-  id: string;
+export interface MatchSettings {
   participants: string[];
   targetMatches: number;
-  matchesFound: number[];
-  status: 'active' | 'completed';
-  priorityStack: number[]; // IDs intersection of Watchlists
-  swipes: {
-    [uid: string]: {
-      [movieId: number]: boolean;
-    };
-  };
+  mode: 'watchlist_only' | 'mixed';
 }
 
 /**
- * Crea una sesión de Match entre usuarios
+ * Inicia una sesión de Match cruzando las listas "Por Ver" de los participantes
  */
-export async function iniciarSesionMatch(participantUids: string[], targetCount = 3) {
-  const sessionId = `match_${participantUids.sort().join('_')}`;
-  const sessionRef = doc(db, 'match_sessions', sessionId);
+export async function iniciarSesionMatch(participantUids: string[], target = 3) {
+  const matchId = `match_${Date.now()}_${participantUids.join('_')}`;
   
-  const snap = await getDoc(sessionRef);
+  // Obtener intersección de listas "Por Ver" para priorizar
+  // Nota: En una app real esto se haría en el servidor (Cloud Function)
+  // Aquí lo hacemos localmente extrayendo las listas
   
-  if (!snap.exists()) {
-    await setDoc(sessionRef, {
-      id: sessionId,
-      participants: participantUids,
-      targetMatches: targetCount,
-      matchesFound: [],
-      status: 'active',
-      priorityStack: [], 
-      updatedAt: serverTimestamp()
-    });
-  }
-  
-  return sessionId;
-}
-
-/**
- * Registra un voto (Swipe) en la sesión
- */
-export async function registrarVoto(sessionId: string, uid: string, movieId: number, vote: boolean) {
-  const sessionRef = doc(db, 'match_sessions', sessionId);
-  const swipePath = `swipes.${uid}.${movieId}`;
-  
-  await updateDoc(sessionRef, {
-    [swipePath]: vote,
-    updatedAt: serverTimestamp()
+  const matchRef = doc(db, 'matches', matchId);
+  await setDoc(matchRef, {
+    id: matchId,
+    participants: participantUids,
+    settings: {
+      targetMatches: target,
+      mode: 'watchlist_only'
+    },
+    matchedMovies: [],
+    votes: {}, // { movieId: { uid1: 'yes', uid2: 'no' } }
+    status: 'active',
+    createdAt: Date.now()
   });
 
-  const snap = await getDoc(sessionRef);
-  const data = snap.data() as MatchSession;
+  return matchId;
+}
+
+/**
+ * Obtiene candidatos para el Match priorizando la intersección de listas
+ */
+export async function obtenerCandidatosMatch(matchId: string, participants: string[]) {
+  const { tmdbApi } = require('./tmdbClient');
   
-  const allLiked = data.participants.every(pUid => 
-    data.swipes?.[pUid]?.[movieId] === true
+  // 1. Obtener "Por ver" de todos
+  const lists = await Promise.all(
+    participants.map(uid => listarPeliculasPorEstadoDeUsuario(uid, 'por_ver'))
   );
 
-  if (allLiked && !data.matchesFound.includes(movieId)) {
-    await updateDoc(sessionRef, {
-      matchesFound: arrayUnion(movieId),
-      updatedAt: serverTimestamp()
-    });
-    
-    if (data.matchesFound.length + 1 >= data.targetMatches) {
-      await updateDoc(sessionRef, { status: 'completed' });
-    }
-    
-    return true; 
+  // 2. Encontrar intersección (películas que están en más de una lista)
+  const allMovieIds = lists.flatMap(l => l.map(p => p.idPelicula));
+  const counts: Record<number, number> = {};
+  allMovieIds.forEach(id => counts[id] = (counts[id] || 0) + 1);
+
+  // Ordenar por popularidad/frecuencia
+  const priorityIds = Object.keys(counts)
+    .sort((a, b) => counts[Number(b)] - counts[Number(a)])
+    .map(Number);
+
+  // 3. Obtener detalles de TMDB para las prioritarias
+  const priorityMovies = [];
+  for (const id of priorityIds.slice(0, 15)) {
+    try {
+      const details = await tmdbApi.obtenerDetallesPelicula(id);
+      priorityMovies.push(details);
+    } catch (e) {}
   }
 
-  return false;
+  // 4. Si faltan, rellenar con tendencias
+  if (priorityMovies.length < 20) {
+    const trending = await tmdbApi.obtenerTendencias();
+    priorityMovies.push(...trending.results.slice(0, 20 - priorityMovies.length));
+  }
+
+  return priorityMovies;
 }
 
-/**
- * Escucha la sesión en tiempo real para avisos de Match
- */
-export function escucharSesionMatch(sessionId: string, callback: (session: MatchSession) => void) {
-  return onSnapshot(doc(db, 'match_sessions', sessionId), (snap) => {
-    if (snap.exists()) callback({ id: snap.id, ...snap.data() } as MatchSession);
-  });
+export async function registrarVoto(matchId: string, userId: string, movieId: number, vote: 'yes' | 'no') {
+  const matchRef = doc(db, 'matches', matchId);
+  const snap = await getDoc(matchRef);
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  const votes = data.votes || {};
+  if (!votes[movieId]) votes[movieId] = {};
+  votes[movieId][userId] = vote;
+
+  const participants = data.participants as string[];
+  const everyoneVoted = participants.every(uid => votes[movieId][uid] !== undefined);
+  const everyoneSaidYes = participants.every(uid => votes[movieId][uid] === 'yes');
+
+  const updates: any = { votes };
+
+  if (everyoneVoted && everyoneSaidYes) {
+    updates.matchedMovies = arrayUnion(movieId);
+    // Notificación de Match (Lógica de notificación aquí)
+  }
+
+  await updateDoc(matchRef, updates);
+  return everyoneVoted && everyoneSaidYes;
 }

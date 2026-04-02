@@ -42,6 +42,14 @@ export async function obtenerPeliculaUsuario(idPelicula: number): Promise<Pelicu
   }
 }
 
+export async function obtenerPeliculaDeUsuario(uid: string, idPelicula: number): Promise<PeliculaUsuario | null> {
+  const db = getFirestoreDb();
+  if (!db) return null;
+  const snap = await getDoc(doc(db, 'usuarios', uid, 'peliculas', String(idPelicula)));
+  if (!snap.exists()) return null;
+  return snap.data() as PeliculaUsuario;
+}
+
 export async function listarPeliculasPorEstado(estado: 'por_ver' | 'vista'): Promise<PeliculaUsuario[]> {
   const uid = uidOrThrow();
   const db = dbOrThrow();

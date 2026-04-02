@@ -1,9 +1,12 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { Image, StyleSheet, Text, View, Dimensions, Pressable } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { posterUrl } from '../../services/tmdbClient';
 import type { MovieDetails, WatchProvidersResponse } from '../../types/tmdb';
 import { SHADOWS } from '../../theme/theme';
+import { AccentColor } from '../../theme/colors';
 
 type Props = {
   detalles: MovieDetails;
@@ -20,9 +23,22 @@ export const MovieHeader = React.memo(({ detalles, fontFamily, misPlataformas = 
   const isFlatrate = flatrate.some(p => misPlataformas.includes(p));
   const isRent = !isFlatrate && rent.some(p => misPlataformas.includes(p));
 
+  const trailer = detalles.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+
+  const playTrailer = () => {
+    if (trailer) {
+      WebBrowser.openBrowserAsync(`https://www.youtube.com/watch?v=${trailer.key}`);
+    }
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return '—';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Title Card Overlay */}
       <View style={styles.content}>
         <View style={[styles.macCardWrap, SHADOWS.mac]}>
           <BlurView intensity={60} style={StyleSheet.absoluteFill} tint="dark" />
@@ -32,37 +48,37 @@ export const MovieHeader = React.memo(({ detalles, fontFamily, misPlataformas = 
             <View style={styles.posterShadow}>
               <View style={styles.posterClip}>
                 {detalles.poster_path ? (
-                  <Image
-                    source={{ uri: posterUrl(detalles.poster_path, 'w500')! }}
-                    style={styles.mainPoster}
-                  />
+                  <Image source={{ uri: posterUrl(detalles.poster_path, 'w500')! }} style={styles.mainPoster} />
                 ) : (
                   <View style={[styles.mainPoster, { backgroundColor: 'rgba(255,255,255,0.05)' }]} />
                 )}
-                
                 {(isFlatrate || isRent) && (
-                  <View style={[
-                    styles.dot, 
-                    { backgroundColor: isFlatrate ? '#2ecc71' : '#f39c12' }
-                  ]} />
+                  <View style={[styles.dot, { backgroundColor: isFlatrate ? '#2ecc71' : '#f39c12' }]} />
                 )}
               </View>
             </View>
 
             <View style={styles.infoCol}>
-              <Text style={[styles.title, { fontFamily }]} adjustsFontSizeToFit numberOfLines={2}>
-                {detalles.title}
-              </Text>
+              <Text style={[styles.title, { fontFamily }]} adjustsFontSizeToFit numberOfLines={2}>{detalles.title}</Text>
               <View style={styles.metaRow}>
-                <Text style={[styles.metaText, { fontFamily }]}>
-                  {detalles.release_date?.slice(0, 4) ?? '—'}  •  ⭐ {detalles.vote_average.toFixed(1)}
-                </Text>
+                <Text style={[styles.metaText, { fontFamily }]}>{formatDate(detalles.release_date)}</Text>
+                <View style={styles.badge}>
+                  <Text style={[styles.badgeText, { fontFamily }]}>⭐ {detalles.vote_average.toFixed(1)}</Text>
+                </View>
                 {detalles.runtime ? (
                   <View style={styles.badge}>
                     <Text style={[styles.badgeText, { fontFamily }]}>{detalles.runtime} min</Text>
                   </View>
                 ) : null}
               </View>
+              
+              {trailer && (
+                <Pressable onPress={playTrailer} style={({ pressed }) => [styles.trailerBtn, pressed && { opacity: 0.7 }]}>
+                  <Ionicons name="play-circle" size={18} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={[styles.trailerText, { fontFamily }]}>Ver Trailer</Text>
+                </Pressable>
+              )}
+
               {detalles.genres.length ? (
                 <View style={styles.genreRow}>
                   {detalles.genres.slice(0, 3).map((g) => (
@@ -83,57 +99,32 @@ export const MovieHeader = React.memo(({ detalles, fontFamily, misPlataformas = 
 const styles = StyleSheet.create({
   container: { width: '100%', minHeight: 200 },
   content: { paddingHorizontal: 20, paddingTop: 100, zIndex: 10 },
-  macCardWrap: {
-    borderRadius: 24,
-    marginBottom: 32,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  macCardInner: {
-    flexDirection: 'row',
-    gap: 16,
-    padding: 16,
-    alignItems: 'center',
-  },
-  posterShadow: {
-    width: 100,
-    height: 150,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    ...SHADOWS.macLight
-  },
+  macCardWrap: { borderRadius: 24, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  macCardInner: { flexDirection: 'row', gap: 16, padding: 16, alignItems: 'center' },
+  posterShadow: { width: 100, height: 150, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.5)', ...SHADOWS.macLight },
   posterClip: { width: '100%', height: '100%', borderRadius: 16, overflow: 'hidden' },
   mainPoster: { width: '100%', height: '100%' },
   infoCol: { flex: 1 },
-  title: { fontSize: 24, color: '#fff', fontWeight: '800', lineHeight: 28, marginBottom: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  metaText: { color: '#ccc', fontSize: 13 },
-  badge: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  title: { fontSize: 24, color: '#fff', fontWeight: '800', lineHeight: 28, marginBottom: 6 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  metaText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' },
+  badge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
   badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
-  chip: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+  trailerBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(56, 189, 248, 0.2)', 
+    paddingHorizontal: 12, 
+    paddingVertical: 8, 
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    marginBottom: 10,
+    alignSelf: 'flex-start'
   },
-  chipText: { color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '600' },
-  dot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 4
-  }
+  trailerText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  chip: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: 'rgba(255,255,255,0.05)' },
+  chipText: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '600' },
+  dot: { position: 'absolute', top: 8, right: 8, width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.5, shadowRadius: 2, elevation: 4 }
 });

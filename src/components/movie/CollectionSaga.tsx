@@ -11,13 +11,16 @@ type Props = {
 
 export const CollectionSaga = React.memo(({ coleccion, fontFamily, onMovieClick }: Props) => {
   if (!coleccion || coleccion.parts.length <= 1) return null;
+  const sortedParts = [...coleccion.parts].sort((a, b) => 
+    (a.release_date || '').localeCompare(b.release_date || '')
+  );
 
   return (
     <View style={styles.container}>
       <Text style={[styles.section, { fontFamily }]}>De la misma saga</Text>
       <FlatList
         horizontal
-        data={coleccion.parts}
+        data={sortedParts}
         keyExtractor={(item) => String(item.id)}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 12, paddingRight: 20 }}

@@ -198,3 +198,24 @@ export async function bloquearUsuario(amigoUid: string): Promise<void> {
     { merge: true }
   );
 }
+
+export async function obtenerActividadAmigosPelicula(idPelicula: number) {
+  const { obtenerAmigos } = require('./repositorioSocial');
+  const amigos = await obtenerAmigos();
+  const actividad = [];
+  const { obtenerPeliculaDeUsuario } = require('./repositorioPeliculasUsuario');
+  
+  for (const amigo of amigos) {
+    const p = await obtenerPeliculaDeUsuario(amigo.uid, idPelicula);
+    if (p) {
+      actividad.push({
+        uid: amigo.uid,
+        username: amigo.username,
+        foto: amigo.foto,
+        estado: p.estado,
+        valoracion: p.valoracion,
+      });
+    }
+  }
+  return actividad;
+}
