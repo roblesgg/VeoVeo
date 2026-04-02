@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,6 +16,14 @@ export function RatingBadge({ rating, fontFamily }: Props) {
   let iconColor = '#FFD700'; // Gold default
   let glow = false;
   let textColor = '#fff';
+
+  const ratingDescription = useMemo(() => {
+    if (rating >= 5) return 'Excelente';
+    if (rating >= 4) return 'Muy buena';
+    if (rating >= 3) return 'Recomendable';
+    if (rating >= 2) return 'Pasable';
+    return 'Pésima';
+  }, [rating]);
 
   if (rating >= 5) {
     iconColor = '#FFD700';
@@ -39,7 +47,9 @@ export function RatingBadge({ rating, fontFamily }: Props) {
               color={iconColor} 
               style={{ marginRight: 2 }} 
             />
-            <Text style={[styles.text, { fontFamily, color: textColor }]}>{rating}</Text>
+            <Text style={[styles.text, { fontFamily, color: textColor }]}>
+              {ratingDescription} • {rating}
+            </Text>
           </>
         )}
       </View>

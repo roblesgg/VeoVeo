@@ -1,131 +1,98 @@
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  query,
-  setDoc,
-  updateDoc,
-  where,
-  orderBy,
-  limit,
-  serverTimestamp,
-  addDoc,
-  Timestamp,
-  arrayUnion,
-} from 'firebase/firestore';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
-import type { Chat, ChatType } from '../types/chat';
-import type { Message } from '../types/message';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, serverTimestamp, collection, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { getFirestoreDb } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
+import type { Movie } from '../types/tmdb';
 
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
+const db = getFirestoreDb()!;
+
+export interface ChatMessage {
+  id?: string;
+  senderId: string;
+  type: 'text' | 'movie' | 'match_alert';
+  text?: string;
+  movieData?: {
+    id: number;
+    title: string;
+    posterPath: string;
+  };
+  timestamp: any;
 }
 
-function dbOrThrow() {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
-
-/** Crea un chat individual o grupal */
-export async function crearChat(participantes: string[], tipo: ChatType = 'individual', nombre?: string): Promise<string> {
-  const db = dbOrThrow();
-  const uidActual = uidOrThrow();
-  const todosParticipantes = Array.from(new Set([...participantes, uidActual]));
-
-  // Si es individual, verificar si ya existe
-  if (tipo === 'individual' && todosParticipantes.length === 2) {
-    const q = query(
-      collection(db, 'chats'),
-      where('type', '==', 'individual'),
-      where('participants', 'array-contains', uidActual)
-    );
-    const snap = await getDocs(q);
-    const existente = snap.docs.find(d => {
-      const p = (d.data() as Chat).participants;
-      return p.length === 2 && p.includes(todosParticipantes[0]) && p.includes(todosParticipantes[1]);
+/**
+ * Crea un chat directo o grupal
+ */
+export async function crearChat(participantUids: string[], isGroup = false, groupMetadata?: any) {
+  const participants = participantUids.sort(); // Orden para IDs estables
+  const chatId = isGroup ? `group_${Date.now()}` : `direct_${participants.join('_')}`;
+  
+  const chatRef = doc(db, 'chats', chatId);
+  const snap = await getDoc(chatRef);
+  
+  if (!snap.exists()) {
+    await setDoc(chatRef, {
+      id: chatId,
+      participants,
+      type: isGroup ? 'group' : 'direct',
+      metadata: groupMetadata || {},
+      lastMessage: null,
+      updatedAt: serverTimestamp()
     });
-    if (existente) return existente.id;
+  }
+  
+  return chatId;
+}
+
+/**
+ * Envía un mensaje (Texto o Película)
+ */
+export async function enviarMensaje(chatId: string, senderId: string, content: string | Movie, type: 'text' | 'movie' = 'text') {
+  const msgRef = collection(db, 'chats', chatId, 'messages');
+  
+  let msgData: any = {
+    senderId,
+    type,
+    timestamp: serverTimestamp(),
+  };
+
+  if (type === 'movie') {
+    const movie = content as Movie;
+    msgData.movieData = {
+      id: movie.id,
+      title: movie.title,
+      posterPath: movie.poster_path
+    };
+    msgData.text = `🎬 ${movie.title}`;
+  } else {
+    msgData.text = content as string;
   }
 
-  const chatRef = doc(collection(db, 'chats'));
-  const nuevoChat: Omit<Chat, 'id'> = {
-    type: tipo,
-    participants: todosParticipantes,
-    createdAt: Date.now(),
-    name: nombre,
-  };
-
-  await setDoc(chatRef, nuevoChat);
-  return chatRef.id;
-}
-
-/** Observa la lista de chats del usuario */
-export function observarMisChats(callback: (chats: Chat[]) => void, errorCallback?: (err: any) => void): () => void {
-  const db = dbOrThrow();
-  const uidActual = uidOrThrow();
-
-  const q = query(
-    collection(db, 'chats'),
-    where('participants', 'array-contains', uidActual),
-    orderBy('createdAt', 'desc')
-  );
-
-  return onSnapshot(q, (snap) => {
-    const chats = snap.docs.map(d => ({ ...d.data(), id: d.id } as Chat));
-    callback(chats);
-  }, (err) => {
-    console.error('Error en observarMisChats:', err);
-    if (errorCallback) errorCallback(err);
-  });
-}
-
-/** Envía un mensaje a un chat */
-export async function enviarMensaje(chatId: string, texto: string, tipo: Message['type'] = 'text', matchId?: string): Promise<void> {
-  const db = dbOrThrow();
-  const uidActual = uidOrThrow();
-
-  // 1. Añadir mensaje a la subcolección
-  const msgRef = collection(db, 'chats', chatId, 'mensajes');
-  const nuevoMsg: Omit<Message, 'id'> = {
-    chatId,
-    senderId: uidActual,
-    senderName: getFirebaseAuth()?.currentUser?.displayName || 'Usuario',
-    text: texto,
-    type: tipo,
-    timestamp: Date.now(),
-    matchId,
-  };
-  await addDoc(msgRef, nuevoMsg);
-
-  // 2. Actualizar último mensaje en el chat
+  const newDoc = await addDoc(msgRef, msgData);
+  
+  // Actualizar puntero del último mensaje
   await updateDoc(doc(db, 'chats', chatId), {
     lastMessage: {
-      text: texto,
-      senderId: uidActual,
-      timestamp: Date.now(),
-    }
+      text: msgData.text,
+      senderId,
+      timestamp: serverTimestamp()
+    },
+    updatedAt: serverTimestamp()
   });
+
+  return newDoc.id;
 }
 
-/** Observa los mensajes de un chat específico */
-export function observarMensajes(chatId: string, callback: (mensajes: Message[]) => void, errorCallback?: (err: any) => void): () => void {
-  const db = dbOrThrow();
+/**
+ * Escucha mensajes en tiempo real
+ */
+export function escucharMensajes(chatId: string, callback: (msgs: ChatMessage[]) => void) {
   const q = query(
-    collection(db, 'chats', chatId, 'mensajes'),
+    collection(db, 'chats', chatId, 'messages'),
     orderBy('timestamp', 'asc'),
-    limit(100)
+    limit(50)
   );
 
   return onSnapshot(q, (snap) => {
-    const msgs = snap.docs.map(d => ({ ...d.data(), id: d.id } as Message));
+    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
     callback(msgs);
-  }, (err) => {
-    console.error('Error en observarMensajes:', err);
-    if (errorCallback) errorCallback(err);
   });
 }

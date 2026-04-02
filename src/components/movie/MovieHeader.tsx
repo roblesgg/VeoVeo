@@ -25,8 +25,8 @@ export const MovieHeader = React.memo(({ detalles, fontFamily, misPlataformas = 
       {/* Title Card Overlay */}
       <View style={styles.content}>
         <View style={[styles.macCardWrap, SHADOWS.mac]}>
-          <BlurView intensity={80} style={StyleSheet.absoluteFill} tint="dark" />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10, 10, 20, 0.75)' }]} />
+          <BlurView intensity={60} style={StyleSheet.absoluteFill} tint="dark" />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]} />
 
           <View style={styles.macCardInner}>
             <View style={styles.posterShadow}>

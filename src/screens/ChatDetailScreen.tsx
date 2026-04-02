@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   StyleSheet, View, Text, FlatList, TextInput, Pressable, 
-  KeyboardAvoidingView, Platform, ActivityIndicator 
+  KeyboardAvoidingView, Platform, ActivityIndicator, Image 
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,11 +11,12 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 
 // Services/Types
-import { observarMensajes, enviarMensaje } from '../services/repositorioChats';
-import { iniciarMatch } from '../services/repositorioMatches';
+import { escucharMensajes, enviarMensaje as enviarMensajeChat } from '../services/repositorioChats';
+import { iniciarSesionMatch } from '../services/matchEngine';
 import { Message } from '../types/message';
 import { GradientTop, GlassSurface, GlassBorder } from '../theme/colors';
 import { getFirebaseAuth } from '../services/firebase';
+import { posterUrl } from '../services/tmdbClient';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChatDetail'>;
 
@@ -29,8 +30,8 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const uidActual = getFirebaseAuth()?.currentUser?.uid;
 
   useEffect(() => {
-    return observarMensajes(chatId, (msgs) => {
-      setMensajes(msgs);
+    return escucharMensajes(chatId, (msgs) => {
+      setMensajes(msgs as any);
       setTimeout(() => flatListRef.current?.scrollToEnd(), 200);
     });
   }, [chatId]);
@@ -39,7 +40,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
     if (!texto.trim() || enviando) return;
     setEnviando(true);
     try {
-      await enviarMensaje(chatId, texto);
+      await enviarMensajeChat(chatId, uidActual || '', texto);
       setTexto('');
     } catch (err) {
       console.error(err);
@@ -50,7 +51,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
   const handleStartMatch = async () => {
     try {
-        const matchId = await iniciarMatch(chatId, [], { targetMatches: 3, excludeSeen: true });
+        const matchId = await iniciarSesionMatch([uidActual || ''], 3);
         navigation.navigate('MovieMatch', { matchId, chatId });
     } catch (err) {
         console.error(err);
@@ -60,6 +61,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === uidActual;
     const isSystem = item.type === 'match_invite' || item.type === 'match_result';
+    const isMovie = item.type === 'movie';
 
     if (isSystem) {
         return (
@@ -80,6 +82,42 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
         );
     }
 
+    if (isMovie && item.movieData) {
+      return (
+        <View style={[styles.msgWrapper, isMe ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
+          <Pressable 
+            onPress={() => navigation.navigate('Pelicula', { movieId: item.movieData!.id })}
+            style={({ pressed }) => [
+              styles.movieCard,
+              isMe ? styles.myMovieCard : styles.theirMovieCard,
+              { transform: [{ scale: pressed ? 0.98 : 1 }] }
+            ]}
+          >
+            <View style={styles.movieInfo}>
+              <View style={styles.moviePosterWrap}>
+                {item.movieData.posterPath ? (
+                  <Image source={{ uri: posterUrl(item.movieData.posterPath, 'w185')! }} style={styles.moviePoster} />
+                ) : (
+                  <View style={styles.moviePosterFallback}>
+                    <Ionicons name="film" size={24} color="rgba(255,255,255,0.2)" />
+                  </View>
+                )}
+              </View>
+              <View style={styles.movieDetails}>
+                <Text style={styles.movieSubText} numberOfLines={1}>Sugerencia:</Text>
+                <Text style={styles.movieTitle} numberOfLines={2}>{item.movieData.title}</Text>
+              </View>
+            </View>
+            {item.text && <Text style={styles.movieCaption}>{item.text}</Text>}
+          </Pressable>
+          <Text style={styles.msgTime}>
+            {item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+             typeof item.timestamp === 'number' ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View style={[styles.msgWrapper, isMe ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
         <BlurView 
@@ -90,7 +128,7 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
             <Text style={styles.msgText}>{item.text}</Text>
         </BlurView>
         <Text style={styles.msgTime}>
-            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
         </Text>
       </View>
     );
@@ -130,6 +168,12 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
             <View style={styles.inputInner}>
                 <Pressable style={styles.attachBtn}>
                     <Ionicons name="add" size={26} color="rgba(255,255,255,0.6)" />
+                </Pressable>
+                <Pressable 
+                  style={[styles.attachBtn, { marginLeft: 8 }]} 
+                  onPress={() => enviarMensajeChat(chatId, uidActual || '', { id: 550, title: 'Fight Club', poster_path: '/pB8S7S91uS06vbn0Sww9vpg69on.jpg' } as any, 'movie')}
+                >
+                    <Ionicons name="film-outline" size={24} color="#38bdf8" />
                 </Pressable>
                 <TextInput
                     value={texto}
@@ -187,5 +231,28 @@ const styles = StyleSheet.create({
   systemInner: { padding: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.3)' },
   systemText: { color: '#fff', fontSize: 14, textAlign: 'center', fontWeight: '600', marginBottom: 10 },
   systemBtn: { backgroundColor: '#38bdf8', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 12 },
-  systemBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' }
+  systemBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  movieCard: { 
+    padding: 12, 
+    borderRadius: 20, 
+    width: 240, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5
+  },
+  myMovieCard: { backgroundColor: 'rgba(56, 189, 248, 0.25)', borderBottomRightRadius: 4 },
+  theirMovieCard: { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderBottomLeftRadius: 4 },
+  movieInfo: { flexDirection: 'row', gap: 12, marginBottom: 8 },
+  moviePosterWrap: { width: 60, height: 90, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)' },
+  moviePoster: { width: '100%', height: '100%' },
+  moviePosterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  movieDetails: { flex: 1, justifyContent: 'center' },
+  movieSubText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+  movieTitle: { color: '#fff', fontSize: 15, fontWeight: '800', lineHeight: 18 },
+  movieCaption: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4, fontStyle: 'italic' }
 });
+

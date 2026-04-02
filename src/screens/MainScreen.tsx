@@ -99,6 +99,16 @@ export function MainScreen() {
     navigation.navigate('Actor', { actorId: id, actorName: name });
   };
 
+  const [resetToken, setResetToken] = useState(0);
+
+  const handleTabPress = (index: number) => {
+    if (paginaActual === index) {
+      setResetToken(prev => prev + 1);
+    } else {
+      setPaginaActual(index);
+    }
+  };
+
   return (
     <LinearGradient colors={[GradientTop, GradientBottom]} style={styles.flex}>
       <View style={styles.flex}>
@@ -106,6 +116,7 @@ export function MainScreen() {
           <DiscoverTab
             fontFamily={ff}
             estaActiva={true}
+            resetToken={resetToken}
             onPeliculaClick={navigatePelicula}
             onActorClick={navigateActor}
             onPerfilClick={() => navigation.navigate('Perfil')}
@@ -116,6 +127,7 @@ export function MainScreen() {
         {paginaActual === 1 ? (
           <BibliotecaTab
             fontFamily={ff}
+            resetToken={resetToken}
             refreshToken={bibRefresh}
             onPeliculaClick={navigatePelicula}
             onPerfilClick={() => navigation.navigate('Perfil')}
@@ -165,7 +177,7 @@ export function MainScreen() {
       </View>
 
       {showBottomBar ? (
-        <MainBottomBar onTabChange={setPaginaActual} paginaActual={paginaActual} />
+        <MainBottomBar onTabChange={handleTabPress} paginaActual={paginaActual} />
       ) : null}
 
       {/* Profile button moved into tab headers */}

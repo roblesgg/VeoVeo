@@ -54,7 +54,7 @@ export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [] }: 
 });
 
 const styles = StyleSheet.create({
-  posterWrapper: { width: 130, height: 190 },
+  posterWrapper: { width: 130, aspectRatio: 2 / 3 },
   posterCard: { flex: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: '#1e1e2d' },
   posterImg: { width: '100%', height: '100%' },
   posterFallback: { justifyContent: 'center', alignItems: 'center' },

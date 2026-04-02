@@ -52,7 +52,7 @@ Este documento es tu guía de ejecución manual para realizar la transición fin
     - *Resultado esperado:* Carga la landing page con animaciones y el logo.
 - [ ] **Enlace 2 (Descarga APK):** [https://dripdev.dev/veoveo-latest.apk](https://dripdev.dev/veoveo-latest.apk)
     - *Resultado esperado:* Salta la descarga inmediata del archivo de 86MB aproximadamente.
-- [ ] **Enlace 3 (Deep Linking):** [https://dripdev.dev/share?type=movie&id=550](https://dripdev.dev/share?type=movie&id=550)
+- [ ] **Enlace 3 (Deep Linking):** [https://veoveo.dripdev.dev/share?type=movie&id=550](https://veoveo.dripdev.dev/share?type=movie&id=550)
     - *Resultado esperado:* Carga la página de share (el diseño tipo movil) con el botón para abrir la app.
 - [ ] **Bonus (AssetLinks):** [https://dripdev.dev/.well-known/assetlinks.json](https://dripdev.dev/.well-known/assetlinks.json)
     - *Resultado esperado:* Se muestra el JSON con el SHA256 de la firma de Android.

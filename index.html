@@ -1,308 +1,240 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeoVeo | Tu cine, tus amigos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap"
-        rel="stylesheet">
+    <title>VeoVeo | Encuentra qué ver con tus amigos</title>
+    <meta name="description" content="La app definitiva para descubrir películas y series. Haz match con tus amigos y decide qué ver esta noche sin discusiones.">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="VeoVeo - Tu próximo gran descubrimiento">
+    <meta property="og:description" content="Haz match con tus amigos y encuentra la película perfecta.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://veoveo.dripdev.dev">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg: #020617;
-            --accent: #38bdf8;
-            --surface: rgba(255, 255, 255, 0.03);
+            --primary: #38bdf8;
+            --primary-dark: #0ea5e9;
+            --accent: #818cf8;
+            --bg: #030712;
+            --glass: rgba(255, 255, 255, 0.03);
             --border: rgba(255, 255, 255, 0.08);
             --text: #f8fafc;
-            --text-dim: #94a3b8;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-font-smoothing: antialiased;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg);
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
             color: var(--text);
-            overflow-x: hidden;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .ambient {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            height: 100vh;
-            background:
-                radial-gradient(circle at 80% 20%, #1e3a8a 0%, transparent 40%),
-                radial-gradient(circle at 20% 80%, #0f172a 0%, transparent 50%);
-            z-index: -1;
-            opacity: 0.6;
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
+        /* Navbar */
         nav {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            background: rgba(2, 6, 23, 0.4);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 30px 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Hero Section */
+        .hero {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            padding: 100px 0;
+            min-height: 80vh;
+            gap: 40px;
         }
 
-        .hero {
-            padding: 160px 20px 100px;
-            max-width: 1000px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .logo-main {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 40px;
-            display: block;
-            border-radius: 32px;
-            box-shadow: 0 0 50px rgba(56, 189, 248, 0.2);
-            animation: float 6s infinite ease-in-out;
-            object-fit: cover;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0) scale(1);
-            }
-
-            50% {
-                transform: translateY(-10px) scale(1.02);
-            }
-        }
+        .hero-content { flex: 1; max-width: 600px; }
 
         h1 {
-            font-size: clamp(3.5rem, 12vw, 6.5rem);
+            font-size: 4.5rem;
+            line-height: 1.1;
             font-weight: 800;
-            letter-spacing: -4px;
-            line-height: 1;
             margin-bottom: 24px;
+            letter-spacing: -2px;
         }
 
-        h1 span {
-            color: var(--accent);
+        .hero p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 40px;
         }
 
-        .tagline {
-            font-size: 1.4rem;
-            color: var(--text-dim);
-            max-width: 600px;
-            margin: 0 auto 48px;
-            font-weight: 400;
-        }
-
-        .cta {
-            display: inline-block;
-            padding: 22px 64px;
-            background: var(--accent);
-            color: #020617;
-            border-radius: 100px;
-            font-weight: 800;
-            font-size: 1.3rem;
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 18px 36px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
             text-decoration: none;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 40px rgba(56, 189, 248, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3);
         }
 
-        .cta:hover {
-            transform: scale(1.05) translateY(-5px);
-            box-shadow: 0 20px 60px rgba(56, 189, 248, 0.5);
-            filter: brightness(1.1);
+        .cta-button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(56, 189, 248, 0.4);
         }
 
-        .grid {
+        /* Features */
+        .features { padding: 100px 0; }
+        
+        .features-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 24px;
-            margin-top: 120px;
-            padding: 0 20px;
         }
 
-        .card {
-            background: var(--surface);
+        .feature-card {
+            background: var(--glass);
             border: 1px solid var(--border);
-            padding: 48px;
-            border-radius: 40px;
-            text-align: left;
+            padding: 40px;
+            border-radius: 32px;
             transition: all 0.3s ease;
         }
 
-        .card:hover {
-            border-color: var(--accent);
-            transform: translateY(-8px);
+        .feature-card:hover {
             background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-8px);
         }
 
-        .card h3 {
-            font-size: 1.6rem;
-            margin-bottom: 16px;
-            font-weight: 700;
-            color: #fff;
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            display: block;
         }
 
-        .card p {
-            color: var(--text-dim);
-            font-size: 1.1rem;
-            line-height: 1.5;
+        .feature-card h3 { font-size: 1.5rem; margin-bottom: 12px; }
+        .feature-card p { color: rgba(255, 255, 255, 0.5); }
+
+        /* Mockup */
+        .mockup {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            perspective: 1000px;
         }
 
-        [data-reveal] {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        .mockup img {
+            width: 320px;
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.5));
+            border-radius: 40px;
+            transform: rotateY(-10deg) rotateX(10deg);
         }
 
-        [data-reveal].active {
-            opacity: 1;
-            transform: translateY(0);
+        /* Feedback Section */
+        .feedback {
+            padding: 100px 0;
+            text-align: center;
         }
+
+        .feedback-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            padding: 60px;
+            border-radius: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .feedback h2 { font-size: 2.5rem; margin-bottom: 16px; }
+        .feedback p { color: rgba(255, 255, 255, 0.6); margin-bottom: 32px; }
 
         footer {
-            padding: 120px 20px 60px;
+            padding: 60px 0;
             text-align: center;
-            font-size: 0.95rem;
-            color: var(--text-dim);
             border-top: 1px solid var(--border);
-            margin-top: 60px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
         }
 
         @media (max-width: 768px) {
-            h1 {
-                font-size: 4rem;
-            }
-
-            .hero {
-                padding-top: 140px;
-            }
-
-            .card {
-                padding: 32px;
-            }
-
-            .cta {
-                padding: 18px 48px;
-                width: 100%;
-                text-align: center;
-                box-sizing: border-box;
-            }
+            .hero { flex-direction: column; text-align: center; padding: 60px 0; }
+            h1 { font-size: 3rem; }
+            .mockup { display: none; }
         }
     </style>
 </head>
-
 <body>
-    <div class="ambient"></div>
+    <div class="container">
+        <nav>
+            <div class="logo">VeoVeo</div>
+        </nav>
 
-    <nav>
-        <span
-            style="font-weight: 800; font-size: 1.2rem; letter-spacing: -1px; background: linear-gradient(90deg, #fff, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">VeoVeo</span>
-        <div style="width: 1px; height: 16px; background: var(--border);"></div>
-        <span style="font-size: 0.75rem; color: var(--accent); font-weight: 700; text-transform: uppercase;">Beta</span>
-    </nav>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Encuentra qué ver sin dramas.</h1>
+                <p>La app que cruza tus listas con las de tus amigos para encontrar el Match cinematográfico perfecto en segundos.</p>
+                <a href="#download" class="cta-button">Descargar App</a>
+            </div>
+            <div class="mockup">
+                <!-- Using an image from artifacts might not work directly in web if paths change, but for local is fine -->
+                <img src="./assets/mockup_v15.png" alt="App Mockup">
+            </div>
+        </section>
 
-    <main class="hero">
-        <!-- Logo file (App Icon) -->
-        <img src="logo.png" alt="VeoVeo" class="logo-main" data-reveal>
+        <section id="features" class="features">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🎬</span>
+                    <h3>Inteligencia Cinéfila</h3>
+                    <p>Recomendaciones personalizadas que entienden lo que realmente quieres ver, no lo que el algoritmo quiere venderte.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🤝</span>
+                    <h3>Social Match</h3>
+                    <p>¿No sabéis que ver? Desliza, encuentra coincidencias con tus amigos y ahorra horas de debate.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">✨</span>
+                    <h3>Cura tu Biblioteca</h3>
+                    <p>Gestiona tus listas de 'Por ver' y 'Vistas' con una interfaz de primera clase.</p>
+                </div>
+            </div>
+        </section>
 
-        <h1 data-reveal><span>VeoVeo.</span></h1>
-        <p class="tagline" data-reveal>
-            He hecho VeoVeo porque estaba harto de olvidar qué pelis quería ver. Apúntalas aquí, cotillea qué ven tus
-            amigos y listo.
-        </p>
+        <section class="feedback">
+            <div class="feedback-container">
+                <h2>Tu opinión nos hace mejores</h2>
+                <p>¿Tienes alguna idea o has encontrado un fallo? Escríbeme directamente y hablemos de ello.</p>
+                <a href="mailto:Alvaro@dripdev.dev?subject=Sugerencia VeoVeo" class="cta-button">Enviar un correo a Álvaro</a>
+            </div>
+        </section>
 
-        <a href="/veoveo-latest.apk" class="cta" id="dl-btn" data-reveal>Descargar Android</a>
-        <p style="margin-top: 15px; font-size: 0.9rem; color: var(--text-dim);" data-reveal>La versión más estable y completa hasta la fecha.</p>
-
-        <div class="grid">
-            <div class="card" data-reveal>
-                <h3>No más olvidos</h3>
-                <p>Esa peli de la que te hablaron ayer... apúntala al momento y no vuelvas a preguntarte "¿cómo se
-                    llamaba?".</p>
-            </div>
-            <div class="card" data-reveal>
-                <h3>Cotillea a tus amigos</h3>
-                <p>Mira qué están viendo tus amigos y si de verdad les ha gustado o es un tostón infumable. Directo y
-                    real.</p>
-            </div>
-            <div class="card" data-reveal>
-                <h3>¿Dónde la ponen?</h3>
-                <p>Te decimos en qué plataforma está cada peli. Netflix, Prime, HBO... no des mil vueltas por el
-                    catálogo.</p>
-            </div>
-            <div class="card" data-reveal>
-                <h3>Tus Tierlists</h3>
-                <p>Haz tus propios rankings de sagas o directores favoritos. Tú eres el que manda en tu biblioteca de
-                    cine.</p>
-            </div>
-            <div class="card" data-reveal>
-                <h3>Diario personal</h3>
-                <p>Ponle nota a cada peli y guarda tus propios pensamientos. Tu historia cinéfila, siempre a mano.</p>
-            </div>
-            <div class="card" data-reveal>
-                <h3>Sin tonterías</h3>
-                <p>Sin anuncios, sin registros de empresas raras. Una app limpia hecha solo para gente que ama el cine.
-                </p>
-            </div>
-        </div>
-        <!-- Zona Testers - Movido al final -->
-        <div id="tester-zone" style="margin-top: 100px; border-top: 1px solid var(--glass-border); padding-top: 60px; text-align: center;" data-reveal>
-            <h3 style="margin-bottom: 20px; font-weight: 700; color: var(--text-dim);">Zona Testers</h3>
-            <div id="pw-input-container" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                <input type="password" id="tester-pw" placeholder="Introduce la contraseña" 
-                    style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); padding: 12px 20px; border-radius: 12px; color: #fff; width: 260px; text-align: center; font-family: inherit; font-size: 1rem;">
-                <button onclick="checkTesterPw()" class="cta" style="padding: 10px 30px; font-size: 0.9rem; min-width: auto; background: var(--bg-card);">Acceder</button>
-            </div>
-            <div id="tester-download" style="display: none;">
-                <a href="./veoveo-v1.4.1-test.apk" class="cta" style="background: linear-gradient(135deg, #38bdf8, #818cf8);">Descargar Beta v1.4.1 (Chat & Match)</a>
-                <p style="margin-top: 10px; font-size: 0.85rem; color: var(--accent-light);">Acceso concedido. ¡Prueba las nuevas funciones sociales! 🚀</p>
-            </div>
-        </div>
-
-        <script>
-            function checkTesterPw() {
-                const pw = document.getElementById('tester-pw').value;
-                if (pw === 'TesTer') {
-                    document.getElementById('pw-input-container').style.display = 'none';
-                    document.getElementById('tester-download').style.display = 'block';
-                } else {
-                    alert('Acceso denegado. Contraseña incorrecta.');
-                }
-            }
-        </script>
-    </main>
-
-    <footer>
-        Hecho con ❤️ para cinéfilos de pura cepa &bull; VeoVeo 2026
-    </footer>
-
-    <script>
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) { entry.target.classList.add('active'); }
-            });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
-    </script>
+        <footer>
+            <p>&copy; 2026 Drip Dev. Todos los derechos reservados.</p>
+        </footer>
+    </div>
 </body>
-
 </html>

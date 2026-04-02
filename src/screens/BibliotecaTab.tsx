@@ -26,11 +26,20 @@ type Props = {
   onPeliculaClick: (movieId: number) => void;
   onPerfilClick?: () => void;
   userFoto?: string | null;
+  resetToken?: number;
 };
 
-export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, onPerfilClick, userFoto }: Props) {
+export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, onPerfilClick, userFoto, resetToken = 0 }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  
+  const listRef = React.useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (resetToken > 0) {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, [resetToken]);
   
   const [seccion, setSeccion] = useState<0 | 1>(0); // 0: Por Ver, 1: Vistas
   const [buscar, setBuscar] = useState(false);
@@ -43,26 +52,7 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
   const { t } = useLanguage();
   const [allProviderNames, setAllProviderNames] = useState<Record<number, string>>({});
 
-  const { porVer, vistas, cargando, error } = useLibraryData(user, refreshToken);
-  const [decoratedPorVer, setDecoratedPorVer] = useState<any[]>([]);
-  const [decoratedVistas, setDecoratedVistas] = useState<any[]>([]);
-
-  useEffect(() => {
-    const decorate = async (list: any[]) => {
-      return await Promise.all(list.map(async (p) => {
-        if (p.providers && !Array.isArray(p.providers)) return p;
-        try {
-          const res = await tmdbApi.obtenerDondeVer(p.idPelicula);
-          const resES = res.results['ES'];
-          const flatrate = resES?.flatrate?.map((pr: any) => pr.provider_id) || [];
-          const rent = [...(resES?.rent || []), ...(resES?.buy || [])].map((pr: any) => pr.provider_id);
-          return { ...p, providers: { flatrate, rent } };
-        } catch { return p; }
-      }));
-    };
-    void decorate(porVer).then(setDecoratedPorVer);
-    void decorate(vistas).then(setDecoratedVistas);
-  }, [porVer, vistas]);
+  const { porVer, vistas, cargando } = useLibraryData(user, refreshToken);
 
   useEffect(() => {
     void (async () => {
@@ -95,10 +85,7 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
 
   const listaFiltrada = useMemo(() => {
     const raw = seccion === 0 ? porVer : vistas;
-    const dec = seccion === 0 ? decoratedPorVer : decoratedVistas;
-    const decMap = new Map(dec.map(item => [item.idPelicula, item]));
-    
-    let base = raw.map(p => decMap.get(p.idPelicula) || p);
+    let base = [...raw];
     
     if (orden === 'alpha') base.sort((a, b) => a.titulo.localeCompare(b.titulo));
     else if (orden === 'fecha_peli') base.sort((a, b) => (b.fechaLanzamiento || '').localeCompare(a.fechaLanzamiento || ''));
@@ -111,17 +98,8 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
     const qBase = textoBuscar.trim().toLowerCase();
     let filtered = qBase ? base.filter((p: any) => p.titulo.toLowerCase().includes(qBase)) : base;
 
-    if (plataformas.length > 0) {
-      filtered = filtered.filter((p: any) => {
-        const flatrate = p.providers?.flatrate || [];
-        const rent = p.providers?.rent || [];
-        const allProviders = [...flatrate, ...rent];
-        return allProviders.some((pid: number) => plataformas.includes(pid));
-      });
-    }
-
     return filtered;
-  }, [porVer, vistas, decoratedPorVer, decoratedVistas, seccion, textoBuscar, orden, plataformas]);
+  }, [porVer, vistas, seccion, textoBuscar, orden]);
 
   const platformOptions: FilterSortOption[] = useMemo(() => {
     const plats = misPlataformas.map(id => ({
@@ -137,8 +115,11 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
 
   return (
     <View style={styles.flex}>
-      <LinearGradient colors={[GradientTop, 'transparent']} style={styles.topFade} pointerEvents="none" />
-      
+      <View style={[styles.tabsHeaderOverlay, { height: Math.max(insets.top, 12) + 130 }]}>
+        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={[GradientTop, 'transparent']} style={StyleSheet.absoluteFill} />
+      </View>
+
       <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
         <Text style={[styles.titulo, { fontFamily, flex: 1 }]} numberOfLines={1}>
           {seccion === 0 ? t('por_ver') : t('vistas')}
@@ -179,6 +160,7 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
 
       {cargando ? <ActivityIndicator color="#fff" style={{ marginTop: 200 }} /> : (
         <FlatList
+          ref={listRef}
           data={listaFiltrada}
           extraData={misPlataformas}
           keyExtractor={(p) => String(p.idPelicula)}
@@ -189,19 +171,12 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
             paddingBottom: 140 
           }}
           renderItem={({ item: p }) => (
-            <Pressable style={[styles.card, SHADOWS.macLight]} onPress={() => onPeliculaClick(p.idPelicula)}>
-              {p.rutaPoster ? <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} /> : (
-                <View style={[styles.poster, styles.noPoster]}><Text style={[styles.noPosterText, { fontFamily }]} numberOfLines={3}>{p.titulo}</Text></View>
-              )}
-              {(p.providers?.flatrate?.some((pid: number) => misPlataformas.includes(pid)) || 
-                p.providers?.rent?.some((pid: number) => misPlataformas.includes(pid))) && (
-                <View style={[
-                  styles.dot, 
-                  { backgroundColor: p.providers?.flatrate?.some((pid: number) => misPlataformas.includes(pid)) ? '#2ecc71' : '#f39c12' }
-                ]} />
-              )}
-              <RatingBadge rating={p.valoracion} fontFamily={fontFamily} />
-            </Pressable>
+            <BibliotecaMovieItem
+              p={p}
+              fontFamily={fontFamily}
+              misPlataformas={misPlataformas}
+              onPeliculaClick={onPeliculaClick}
+            />
           )}
           columnWrapperStyle={{ gap: 12, marginBottom: 12 }}
           ListEmptyComponent={
@@ -242,6 +217,56 @@ export function BibliotecaTab({ fontFamily, refreshToken = 0, onPeliculaClick, o
   );
 }
 
+function BibliotecaMovieItem({ p, fontFamily, misPlataformas, onPeliculaClick }: { p: any, fontFamily: string, misPlataformas: number[], onPeliculaClick: any }) {
+  const [providers, setProviders] = useState<{ flatrate: number[], rent: number[] } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const res = await tmdbApi.obtenerDondeVer(p.idPelicula);
+        const resES = res.results?.['ES'];
+        if (active) {
+          setProviders({
+            flatrate: resES?.flatrate?.map((pr: any) => pr.provider_id) || [],
+            rent: [...(resES?.rent || []), ...(resES?.buy || [])].map((pr: any) => pr.provider_id)
+          });
+        }
+      } catch (e) {
+        // Silencio
+      }
+    })();
+    return () => { active = false; };
+  }, [p.idPelicula]);
+
+  const hasDot = useMemo(() => {
+    if (!providers) return false;
+    return providers.flatrate.some(pid => misPlataformas.includes(pid)) || 
+           providers.rent.some(pid => misPlataformas.includes(pid));
+  }, [providers, misPlataformas]);
+
+  const dotColor = useMemo(() => {
+    if (!providers) return 'transparent';
+    return providers.flatrate.some(pid => misPlataformas.includes(pid)) ? '#2ecc71' : '#f39c12';
+  }, [providers, misPlataformas]);
+
+  return (
+    <Pressable style={[styles.card, SHADOWS.macLight]} onPress={() => onPeliculaClick(p.idPelicula)}>
+      {p.rutaPoster ? (
+        <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />
+      ) : (
+        <View style={[styles.poster, styles.noPoster]}>
+          <Text style={[styles.noPosterText, { fontFamily }]} numberOfLines={3}>{p.titulo}</Text>
+        </View>
+      )}
+      {hasDot && (
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+      )}
+      <RatingBadge rating={p.valoracion} fontFamily={fontFamily} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   titulo: { color: '#fff', fontSize: 34, fontWeight: '800' },
@@ -273,7 +298,8 @@ const styles = StyleSheet.create({
   tabActivo: { color: '#fff', fontWeight: '800' },
   searchField: { position: 'absolute', left: 20, right: 20, zIndex: 15, borderRadius: 24, backgroundColor: CardSurface, paddingHorizontal: 20, height: 50, color: '#fff' },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 5 },
-  card: { width: CARD_WIDTH, height: 180, borderRadius: 16, backgroundColor: CardSurface, overflow: 'hidden' },
+  tabsHeaderOverlay: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 9, overflow: 'hidden' },
+  card: { width: CARD_WIDTH, aspectRatio: 2 / 3, borderRadius: 16, backgroundColor: CardSurface, overflow: 'hidden' },
   poster: { width: '100%', height: '100%' },
   noPoster: { justifyContent: 'center', padding: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
   noPosterText: { color: '#fff', fontSize: 12, textAlign: 'center' },

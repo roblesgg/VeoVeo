@@ -1,6 +1,6 @@
 import { Share, Platform } from 'react-native';
 
-const BASE_URL = 'https://dripdev.dev/share';
+const BASE_URL = 'https://veoveo.dripdev.dev/share';
 
 /**
  * Genera un enlace universal que:
