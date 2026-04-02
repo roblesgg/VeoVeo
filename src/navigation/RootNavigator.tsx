@@ -22,7 +22,7 @@ const linking = {
   prefixes: [
     'veoveo://',
     'https://veoveo-app.netlify.app',
-    'https://veoveo-app-install.netlify.app'
+    'https://dripdev.dev'
   ],
   config: {
     screens: {

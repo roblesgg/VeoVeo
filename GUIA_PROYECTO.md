@@ -1,148 +1,38 @@
-# guia del proyecto veoveo
+# 📂 Informe Maestro de Infraestructura y Proyecto: Drip Dev
 
-## que es esta app
-app de peliculas donde puedes:
-- buscar peliculas
-- marcar peliculas como vistas o por ver
-- crear rankings (tier lists)
-- añadir amigos y ver sus peliculas
-- valorar peliculas con estrellas
+## 1. Identidad Corporativa y Contacto
+- **Marca Profesional:** Drip Dev
+- **Dominio Oficial:** `dripdev.dev`
+- **Correo de Contacto Profesional:** `Alvaro@dripdev.dev` (Gestionado vía Porkbun Email Forwarding).
+- **Cuenta de Administración Raíz:** `dripdev.dev@gmail.com` (Acceso a Vercel, Firebase, Google Console).
 
-## estructura del proyecto
+## 2. Ecosistema de Plataformas (Migración Completada)
+- **Control de Versiones:** GitHub (Organización DripDev). Todos los repositorios de "VeoVeo" han sido transferidos aquí.
+- **Firma de Código (Git Config):**
+  - **User:** Alvaro DripDev
+  - **Email:** Alvaro@dripdev.dev
+- **Hosting de Identidad (Landing/Docs):** Vercel (Plan Hobby). Vinculado a la cuenta raíz de Gmail.
+- **Infraestructura Backend:** Firebase (Google Cloud). Propiedad transferida exitosamente a `dripdev.dev@gmail.com`.
 
-### modelos (model/)
-clases que guardan datos:
-- **Usuario.kt** - info del usuario (nombre, email, foto, amigos)
-- **PeliculaUsuario.kt** - peliculas que el usuario guarda
-- **SolicitudAmistad.kt** - peticiones de amistad
-- **TierList.kt** - rankings de peliculas por niveles
-- **MovieResponse.kt** - respuesta de la api de tmdb con lista de peliculas
-- **MovieDetails.kt** - info completa de una pelicula (reparto, generos, etc)
+## 3. Ficha Técnica de la App: VeoVeo (v1.3.0)
+**Definición:**  
+Plataforma híbrida de tracking cinematográfico y red social inmersiva. Resuelve la fragmentación de catálogos mediante la centralización de datos y el filtrado social nativo.
 
-### repositorios (data/)
-clases que se conectan con firebase y tmdb:
-- **AuthRepository.kt** - login, registro, logout
-- **RepositorioPeliculasUsuario.kt** - guardar y cargar peliculas del usuario
-- **RepositorioUsuarios.kt** - gestionar usuarios, amigos, buscar gente
-- **RepositorioTierLists.kt** - crear y gestionar tier lists
+**Stack Tecnológico:**
+- **Frontend:** React Native (Expo SDK 54) + React Navigation v7.
+- **Lógica de UI:** Reanimated & Gesture Handler (Animaciones Glassmorphism).
+- **Base de Datos y Auth:** Firebase Firestore (NoSQL en tiempo real) + Firebase Auth (Google/Email).
+- **Fuentes de Datos:** TMDB API (The Movie Database) para metadata global.
+- **DevOps:** Expo Updates (OTA) para parches en caliente sin pasar por tiendas.
 
-### viewmodels (viewmodel/)
-clases intermedias entre pantallas y repositorios:
-- **AuthViewModel.kt** - gestiona login y registro
-- **ViewModelBiblioteca.kt** - gestiona peliculas guardadas
-- **ViewModelSocial.kt** - gestiona amigos y solicitudes
-- **ViewModelPerfil.kt** - gestiona perfil del usuario
-- **ViewModelTierLists.kt** - gestiona tier lists
-- **ViewModelDescubrir.kt** - gestiona carruseles de peliculas
+## 4. Flujo de Datos y Operativa
+- **Validación:** UpdateGuard + Expo Updates aseguran que el cliente móvil esté sincronizado.
+- **Consumo de API:** Requests directas a TMDB para visualización rápida (Cero latencia de servidor intermedio).
+- **Persistencia:** Modelo de documentos en `/usuarios/{uid}/peliculas/` con renderizado optimista.
+- **Social Graph:** Gestión de relaciones simétricas en `/solicitudes_amistad/` para lecturas cruzadas de bibliotecas.
 
-### pantallas (ui/screens/)
-las pantallas que ve el usuario:
-- **LoginScreen.kt** - pantalla de login
-- **RegisterScreen.kt** - pantalla de registro
-- **MainScreen.kt** - pantalla principal con 4 pestañas (descubrir, biblioteca, social, perfil)
-- **PeliculaScreen.kt** - detalles de una pelicula
-- **PerfilScreen.kt** - perfil del usuario
-- **SocialScreen.kt** - buscar amigos y ver solicitudes
-- **SolicitudesScreen.kt** - aceptar o rechazar solicitudes de amistad
-- **BibliotecaAmigoScreen.kt** - ver peliculas de un amigo
-- **TierListScreen.kt** - ver una tier list
-- **CrearTierListScreen.kt** - crear nueva tier list
-- **EditarTierListScreen.kt** - editar tier list existente
-- **AjustesScreen.kt** - ajustes de la app
-- **ContactoScreen.kt** - pantalla de contacto
-
-### navegacion (ui/navigation/)
-controla como se mueve el usuario entre pantallas:
-- **VeoVeoApp.kt** - punto de entrada, decide si mostrar login o app principal
-- **AuthNavigation.kt** - navegacion de login/registro
-- **AppNavigation.kt** - navegacion dentro de la app (pantallas principales)
-
-### conexion (conexion/)
-se conecta con la api de tmdb:
-- **RetrofitClient.kt** - configuracion para conectar con tmdb
-- **ApiService.kt** - define las peticiones a la api (buscar peliculas, obtener detalles, etc)
-
-### utilidades (utils/)
-- **PreferencesHelper.kt** - guarda preferencias del usuario en el dispositivo (que generos mostrar)
-
-### tema (ui/theme/)
-- **Color.kt** - colores de la app
-- **Type.kt** - estilos de texto
-- **Theme.kt** - tema general (modo claro/oscuro)
-
-### main
-- **MainActivity.kt** - punto de entrada de la app
-
-## como funciona
-
-1. **al abrir la app**: MainActivity arranca VeoVeoApp
-2. **VeoVeoApp verifica**: si hay usuario logueado muestra app principal, si no muestra login
-3. **login/registro**: AuthViewModel usa AuthRepository para autenticar con firebase
-4. **app principal**: MainScreen con 4 pestañas
-   - **descubrir**: muestra carruseles de peliculas por genero (ViewModelDescubrir)
-   - **biblioteca**: muestra peliculas guardadas (ViewModelBiblioteca)
-   - **social**: buscar amigos, ver solicitudes (ViewModelSocial)
-   - **perfil**: ver y editar perfil, crear tier lists (ViewModelPerfil, ViewModelTierLists)
-5. **al pulsar pelicula**: navega a PeliculaScreen que muestra detalles y permite guardar
-6. **guardar pelicula**: ViewModelBiblioteca usa RepositorioPeliculasUsuario para guardar en firebase
-
-## tecnologias usadas
-
-- **kotlin** - lenguaje
-- **jetpack compose** - interfaz
-- **firebase auth** - autenticacion
-- **firebase firestore** - base de datos
-- **retrofit** - peticiones http
-- **tmdb api** - info de peliculas
-- **coil** - cargar imagenes
-
-## firebase estructura
-
-```
-usuarios/
-  {uid}/
-    - username
-    - email
-    - fotoPerfil
-    - amigos[]
-
-    peliculas/
-      {idPelicula}/
-        - titulo
-        - rutaPoster
-        - estado (por_ver o vista)
-        - valoracion
-
-    tierLists/
-      {idTierList}/
-        - nombre
-        - descripcion
-        - tierObraMaestra[]
-        - tierMuyBuena[]
-        - tierBuena[]
-        - tierMala[]
-        - tierNefasta[]
-
-solicitudes_amistad/
-  {idSolicitud}/
-    - deUid
-    - paraUid
-    - deUsername
-    - estado (pendiente, aceptada, rechazada)
-```
-
-## como estudiar el proyecto
-
-1. empieza por los **modelos** - entender que datos guarda la app
-2. luego **repositorios** - como se conecta con firebase y tmdb
-3. luego **viewmodels** - como se gestiona la logica
-4. luego **pantallas** - como se muestra al usuario
-5. finalmente **navegacion** - como se conectan las pantallas
-
-## tips para el tfg
-
-- cada archivo tiene comentarios explicando que hace
-- los comentarios son directos y simples
-- toda la funcionalidad esta lista
-- podeis añadir mas features si quereis
-- estudiad primero los modelos y repositorios, son lo mas importante
+## 🚀 Plan de Ataque: El "Corte de Cinta"
+Acciones inminentes para darle vida al dominio:
+1. **La Web de Drip Dev:** Conectaremos `dripdev.dev` a un proyecto en Vercel (Landing sencilla que presente VeoVeo o el portfolio).
+2. **Configuración DNS:** Apuntar los registros A y CNAME hacia Vercel en la consola de Porkbun.
+3. **Seguridad SSL:** Activar el certificado gratuito en Vercel.

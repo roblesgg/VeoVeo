@@ -39,7 +39,7 @@ async function pushVersion() {
   
   // También actualizamos la URL de descarga por si acaso
   const downloadUrlField = isTest ? 'download_url_test' : 'download_url';
-  updateData[downloadUrlField] = 'https://veoveo-app-install.netlify.app';
+  updateData[downloadUrlField] = 'https://dripdev.dev';
 
   try {
     await updateDoc(docRef, updateData);

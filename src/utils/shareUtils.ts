@@ -1,6 +1,6 @@
 import { Share, Platform } from 'react-native';
 
-const BASE_URL = 'https://veoveo-app-install.netlify.app/share';
+const BASE_URL = 'https://dripdev.dev/share';
 
 /**
  * Genera un enlace universal que:

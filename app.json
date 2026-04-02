@@ -17,7 +17,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.roblesgg.veoveo",
+      "package": "com.dripdev.veoveo",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,14 +30,14 @@
       "favicon": "./assets/favicon.png"
     },
     "updates": {
-      "url": "https://u.expo.dev/315e4c09-193a-4af0-a616-fa349b63ebf4"
+      "url": "https://u.expo.dev/db438c91-21eb-4020-a3ad-efec69cef405"
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "extra": {
       "eas": {
-        "projectId": "315e4c09-193a-4af0-a616-fa349b63ebf4"
+        "projectId": "db438c91-21eb-4020-a3ad-efec69cef405"
       }
     }
   }

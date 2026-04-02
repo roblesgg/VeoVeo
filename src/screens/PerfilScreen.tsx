@@ -98,7 +98,7 @@ export function PerfilScreen() {
 
         <Pressable 
           style={styles.shareBtn} 
-          onPress={() => Share.share({ message: `${t('share_msg')} https://veoveo-app-install.netlify.app` })}
+          onPress={() => Share.share({ message: `${t('share_msg')} https://dripdev.dev` })}
         >
           <Ionicons name="share-social-outline" size={22} color="#fff" />
           <Text style={[styles.shareText, { fontFamily }]}>{t('share_app')}</Text>

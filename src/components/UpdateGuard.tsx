@@ -12,7 +12,7 @@ import { GradientBottom, AccentColor, Slate300, CardSurface } from '../theme/col
 export function UpdateGuard({ children }: { children: React.ReactNode }) {
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const [minVersion, setMinVersion] = useState<string | null>(null);
-  const [downloadUrl, setDownloadUrl] = useState('https://veoveo-app-install.netlify.app');
+  const [downloadUrl, setDownloadUrl] = useState('https://dripdev.dev');
 
   const isTest = Constants.expoConfig?.name === 'VeoVeoTest' || Constants.expoConfig?.name === 'VeoVeo Test' || __DEV__;
   const lastNotifiedVersion = React.useRef<string | null>(null);

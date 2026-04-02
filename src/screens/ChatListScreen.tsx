@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, View, Text, FlatList, Image, Pressable, 
-  ActivityIndicator, StatusBar, Modal, ScrollView 
+  ActivityIndicator, StatusBar, Modal, ScrollView, Alert 
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,9 @@ export default function ChatListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { amigos } = useSocialData();
   const [chats, setChats] = useState<Chat[]>([]);
+
+  console.log('[DEBUG] ChatList amigos count:', amigos.length);
+
   const [loading, setLoading] = useState(true);
   const [showFriends, setShowFriends] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +121,11 @@ export default function ChatListScreen({ navigation }: Props) {
         <Text style={styles.title}>Mensajes</Text>
         <Pressable 
             style={styles.newChatBtn} 
-            onPress={() => setShowFriends(true)}
+            onPress={() => {
+                console.log('[DEBUG] Click en Añadir - amigos:', amigos.length);
+                Alert.alert('DEBUG', `Click! Amigos: ${amigos.length}`);
+                setShowFriends(true);
+            }}
         >
             <Ionicons name="add" size={28} color="#fff" />
         </Pressable>
