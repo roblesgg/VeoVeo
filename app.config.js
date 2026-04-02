@@ -11,7 +11,7 @@ module.exports = {
   name: IS_TEST ? 'VeoVeoTest' : appJson.expo.name,
   android: {
     ...appJson.expo.android,
-    package: IS_TEST ? 'com.roblesgg.veoveo' : appJson.expo.android.package,
+    package: IS_TEST ? 'com.roblesgg.veoveo.test' : appJson.expo.android.package,
   },
   scheme: IS_TEST ? 'veoveotest' : 'veoveo',
 };

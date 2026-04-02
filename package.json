@@ -6,9 +6,12 @@
     "env:sync": "node scripts/sync-firebase-env.mjs",
     "start": "expo start",
     "start:lan": "expo start --lan",
+    "start:usb": "expo start --localhost",
+    "start:test:usb": "cross-env APP_ENV=test expo start --localhost",
     "start:tunnel": "expo start --tunnel",
     "android": "expo run:android",
     "android:test": "cross-env APP_ENV=test npx expo run:android",
+    "android:test:usb": "powershell -ExecutionPolicy Bypass -File ./scripts/android-test-usb.ps1",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "release": "node scripts/push-version.mjs"
