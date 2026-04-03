@@ -37,7 +37,7 @@ export function getFirebaseApp(): FirebaseApp | null {
 export function getFirebaseAuth(): Auth | null {
   const app = getFirebaseApp();
   if (!app) return null;
-  
+
   if (!authSingleton) {
     if (getApps().length > 0 && !authSingleton) {
       // Intentamos inicializar con persistencia si es la primera vez

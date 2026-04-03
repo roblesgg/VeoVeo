@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, Pressable, View, KeyboardAvoidingView, Platform as RNPlatform } from 'react-native';
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  Pressable,
+  View,
+  KeyboardAvoidingView,
+  Platform as RNPlatform,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { AccentBorder } from '../theme/colors';
@@ -13,13 +22,20 @@ type Props = {
   fontFamily: string;
 };
 
-export const InputModal = ({ visible, onClose, onConfirm, title, placeholder, fontFamily }: Props) => {
+export const InputModal = ({
+  visible,
+  onClose,
+  onConfirm,
+  title,
+  placeholder,
+  fontFamily,
+}: Props) => {
   const [value, setValue] = useState('');
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <KeyboardAvoidingView 
-        behavior={RNPlatform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={RNPlatform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.centered}
       >
         <BlurView intensity={80} tint="dark" style={styles.container}>
@@ -37,11 +53,11 @@ export const InputModal = ({ visible, onClose, onConfirm, title, placeholder, fo
             <Pressable onPress={onClose} style={styles.btn}>
               <Text style={[styles.btnText, { fontFamily, opacity: 0.6 }]}>Cancelar</Text>
             </Pressable>
-            <Pressable 
+            <Pressable
               onPress={() => {
                 onConfirm(value);
                 setValue('');
-              }} 
+              }}
               style={[styles.btn, styles.confirmBtn]}
             >
               <Text style={[styles.btnText, { fontFamily, color: '#fff' }]}>Confirmar</Text>
@@ -54,8 +70,20 @@ export const InputModal = ({ visible, onClose, onConfirm, title, placeholder, fo
 };
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
-  container: { width: '85%', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  container: {
+    width: '85%',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
   title: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 20, textAlign: 'center' },
   input: {
     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -65,10 +93,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)'
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
   btn: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
   confirmBtn: { backgroundColor: AccentBorder },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 }
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

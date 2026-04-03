@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { tmdbApi } from '../../services/tmdbClient';
-import type { ActorDetails, ActorMovie } from '../../types/tmdb';
+import type { ActorDetails, ActorMovie } from '../../types';
 
 export function useActorData(actorId: number) {
   const [detalles, setDetalles] = useState<ActorDetails | null>(null);
@@ -26,7 +26,9 @@ export function useActorData(actorId: number) {
         if (mounted) setCargando(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [actorId]);
 
   return { detalles, peliculas, cargando, error };

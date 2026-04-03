@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
+
 import { useAuth } from '../context/AuthContext';
 import { ActorScreen } from '../screens/ActorScreen';
 import { AjustesScreen } from '../screens/AjustesScreen';
@@ -14,16 +15,13 @@ import { VerificationScreen } from '../screens/VerificationScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import MovieMatchScreen from '../screens/MovieMatchScreen';
+import { COLORS } from '../theme/colors';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const linking = {
-  prefixes: [
-    'veoveo://',
-    'https://veoveo-app.netlify.app',
-    'https://dripdev.dev'
-  ],
+  prefixes: ['veoveo://', 'https://veoveo-app.netlify.app', 'https://dripdev.dev'],
   config: {
     screens: {
       Main: 'main',
@@ -41,8 +39,15 @@ export function RootNavigator() {
   return (
     <NavigationContainer linking={linking}>
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A1A2E' }}>
-          <ActivityIndicator size="large" color="#fff" />
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: COLORS.background,
+          }}
+        >
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
         <Stack.Navigator

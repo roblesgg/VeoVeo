@@ -9,7 +9,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import type { PeliculaUsuario } from '../types/peliculaUsuario';
+import type { PeliculaUsuario } from '../types';
 import { getFirebaseAuth, getFirestoreDb } from './firebase';
 
 function uidOrThrow(): string {
@@ -42,7 +42,10 @@ export async function obtenerPeliculaUsuario(idPelicula: number): Promise<Pelicu
   }
 }
 
-export async function obtenerPeliculaDeUsuario(uid: string, idPelicula: number): Promise<PeliculaUsuario | null> {
+export async function obtenerPeliculaDeUsuario(
+  uid: string,
+  idPelicula: number,
+): Promise<PeliculaUsuario | null> {
   const db = getFirestoreDb();
   if (!db) return null;
   const snap = await getDoc(doc(db, 'usuarios', uid, 'peliculas', String(idPelicula)));
@@ -50,7 +53,9 @@ export async function obtenerPeliculaDeUsuario(uid: string, idPelicula: number):
   return snap.data() as PeliculaUsuario;
 }
 
-export async function listarPeliculasPorEstado(estado: 'por_ver' | 'vista'): Promise<PeliculaUsuario[]> {
+export async function listarPeliculasPorEstado(
+  estado: 'por_ver' | 'vista',
+): Promise<PeliculaUsuario[]> {
   const uid = uidOrThrow();
   const db = dbOrThrow();
   const q = query(collection(db, 'usuarios', uid, 'peliculas'), where('estado', '==', estado));
@@ -60,7 +65,7 @@ export async function listarPeliculasPorEstado(estado: 'por_ver' | 'vista'): Pro
 
 export async function listarPeliculasPorEstadoDeUsuario(
   uid: string,
-  estado: 'por_ver' | 'vista'
+  estado: 'por_ver' | 'vista',
 ): Promise<PeliculaUsuario[]> {
   const db = getFirestoreDb();
   if (!db) throw new Error('Firebase no configurado');
@@ -74,7 +79,10 @@ export async function agregarPelicula(p: PeliculaUsuario): Promise<void> {
   await setDoc(refPelicula(uid, p.idPelicula), p);
 }
 
-export async function actualizarEstadoPelicula(idPelicula: number, nuevoEstado: 'por_ver' | 'vista'): Promise<void> {
+export async function actualizarEstadoPelicula(
+  idPelicula: number,
+  nuevoEstado: 'por_ver' | 'vista',
+): Promise<void> {
   const uid = uidOrThrow();
   await updateDoc(refPelicula(uid, idPelicula), { estado: nuevoEstado });
 }
@@ -107,7 +115,7 @@ export async function contarPeliculasPorEstado(estado: string): Promise<number> 
 export async function reemplazarPorPorVer(
   idPelicula: number,
   titulo: string,
-  rutaPoster: string | null
+  rutaPoster: string | null,
 ): Promise<void> {
   await eliminarPelicula(idPelicula);
   await agregarPelicula({

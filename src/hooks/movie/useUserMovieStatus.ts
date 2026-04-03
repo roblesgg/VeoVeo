@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  actualizarEstadoPelicula, 
-  actualizarValoracion, 
-  agregarPelicula, 
-  eliminarPelicula, 
-  obtenerPeliculaUsuario 
+import {
+  actualizarEstadoPelicula,
+  actualizarValoracion,
+  agregarPelicula,
+  eliminarPelicula,
+  obtenerPeliculaUsuario,
 } from '../../services/repositorioPeliculasUsuario';
-import type { PeliculaUsuario } from '../../types/peliculaUsuario';
-import type { MovieDetails } from '../../types/tmdb';
+import type { PeliculaUsuario, MovieDetails } from '../../types';
 
-export function useUserMovieStatus(movieId: number, detalles: MovieDetails | null, providers?: any) {
+export function useUserMovieStatus(
+  movieId: number,
+  detalles: MovieDetails | null,
+  providers?: any,
+) {
   const { user } = useAuth();
   const [peliculaBib, setPeliculaBib] = useState<PeliculaUsuario | null>(null);
   const [bibCargando, setBibCargando] = useState(true);
@@ -56,7 +59,9 @@ export function useUserMovieStatus(movieId: number, detalles: MovieDetails | nul
           fechaLanzamiento: detalles.release_date || undefined,
           providers: {
             flatrate: providers?.flatrate?.map((p: any) => p.provider_id) || [],
-            rent: [...(providers?.rent || []), ...(providers?.buy || [])].map((p: any) => p.provider_id)
+            rent: [...(providers?.rent || []), ...(providers?.buy || [])].map(
+              (p: any) => p.provider_id,
+            ),
           },
         });
       }
@@ -91,7 +96,9 @@ export function useUserMovieStatus(movieId: number, detalles: MovieDetails | nul
             fechaLanzamiento: detalles.release_date || undefined,
             providers: {
               flatrate: providers?.flatrate?.map((p: any) => p.provider_id) || [],
-              rent: [...(providers?.rent || []), ...(providers?.buy || [])].map((p: any) => p.provider_id)
+              rent: [...(providers?.rent || []), ...(providers?.buy || [])].map(
+                (p: any) => p.provider_id,
+              ),
             },
           });
         }
@@ -125,6 +132,6 @@ export function useUserMovieStatus(movieId: number, detalles: MovieDetails | nul
     onPorVer,
     onToggleVista,
     onActualizarValoracion,
-    recargarBiblioteca
+    recargarBiblioteca,
   };
 }

@@ -43,8 +43,8 @@ export function LoginScreen() {
 
         {!firebaseReady ? (
           <Text style={styles.warn}>
-            Configura las variables EXPO_PUBLIC_FIREBASE_* en un archivo .env (mismo proyecto Firebase
-            que el Android).
+            Configura las variables EXPO_PUBLIC_FIREBASE_* en un archivo .env (mismo proyecto
+            Firebase que el Android).
           </Text>
         ) : null}
 
@@ -113,10 +113,13 @@ export function LoginScreen() {
           <Text style={[styles.link, { fontFamily: ff }]}>¿No tienes cuenta? Regístrate</Text>
         </Pressable>
 
-        <Pressable 
+        <Pressable
           onPress={async () => {
             if (!email.trim()) {
-              Alert.alert('Restablecer contraseña', 'Por favor, introduce tu email arriba primero.');
+              Alert.alert(
+                'Restablecer contraseña',
+                'Por favor, introduce tu email arriba primero.',
+              );
               return;
             }
             try {
@@ -128,10 +131,12 @@ export function LoginScreen() {
             } finally {
               setLoading(false);
             }
-          }} 
+          }}
           style={{ marginTop: 12 }}
         >
-          <Text style={[styles.link, { fontFamily: ff, opacity: 0.7, fontSize: 13 }]}>¿Has olvidado tu contraseña?</Text>
+          <Text style={[styles.link, { fontFamily: ff, opacity: 0.7, fontSize: 13 }]}>
+            ¿Has olvidado tu contraseña?
+          </Text>
         </Pressable>
 
         <Text style={[styles.version, { fontFamily: ff }]}>v1.2.2 - Official</Text>

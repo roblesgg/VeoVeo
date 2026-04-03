@@ -1,13 +1,6 @@
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  arrayRemove,
-  type Firestore,
-} from 'firebase/firestore';
-import type { UsuarioPerfil } from '../types/usuario';
+import { doc, getDoc, setDoc, updateDoc, arrayRemove, type Firestore } from 'firebase/firestore';
 import { getFirebaseAuth, getFirestoreDb } from './firebase';
+import type { UsuarioPerfil } from '../types';
 
 function dbOrThrow(): Firestore {
   const db = getFirestoreDb();
@@ -63,11 +56,7 @@ export async function actualizarUsername(nuevoUsername: string): Promise<void> {
   const trimmed = nuevoUsername.trim();
   if (trimmed.length < 3) throw new Error('El nombre debe tener al menos 3 caracteres');
 
-  await setDoc(
-    doc(db, 'usuarios', uid),
-    { username: trimmed },
-    { merge: true }
-  );
+  await setDoc(doc(db, 'usuarios', uid), { username: trimmed }, { merge: true });
 }
 
 export async function actualizarFotoPerfil(url: string): Promise<void> {
@@ -94,7 +83,9 @@ export async function desbloquearUsuario(bloqueadoUid: string): Promise<void> {
   });
 }
 
-export async function actualizarEstadoConexion(estado: 'online' | 'offline' | 'ausente'): Promise<void> {
+export async function actualizarEstadoConexion(
+  estado: 'online' | 'offline' | 'ausente',
+): Promise<void> {
   const db = getFirestoreDb();
   const auth = getFirebaseAuth();
   const uid = auth?.currentUser?.uid;

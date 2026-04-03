@@ -41,15 +41,33 @@ export const CARRUSELES_DISPONIBLES: string[] = [
   'Zombis',
 ];
 
-export type TipoCarrusel = 'GENERO' | 'TRENDING' | 'POPULAR' | 'NOW_PLAYING' | 'TOP_RATED' | 'DISCOVER';
+export type TipoCarrusel =
+  | 'GENERO'
+  | 'TRENDING'
+  | 'POPULAR'
+  | 'NOW_PLAYING'
+  | 'TOP_RATED'
+  | 'DISCOVER';
 
-export function obtenerConfiguracionCarrusel(titulo: string): { tipo: TipoCarrusel; payload: string } {
+export function obtenerConfiguracionCarrusel(titulo: string): {
+  tipo: TipoCarrusel;
+  payload: string;
+} {
   if (titulo === 'Tendencias Semanales') return { tipo: 'TRENDING', payload: 'week' };
   if (titulo === 'Populares Ahora') return { tipo: 'POPULAR', payload: '' };
   if (titulo === 'Estrenos en Cartelera') return { tipo: 'NOW_PLAYING', payload: '' };
   if (titulo === 'Mejor Valoradas') return { tipo: 'TOP_RATED', payload: '' };
-  if (titulo === 'Joyas de los 80/90') return { tipo: 'DISCOVER', payload: 'primary_release_date.gte=1980-01-01&primary_release_date.lte=1999-12-31&vote_count.gte=1000&sort_by=popularity.desc' };
-  if (titulo === 'Clásicos de Oro') return { tipo: 'DISCOVER', payload: 'primary_release_date.lte=1979-12-31&vote_count.gte=500&sort_by=vote_average.desc' };
+  if (titulo === 'Joyas de los 80/90')
+    return {
+      tipo: 'DISCOVER',
+      payload:
+        'primary_release_date.gte=1980-01-01&primary_release_date.lte=1999-12-31&vote_count.gte=1000&sort_by=popularity.desc',
+    };
+  if (titulo === 'Clásicos de Oro')
+    return {
+      tipo: 'DISCOVER',
+      payload: 'primary_release_date.lte=1979-12-31&vote_count.gte=500&sort_by=vote_average.desc',
+    };
 
   return { tipo: 'GENERO', payload: obtenerIdGenero(titulo) };
 }

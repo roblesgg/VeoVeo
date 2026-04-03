@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { tmdbApi } from '../../services/tmdbClient';
-import type { CastMember, CollectionDetails, MovieDetails, WatchProvidersResponse } from '../../types/tmdb';
+import type {
+  CastMember,
+  CollectionDetails,
+  MovieDetails,
+  WatchProvidersResponse,
+} from '../../types';
 
 export function useMovieData(movieId: number) {
   const [cargando, setCargando] = useState(true);
@@ -21,9 +26,9 @@ export function useMovieData(movieId: number) {
           tmdbApi.obtenerCreditosPelicula(movieId),
           tmdbApi.obtenerDondeVerConCache(movieId),
         ]);
-        
+
         if (!alive) return;
-        
+
         setDetalles(d);
         setReparto(c.cast.slice(0, 12));
         setProviders(p);
@@ -41,7 +46,9 @@ export function useMovieData(movieId: number) {
         if (alive) setCargando(false);
       }
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [movieId]);
 
   return { cargando, error, detalles, reparto, providers, coleccion };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { tmdbApi } from '../services/tmdbClient';
-import type { Movie } from '../types/tmdb';
+import type { Movie } from '../../types';
 
 export function useDiscoverSearch() {
   const [textoBuscar, setTextoBuscar] = useState('');
@@ -19,17 +19,21 @@ export function useDiscoverSearch() {
       try {
         if (tipoBusqueda === 'movie') {
           const res = await tmdbApi.buscarPeliculas(textoBuscar, 'es-ES');
-          const moviesWithProviders = await Promise.all(res.results.map(async (movie: Movie) => {
-            try {
-              const providersRes = await tmdbApi.obtenerDondeVer(movie.id);
-              const resES = providersRes.results['ES'];
-              const flatrate = resES?.flatrate?.map(p => p.provider_id) || [];
-              const rent = [...(resES?.rent || []), ...(resES?.buy || [])].map(p => p.provider_id);
-              return { ...movie, providers: { flatrate, rent } };
-            } catch {
-              return movie;
-            }
-          }));
+          const moviesWithProviders = await Promise.all(
+            res.results.map(async (movie: Movie) => {
+              try {
+                const providersRes = await tmdbApi.obtenerDondeVer(movie.id);
+                const resES = providersRes.results['ES'];
+                const flatrate = resES?.flatrate?.map((p) => p.provider_id) || [];
+                const rent = [...(resES?.rent || []), ...(resES?.buy || [])].map(
+                  (p) => p.provider_id,
+                );
+                return { ...movie, providers: { flatrate, rent } };
+              } catch {
+                return movie;
+              }
+            }),
+          );
           setResultadosBusqueda(moviesWithProviders);
         } else {
           const res = await tmdbApi.buscarActores(textoBuscar, 'es-ES');
@@ -51,6 +55,6 @@ export function useDiscoverSearch() {
     resultadosBusqueda,
     buscando,
     tipoBusqueda,
-    setTipoBusqueda
+    setTipoBusqueda,
   };
 }

@@ -11,7 +11,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirestoreDb } from './firebase';
-import type { MovieMatch, PlayerVote } from '../types/match';
+import type { MovieMatch, PlayerVote } from '../types';
 import { enviarMensaje } from './repositorioChats';
 
 function uidOrThrow(): string {
@@ -27,7 +27,11 @@ function dbOrThrow() {
 }
 
 /** Inicia una partida de Match */
-export async function iniciarMatch(chatId: string, participantes: string[], settings: MovieMatch['settings']): Promise<string> {
+export async function iniciarMatch(
+  chatId: string,
+  participantes: string[],
+  settings: MovieMatch['settings'],
+): Promise<string> {
   const db = dbOrThrow();
   const uidActual = uidOrThrow();
 
@@ -45,13 +49,22 @@ export async function iniciarMatch(chatId: string, participantes: string[], sett
   await setDoc(matchRef, nuevaPartida);
 
   // Notificar en el chat
-  await enviarMensaje(chatId, '¡Ha empezado un nuevo Movie Match! 🎬🍿 Desliza para elegir peli.', 'match_invite', matchRef.id);
+  await enviarMensaje(
+    chatId,
+    '¡Ha empezado un nuevo Movie Match! 🎬🍿 Desliza para elegir peli.',
+    'match_invite',
+    matchRef.id,
+  );
 
   return matchRef.id;
 }
 
 /** Registra un voto de un usuario para una película */
-export async function registrarVoto(matchId: string, movieId: number, voto: 'yes' | 'no'): Promise<void> {
+export async function registrarVoto(
+  matchId: string,
+  movieId: number,
+  voto: 'yes' | 'no',
+): Promise<void> {
   const db = dbOrThrow();
   const uidActual = uidOrThrow();
 
@@ -78,21 +91,30 @@ async function verificarMatch(matchId: string, movieId: number) {
   const participantes = matchData.participants;
 
   // Consultar todos los votos para esta película
-  const votosQ = query(collection(db, 'matches', matchId, 'votos'), where('movieId', '==', movieId), where('vote', '==', 'yes'));
+  const votosQ = query(
+    collection(db, 'matches', matchId, 'votos'),
+    where('movieId', '==', movieId),
+    where('vote', '==', 'yes'),
+  );
   const votosSnap = await getDocs(votosQ);
 
   if (votosSnap.size === participantes.length) {
     // ¡MATCH ENCONTRADO!
     await updateDoc(doc(db, 'matches', matchId), {
-      matchedMovies: arrayUnion(movieId)
+      matchedMovies: arrayUnion(movieId),
     });
 
     // Notificar en el chat
-    await enviarMensaje(matchData.chatId, `¡MATCH! 🎉 Todos queréis ver esta película.`, 'match_result', matchId);
+    await enviarMensaje(
+      matchData.chatId,
+      `¡MATCH! 🎉 Todos queréis ver esta película.`,
+      'match_result',
+      matchId,
+    );
 
     // Si llegamos al objetivo, finalizar
     if (matchData.matchedMovies.length + 1 >= matchData.settings.targetMatches) {
-        await updateDoc(doc(db, 'matches', matchId), { status: 'finished', finishedAt: Date.now() });
+      await updateDoc(doc(db, 'matches', matchId), { status: 'finished', finishedAt: Date.now() });
     }
   }
 }
@@ -100,11 +122,15 @@ async function verificarMatch(matchId: string, movieId: number) {
 /** Observa una partida de Match en tiempo real */
 export function observarMatch(matchId: string, callback: (match: MovieMatch) => void): () => void {
   const db = dbOrThrow();
-  return onSnapshot(doc(db, 'matches', matchId), (snap) => {
-    if (snap.exists()) {
-      callback({ ...snap.data(), id: snap.id } as MovieMatch);
-    }
-  }, (err) => {
-    console.error('Error en observarMatch:', err);
-  });
+  return onSnapshot(
+    doc(db, 'matches', matchId),
+    (snap) => {
+      if (snap.exists()) {
+        callback({ ...snap.data(), id: snap.id } as MovieMatch);
+      }
+    },
+    (err) => {
+      console.error('Error en observarMatch:', err);
+    },
+  );
 }

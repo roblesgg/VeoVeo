@@ -6,9 +6,9 @@ import {
   obtenerSolicitudesPendientes,
   enviarSolicitudAmistad,
   eliminarAmigo,
-  bloquearUsuario
+  bloquearUsuario,
 } from '../../services/repositorioSocial';
-import type { UsuarioPerfil } from '../../types/usuario';
+import type { UsuarioPerfil } from '../../types';
 
 export function useSocialData() {
   const [amigos, setAmigos] = useState<UsuarioPerfil[]>([]);
@@ -63,7 +63,7 @@ export function useSocialData() {
   const handleSendSolicitud = async (uid: string) => {
     try {
       await enviarSolicitudAmistad(uid);
-      setSolEnviadas(prev => new Set([...prev, uid]));
+      setSolEnviadas((prev) => new Set([...prev, uid]));
       setMensaje('Solicitud enviada');
       return true;
     } catch (e) {
@@ -107,6 +107,6 @@ export function useSocialData() {
     handleSendSolicitud,
     handleEliminarAmigo,
     handleBloquear,
-    recargar: cargarBase
+    recargar: cargarBase,
   };
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { posterUrl } from '../../services/tmdbClient';
-import type { WatchProvidersResponse } from '../../types/tmdb';
+import type { WatchProvidersResponse } from '../../types';
 
 type Props = {
   providers: WatchProvidersResponse | null;
@@ -24,27 +24,45 @@ export const MovieProviders = React.memo(({ providers, fontFamily }: Props) => {
           {es.flatrate && (
             <View style={styles.providerRow}>
               <Text style={[styles.providerType, { fontFamily }]}>Suscripción</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.providerIcons}>
-                {es.flatrate.map(p => (
-                  <Image key={p.provider_id} source={{ uri: posterUrl(p.logo_path)! }} style={styles.providerIcon} />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.providerIcons}
+              >
+                {es.flatrate.map((p) => (
+                  <Image
+                    key={p.provider_id}
+                    source={{ uri: posterUrl(p.logo_path)! }}
+                    style={styles.providerIcon}
+                  />
                 ))}
               </ScrollView>
             </View>
           )}
-          
+
           {es.rent && (
             <View style={styles.providerRow}>
               <Text style={[styles.providerType, { fontFamily }]}>Alquilar</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.providerIcons}>
-                {es.rent.map(p => (
-                  <Image key={p.provider_id} source={{ uri: posterUrl(p.logo_path)! }} style={styles.providerIcon} />
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.providerIcons}
+              >
+                {es.rent.map((p) => (
+                  <Image
+                    key={p.provider_id}
+                    source={{ uri: posterUrl(p.logo_path)! }}
+                    style={styles.providerIcon}
+                  />
                 ))}
               </ScrollView>
             </View>
           )}
 
           {!es.flatrate && !es.rent && (
-            <Text style={[styles.noProviders, { fontFamily }]}>No disponible para streaming en España.</Text>
+            <Text style={[styles.noProviders, { fontFamily }]}>
+              No disponible para streaming en España.
+            </Text>
           )}
         </BlurView>
       </View>

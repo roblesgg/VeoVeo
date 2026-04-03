@@ -32,7 +32,7 @@ export async function subirImagenStorage(uri: string, ruta: string): Promise<str
 
   // IMPORTANTE: Liberar memoria (React Native Blob implementation detail)
   // @ts-ignore
-  if (blob.close) blob.close(); 
+  if (blob.close) blob.close();
 
   // Devolver URL pública
   return getDownloadURL(fileRef);

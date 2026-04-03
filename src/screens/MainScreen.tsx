@@ -53,7 +53,16 @@ export function MainScreen() {
     }
   }, [loaded]);
 
+  const [resetToken, setResetToken] = useState(0);
   const ff = useMemo(() => fontFamily ?? 'System', [fontFamily]);
+
+  const handleTabPress = (index: number) => {
+    if (paginaActual === index) {
+      setResetToken((prev) => prev + 1);
+    } else {
+      setPaginaActual(index);
+    }
+  };
 
   useEffect(() => {
     if (!isFocused) return;
@@ -95,23 +104,13 @@ export function MainScreen() {
     navigation.navigate('Actor', { actorId: id, actorName: name });
   };
 
-  const [resetToken, setResetToken] = useState(0);
-
-  const handleTabPress = (index: number) => {
-    if (paginaActual === index) {
-      setResetToken(prev => prev + 1);
-    } else {
-      setPaginaActual(index);
-    }
-  };
-
   return (
     <LinearGradient colors={[GradientTop, GradientBottom]} style={styles.flex}>
       <View style={styles.flex}>
         {paginaActual === 0 ? (
           <DiscoverTab
             fontFamily={ff}
-            estaActiva={true}
+            estaActiva
             resetToken={resetToken}
             onPeliculaClick={navigatePelicula}
             onActorClick={navigateActor}
@@ -163,7 +162,9 @@ export function MainScreen() {
               onChatConAmigo={async (uid) => {
                 const { crearChat } = await import('../services/repositorioChats');
                 const chatId = await crearChat([uid]);
-                const otherUserName = (await import('../services/repositorioSocial')).buscarUsuarios(uid);
+                const otherUserName = (
+                  await import('../services/repositorioSocial')
+                ).buscarUsuarios(uid);
                 navigation.navigate('ChatDetail', { chatId, otherUserName: 'Amigo' });
               }}
               onPerfilClick={() => navigation.navigate('Perfil')}
@@ -181,5 +182,5 @@ export function MainScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 }
+  flex: { flex: 1 },
 });

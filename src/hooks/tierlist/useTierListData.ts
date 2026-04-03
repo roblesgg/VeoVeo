@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { obtenerTierLists } from '../../services/repositorioTierLists';
 import { listarPeliculasPorEstado } from '../../services/repositorioPeliculasUsuario';
-import type { TierList } from '../../types/tierList';
-import type { PeliculaUsuario } from '../../types/peliculaUsuario';
+import type { TierList, PeliculaUsuario } from '../../types';
 
 export function useTierListData() {
   const [cargando, setCargando] = useState(false);
@@ -11,10 +10,14 @@ export function useTierListData() {
   const [peliculasVistas, setPeliculasVistas] = useState<PeliculaUsuario[]>([]);
   const [textoBuscar, setTextoBuscar] = useState('');
 
-  const peliculasMap = useMemo(() => peliculasVistas.reduce<Record<number, PeliculaUsuario>>((acc, p) => {
-    acc[p.idPelicula] = p;
-    return acc;
-  }, {}), [peliculasVistas]);
+  const peliculasMap = useMemo(
+    () =>
+      peliculasVistas.reduce<Record<number, PeliculaUsuario>>((acc, p) => {
+        acc[p.idPelicula] = p;
+        return acc;
+      }, {}),
+    [peliculasVistas],
+  );
 
   const cargarDatos = useCallback(async () => {
     setCargando(true);
@@ -22,7 +25,7 @@ export function useTierListData() {
     try {
       const [tl, vistas] = await Promise.all([
         obtenerTierLists(),
-        listarPeliculasPorEstado('vista')
+        listarPeliculasPorEstado('vista'),
       ]);
       setTierLists(tl);
       setPeliculasVistas(vistas);
@@ -52,6 +55,6 @@ export function useTierListData() {
     peliculasMap,
     textoBuscar,
     setTextoBuscar,
-    recargar: cargarDatos
+    recargar: cargarDatos,
   };
 }

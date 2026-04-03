@@ -1,5 +1,5 @@
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
-import type { TierList } from '../types/tierList';
+import type { TierList } from '../types';
 import { getFirebaseAuth, getFirestoreDb } from './firebase';
 
 function uidOrThrow(): string {

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View, Pressable } from 'react-native';
 import { posterUrl } from '../../services/tmdbClient';
-import type { TierList } from '../../types/tierList';
-import type { PeliculaUsuario } from '../../types/peliculaUsuario';
-import { todasLasPeliculasTierList } from '../../types/tierList';
+import type { TierList, PeliculaUsuario } from '../../types';
+import { todasLasPeliculasTierList } from '../../types';
 import { CardSurface } from '../../theme/colors';
 
 type Props = {

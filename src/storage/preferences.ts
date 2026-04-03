@@ -15,7 +15,7 @@ export const DEFAULT_CARRUSELES = [
   'Joyas de los 80/90',
   'Mejor Valoradas',
   'Cine de los 70',
-  'Acción y Pura Adrenalina'
+  'Acción y Pura Adrenalina',
 ];
 
 export async function cargarPreferenciaAdulto(): Promise<boolean> {
@@ -53,7 +53,10 @@ export async function cargarOrdenBiblioteca(tipo: 'vistas' | 'por_ver'): Promise
   return (await AsyncStorage.getItem(key)) || 'recientes';
 }
 
-export async function guardarOrdenBiblioteca(tipo: 'vistas' | 'por_ver', orden: string): Promise<void> {
+export async function guardarOrdenBiblioteca(
+  tipo: 'vistas' | 'por_ver',
+  orden: string,
+): Promise<void> {
   const key = tipo === 'vistas' ? KEY_ORDEN_VISTAS : KEY_ORDEN_POR_VER;
   await AsyncStorage.setItem(key, orden);
 }

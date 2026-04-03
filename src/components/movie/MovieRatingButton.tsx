@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { PeliculaUsuario } from '../../types/peliculaUsuario';
+import type { PeliculaUsuario } from '../../types';
 
 type Props = {
   peliculaUsuario: PeliculaUsuario | null;
@@ -17,11 +17,7 @@ export const MovieRatingButton = React.memo(({ peliculaUsuario, onPress, fontFam
 
   return (
     <Pressable style={styles.btnValorar} onPress={onPress}>
-      <Ionicons
-        name="star"
-        size={18}
-        color={isPoop ? '#8B4513' : '#FFD700'}
-      />
+      <Ionicons name="star" size={18} color={isPoop ? '#8B4513' : '#FFD700'} />
       <Text style={[styles.btnValorarText, { fontFamily }]}>
         {isPoop
           ? 'Valoración: 💩'

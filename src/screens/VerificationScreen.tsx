@@ -1,13 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { GradientBackground } from '../components/GradientBackground';
@@ -63,7 +57,7 @@ export function VerificationScreen() {
 
         <Text style={[styles.title, { fontFamily: ff }]}>Verifica tu correo</Text>
         <Text style={[styles.desc, { fontFamily: ff }]}>
-          Hemos enviado un enlace de confirmación a:{"\n"}
+          {'Hemos enviado un enlace de confirmación a:\n'}
           <Text style={styles.emailText}>{user?.email}</Text>
         </Text>
 
@@ -73,8 +67,8 @@ export function VerificationScreen() {
               Una vez que hayas pulsado el enlace en el correo, dale al botón de abajo:
             </Text>
 
-            <Pressable 
-              style={[styles.mainBtn, SHADOWS.macLight]} 
+            <Pressable
+              style={[styles.mainBtn, SHADOWS.macLight]}
               onPress={onCheckStatus}
               disabled={cargando}
             >
@@ -124,11 +118,29 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   title: { fontSize: 28, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 12 },
-  desc: { fontSize: 16, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 24, marginBottom: 32 },
+  desc: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
   emailText: { color: '#fff', fontWeight: '800' },
-  card: { width: '100%', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  card: {
+    width: '100%',
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
   cardInner: { padding: 24, alignItems: 'center' },
-  info: { color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
+  info: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
   mainBtn: {
     backgroundColor: '#fff',
     height: 52,

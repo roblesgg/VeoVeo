@@ -11,8 +11,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import type { SolicitudAmistad } from '../types/solicitudAmistad';
-import type { UsuarioPerfil } from '../types/usuario';
+import type { SolicitudAmistad, UsuarioPerfil } from '../types';
 import { getFirebaseAuth, getFirestoreDb } from './firebase';
 
 function uidOrThrow(): string {
@@ -88,7 +87,7 @@ export function observarAmigos(callback: (amigos: UsuarioPerfil[]) => void): () 
 
     const qAmigos = query(
       collection(db, 'usuarios'),
-      where('uid', 'in', perfil.amigos.slice(0, 30))
+      where('uid', 'in', perfil.amigos.slice(0, 30)),
     );
 
     unsubAmigos = onSnapshot(qAmigos, (amigosSnap) => {
@@ -109,7 +108,7 @@ export async function obtenerSolicitudesPendientes(): Promise<SolicitudAmistad[]
   const q = query(
     collection(db, 'solicitudes_amistad'),
     where('paraUid', '==', uidActual),
-    where('estado', '==', 'pendiente')
+    where('estado', '==', 'pendiente'),
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...(d.data() as SolicitudAmistad), id: d.id }));
@@ -121,12 +120,10 @@ export async function obtenerSolicitudesEnviadasPendientesUids(): Promise<Set<st
   const q = query(
     collection(db, 'solicitudes_amistad'),
     where('deUid', '==', uidActual),
-    where('estado', '==', 'pendiente')
+    where('estado', '==', 'pendiente'),
   );
   const snap = await getDocs(q);
-  return new Set(
-    snap.docs.map((d) => (d.data() as SolicitudAmistad).paraUid).filter(Boolean)
-  );
+  return new Set(snap.docs.map((d) => (d.data() as SolicitudAmistad).paraUid).filter(Boolean));
 }
 
 export async function enviarSolicitudAmistad(paraUid: string): Promise<void> {
@@ -140,7 +137,7 @@ export async function enviarSolicitudAmistad(paraUid: string): Promise<void> {
     collection(db, 'solicitudes_amistad'),
     where('deUid', '==', uidActual),
     where('paraUid', '==', paraUid),
-    where('estado', '==', 'pendiente')
+    where('estado', '==', 'pendiente'),
   );
   const yaPendiente = await getDocs(yaPendienteQ);
   if (!yaPendiente.empty) throw new Error('Ya enviaste una solicitud a este usuario');
@@ -195,7 +192,7 @@ export async function bloquearUsuario(amigoUid: string): Promise<void> {
   await setDoc(
     doc(db, 'usuarios', uidActual),
     { bloqueados: arrayUnion(amigoUid) },
-    { merge: true }
+    { merge: true },
   );
 }
 
@@ -204,7 +201,7 @@ export async function obtenerActividadAmigosPelicula(idPelicula: number) {
   const amigos = await obtenerAmigos();
   const actividad = [];
   const { obtenerPeliculaDeUsuario } = require('./repositorioPeliculasUsuario');
-  
+
   for (const amigo of amigos) {
     const p = await obtenerPeliculaDeUsuario(amigo.uid, idPelicula);
     if (p) {

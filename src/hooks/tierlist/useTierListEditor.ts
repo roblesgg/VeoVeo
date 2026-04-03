@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { 
-  actualizarTierList, 
-  crearTierList, 
-  eliminarTierList 
+import {
+  actualizarTierList,
+  crearTierList,
+  eliminarTierList,
 } from '../../services/repositorioTierLists';
-import type { TierList } from '../../types/tierList';
-import { nuevaTierListVacia, todasLasPeliculasTierList } from '../../types/tierList';
+import type { TierList } from '../../types';
+import { nuevaTierListVacia, todasLasPeliculasTierList } from '../../types';
 
 type TierKey = 'tierObraMaestra' | 'tierMuyBuena' | 'tierBuena' | 'tierMala' | 'tierNefasta';
 
@@ -17,15 +17,15 @@ export function useTierListEditor(onSuccess: () => void) {
 
   const handleMoverPelicula = (movieId: number, targetTier: TierKey | 'pool') => {
     if (!tierListActual) return;
-    
+
     // Remover de todos los tiers primero
     const clean: TierList = {
       ...tierListActual,
-      tierObraMaestra: (tierListActual.tierObraMaestra || []).filter(id => id !== movieId),
-      tierMuyBuena: (tierListActual.tierMuyBuena || []).filter(id => id !== movieId),
-      tierBuena: (tierListActual.tierBuena || []).filter(id => id !== movieId),
-      tierMala: (tierListActual.tierMala || []).filter(id => id !== movieId),
-      tierNefasta: (tierListActual.tierNefasta || []).filter(id => id !== movieId),
+      tierObraMaestra: (tierListActual.tierObraMaestra || []).filter((id) => id !== movieId),
+      tierMuyBuena: (tierListActual.tierMuyBuena || []).filter((id) => id !== movieId),
+      tierBuena: (tierListActual.tierBuena || []).filter((id) => id !== movieId),
+      tierMala: (tierListActual.tierMala || []).filter((id) => id !== movieId),
+      tierNefasta: (tierListActual.tierNefasta || []).filter((id) => id !== movieId),
     };
 
     if (targetTier !== 'pool') {
@@ -39,7 +39,7 @@ export function useTierListEditor(onSuccess: () => void) {
     if (!tierListActual) return;
     setTierListActual({
       ...tierListActual,
-      [tierKey]: newOrder
+      [tierKey]: newOrder,
     });
   };
 
@@ -50,7 +50,7 @@ export function useTierListEditor(onSuccess: () => void) {
     try {
       if (!tierListActual.id) {
         // Al crear, incluimos las seleccionadas que no tengan tier en 'Nefasta' por defecto
-        let final = { ...tierListActual };
+        const final = { ...tierListActual };
         const yaAsignadas = todasLasPeliculasTierList(final);
         for (const id of seleccionadas) {
           if (!yaAsignadas.includes(id)) {
@@ -91,6 +91,6 @@ export function useTierListEditor(onSuccess: () => void) {
     handleMoverPelicula,
     handleReordenarTier,
     handleGuardar,
-    handleEliminar
+    handleEliminar,
   };
 }

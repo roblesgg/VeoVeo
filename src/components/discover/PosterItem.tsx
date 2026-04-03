@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { posterUrl } from '../../services/tmdbClient';
-import type { Movie } from '../../types/tmdb';
+import type { Movie } from '../../types';
 import { PLATAFORMAS_DEFS } from '../../screens/AjustesScreen';
 
 type Props = {
@@ -14,23 +14,17 @@ type Props = {
 };
 
 export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [] }: Props) => {
-  const isFlatrate = item.providers?.flatrate?.some(p => misPlataformas.includes(p));
-  const isRent = !isFlatrate && item.providers?.rent?.some(p => misPlataformas.includes(p));
+  const isFlatrate = item.providers?.flatrate?.some((p) => misPlataformas.includes(p));
+  const isRent = !isFlatrate && item.providers?.rent?.some((p) => misPlataformas.includes(p));
 
   return (
     <View style={styles.posterWrapper}>
       <Pressable
         onPress={() => onPeliculaClick(item.id)}
-        style={({ pressed }) => [
-          styles.posterCard,
-          { transform: [{ scale: pressed ? 0.96 : 1 }] }
-        ]}
+        style={({ pressed }) => [styles.posterCard, { transform: [{ scale: pressed ? 0.96 : 1 }] }]}
       >
         {posterUrl(item.poster_path, 'w342') ? (
-          <Image
-            source={{ uri: posterUrl(item.poster_path, 'w342')! }}
-            style={styles.posterImg}
-          />
+          <Image source={{ uri: posterUrl(item.poster_path, 'w342')! }} style={styles.posterImg} />
         ) : (
           <View style={[styles.posterImg, styles.posterFallback]}>
             <Ionicons name="film-outline" size={32} color="rgba(255,255,255,0.1)" />
@@ -41,12 +35,9 @@ export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [] }: 
           colors={['transparent', 'rgba(0,0,0,0.4)']}
           style={StyleSheet.absoluteFill}
         />
-        
+
         {(isFlatrate || isRent) && (
-          <View style={[
-            styles.dot, 
-            { backgroundColor: isFlatrate ? '#2ecc71' : '#f39c12' }
-          ]} />
+          <View style={[styles.dot, { backgroundColor: isFlatrate ? '#2ecc71' : '#f39c12' }]} />
         )}
       </Pressable>
     </View>
@@ -72,6 +63,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.5,
     shadowRadius: 2,
-    elevation: 3
-  }
+    elevation: 3,
+  },
 });

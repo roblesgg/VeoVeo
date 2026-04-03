@@ -8,15 +8,6 @@ type Props = {
 };
 
 export function RatingBadge({ rating, fontFamily }: Props) {
-  if (rating === 0) return null;
-
-  const isPoop = rating === -1;
-  
-  // Dynamic styling based on rating
-  let iconColor = '#FFD700'; // Gold default
-  let glow = false;
-  let textColor = '#fff';
-
   const ratingDescription = useMemo(() => {
     if (rating >= 5) return 'Obra Maestra';
     if (rating >= 4) return 'Espectacular';
@@ -24,6 +15,15 @@ export function RatingBadge({ rating, fontFamily }: Props) {
     if (rating >= 2) return 'Me gustó';
     return 'Está bien';
   }, [rating]);
+
+  if (rating === 0) return null;
+
+  const isPoop = rating === -1;
+
+  // Dynamic styling based on rating
+  let iconColor = '#FFD700'; // Gold default
+  let glow = false;
+  const textColor = '#fff';
 
   if (rating >= 5) {
     iconColor = '#FFD700';
@@ -41,11 +41,11 @@ export function RatingBadge({ rating, fontFamily }: Props) {
           <Text style={{ fontSize: 13 }}>💩</Text>
         ) : (
           <>
-            <Ionicons 
-              name="star" 
-              size={glow ? 12 : 11} 
-              color={iconColor} 
-              style={{ marginRight: 2 }} 
+            <Ionicons
+              name="star"
+              size={glow ? 12 : 11}
+              color={iconColor}
+              style={{ marginRight: 2 }}
             />
             <Text style={[styles.text, { fontFamily, color: textColor }]}>
               {ratingDescription} • {rating.toFixed(1)}

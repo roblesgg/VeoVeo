@@ -14,7 +14,7 @@ import {
   unlink,
   updatePassword,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!auth) throw new Error('Firebase no configurado (variables EXPO_PUBLIC_FIREBASE_*).');
       await signInWithEmailAndPassword(auth, email.trim(), password);
     },
-    [auth]
+    [auth],
   );
 
   const register = useCallback(
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Enviar verificación inmediatamente
       await sendEmailVerification(cred.user);
     },
-    [auth]
+    [auth],
   );
 
   const refreshUser = useCallback(async () => {
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!auth) throw new Error('Firebase no configurado.');
       await sendPasswordResetEmail(auth, email.trim());
     },
-    [auth]
+    [auth],
   );
 
   const signInWithGoogle = useCallback(async () => {
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
       if (!idToken || !auth) return;
-      
+
       const credential = GoogleAuthProvider.credential(idToken);
       await signInWithCredential(auth, credential);
     } catch (error) {
@@ -163,16 +163,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [auth]);
 
-  const changePassword = useCallback(async (newPassword: string) => {
-    if (!auth?.currentUser) return;
-    await updatePassword(auth.currentUser, newPassword);
-  }, [auth]);
+  const changePassword = useCallback(
+    async (newPassword: string) => {
+      if (!auth?.currentUser) return;
+      await updatePassword(auth.currentUser, newPassword);
+    },
+    [auth],
+  );
 
-  const reauthenticate = useCallback(async (password: string) => {
-    if (!auth?.currentUser || !auth.currentUser.email) return;
-    const credential = EmailAuthProvider.credential(auth.currentUser.email, password);
-    await reauthenticateWithCredential(auth.currentUser, credential);
-  }, [auth]);
+  const reauthenticate = useCallback(
+    async (password: string) => {
+      if (!auth?.currentUser || !auth.currentUser.email) return;
+      const credential = EmailAuthProvider.credential(auth.currentUser.email, password);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+    },
+    [auth],
+  );
 
   const logout = useCallback(async () => {
     if (!auth) return;
@@ -185,16 +191,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [auth]);
 
   const value = useMemo(
-    () => ({ 
-      user, loading, firebaseReady, login, signInWithGoogle, 
-      linkGoogleAccount, unlinkGoogleAccount, register, logout, 
-      refreshUser, resetPassword, changePassword, reauthenticate 
+    () => ({
+      user,
+      loading,
+      firebaseReady,
+      login,
+      signInWithGoogle,
+      linkGoogleAccount,
+      unlinkGoogleAccount,
+      register,
+      logout,
+      refreshUser,
+      resetPassword,
+      changePassword,
+      reauthenticate,
     }),
     [
-      user, loading, firebaseReady, login, signInWithGoogle, 
-      linkGoogleAccount, unlinkGoogleAccount, register, logout, 
-      refreshUser, resetPassword, changePassword, reauthenticate
-    ]
+      user,
+      loading,
+      firebaseReady,
+      login,
+      signInWithGoogle,
+      linkGoogleAccount,
+      unlinkGoogleAccount,
+      register,
+      logout,
+      refreshUser,
+      resetPassword,
+      changePassword,
+      reauthenticate,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

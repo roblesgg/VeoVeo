@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { AccentBorder } from '../../theme/colors';
 
 type UsernameModalProps = {
@@ -10,11 +18,19 @@ type UsernameModalProps = {
   fontFamily: string;
 };
 
-export const UsernameModal = ({ visible, initialValue, onClose, onSave, fontFamily }: UsernameModalProps) => {
+export const UsernameModal = ({
+  visible,
+  initialValue,
+  onClose,
+  onSave,
+  fontFamily,
+}: UsernameModalProps) => {
   const [val, setVal] = useState(initialValue);
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => { setVal(initialValue); }, [initialValue]);
+  React.useEffect(() => {
+    setVal(initialValue);
+  }, [initialValue]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -36,9 +52,15 @@ export const UsernameModal = ({ visible, initialValue, onClose, onSave, fontFami
             placeholderTextColor="#888"
           />
           <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.btnSec}><Text style={{color:'#fff', fontFamily}}>Cancelar</Text></Pressable>
-            {loading ? <ActivityIndicator color={AccentBorder} /> : (
-              <Pressable onPress={handleSave} style={styles.btnPri}><Text style={{color:'#fff', fontFamily, fontWeight:'700'}}>Guardar</Text></Pressable>
+            <Pressable onPress={onClose} style={styles.btnSec}>
+              <Text style={{ color: '#fff', fontFamily }}>Cancelar</Text>
+            </Pressable>
+            {loading ? (
+              <ActivityIndicator color={AccentBorder} />
+            ) : (
+              <Pressable onPress={handleSave} style={styles.btnPri}>
+                <Text style={{ color: '#fff', fontFamily, fontWeight: '700' }}>Guardar</Text>
+              </Pressable>
             )}
           </View>
         </View>
@@ -55,11 +77,19 @@ type AvatarModalProps = {
   fontFamily: string;
 };
 
-export const AvatarModal = ({ visible, initialValue, onClose, onSave, fontFamily }: AvatarModalProps) => {
+export const AvatarModal = ({
+  visible,
+  initialValue,
+  onClose,
+  onSave,
+  fontFamily,
+}: AvatarModalProps) => {
   const [val, setVal] = useState(initialValue);
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => { setVal(initialValue); }, [initialValue]);
+  React.useEffect(() => {
+    setVal(initialValue);
+  }, [initialValue]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -81,9 +111,15 @@ export const AvatarModal = ({ visible, initialValue, onClose, onSave, fontFamily
             placeholderTextColor="#888"
           />
           <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.btnSec}><Text style={{color:'#fff', fontFamily}}>Cancelar</Text></Pressable>
-            {loading ? <ActivityIndicator color={AccentBorder} /> : (
-              <Pressable onPress={handleSave} style={styles.btnPri}><Text style={{color:'#fff', fontFamily, fontWeight:'700'}}>Guardar</Text></Pressable>
+            <Pressable onPress={onClose} style={styles.btnSec}>
+              <Text style={{ color: '#fff', fontFamily }}>Cancelar</Text>
+            </Pressable>
+            {loading ? (
+              <ActivityIndicator color={AccentBorder} />
+            ) : (
+              <Pressable onPress={handleSave} style={styles.btnPri}>
+                <Text style={{ color: '#fff', fontFamily, fontWeight: '700' }}>Guardar</Text>
+              </Pressable>
             )}
           </View>
         </View>
@@ -93,11 +129,35 @@ export const AvatarModal = ({ visible, initialValue, onClose, onSave, fontFamily
 };
 
 const styles = StyleSheet.create({
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 24,
+  },
   modalCard: { backgroundColor: '#1A1A2E', borderRadius: 24, padding: 24 },
-  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
-  modalInput: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 12, color: '#fff', fontSize: 16 },
+  modalTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 12,
+    color: '#fff',
+    fontSize: 16,
+  },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 24 },
   btnSec: { padding: 12 },
-  btnPri: { backgroundColor: AccentBorder, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  btnPri: {
+    backgroundColor: AccentBorder,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
 });

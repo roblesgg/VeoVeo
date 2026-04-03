@@ -1,7 +1,20 @@
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, arrayUnion, serverTimestamp, collection, query, orderBy, limit, addDoc } from 'firebase/firestore';
-import { getFirestoreDb } from '../services/firebase';
-import { useAuth } from '../context/AuthContext';
-import type { Movie } from '../types/tmdb';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  arrayUnion,
+  serverTimestamp,
+  collection,
+  query,
+  orderBy,
+  limit,
+  addDoc,
+  where,
+} from 'firebase/firestore';
+import { getFirebaseAuth, getFirestoreDb } from '../services/firebase';
+import type { Chat, Movie } from '../types';
 
 const db = getFirestoreDb()!;
 
@@ -24,10 +37,10 @@ export interface ChatMessage {
 export async function crearChat(participantUids: string[], isGroup = false, groupMetadata?: any) {
   const participants = participantUids.sort(); // Orden para IDs estables
   const chatId = isGroup ? `group_${Date.now()}` : `direct_${participants.join('_')}`;
-  
+
   const chatRef = doc(db, 'chats', chatId);
   const snap = await getDoc(chatRef);
-  
+
   if (!snap.exists()) {
     await setDoc(chatRef, {
       id: chatId,
@@ -35,23 +48,31 @@ export async function crearChat(participantUids: string[], isGroup = false, grou
       type: isGroup ? 'group' : 'direct',
       metadata: groupMetadata || {},
       lastMessage: null,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
-  
+
   return chatId;
 }
 
 /**
  * Envía un mensaje (Texto o Película)
  */
-export async function enviarMensaje(chatId: string, senderId: string, content: string | Movie, type: 'text' | 'movie' = 'text') {
+export async function enviarMensaje(
+  chatId: string,
+  content: string | Movie,
+  type: 'text' | 'movie' | 'match_invite' | 'match_result' = 'text',
+  matchId?: string,
+  senderId?: string,
+) {
   const msgRef = collection(db, 'chats', chatId, 'messages');
-  
-  let msgData: any = {
-    senderId,
+  const uid = senderId || getFirebaseAuth()?.currentUser?.uid || 'system';
+
+  const msgData: any = {
+    senderId: uid,
     type,
     timestamp: serverTimestamp(),
+    matchId,
   };
 
   if (type === 'movie') {
@@ -59,7 +80,7 @@ export async function enviarMensaje(chatId: string, senderId: string, content: s
     msgData.movieData = {
       id: movie.id,
       title: movie.title,
-      posterPath: movie.poster_path
+      posterPath: movie.poster_path,
     };
     msgData.text = `🎬 ${movie.title}`;
   } else {
@@ -67,15 +88,15 @@ export async function enviarMensaje(chatId: string, senderId: string, content: s
   }
 
   const newDoc = await addDoc(msgRef, msgData);
-  
+
   // Actualizar puntero del último mensaje
   await updateDoc(doc(db, 'chats', chatId), {
     lastMessage: {
       text: msgData.text,
-      senderId,
-      timestamp: serverTimestamp()
+      senderId: uid,
+      timestamp: serverTimestamp(),
     },
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
   });
 
   return newDoc.id;
@@ -88,11 +109,34 @@ export function escucharMensajes(chatId: string, callback: (msgs: ChatMessage[])
   const q = query(
     collection(db, 'chats', chatId, 'messages'),
     orderBy('timestamp', 'asc'),
-    limit(50)
+    limit(50),
   );
 
   return onSnapshot(q, (snap) => {
-    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatMessage));
+    const msgs = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ChatMessage);
     callback(msgs);
   });
+}
+
+/**
+ * Escucha la lista de chats del usuario actual
+ */
+export function observarMisChats(callback: (chats: Chat[]) => void, onError?: (err: any) => void) {
+  const uid = getFirebaseAuth()?.currentUser?.uid;
+  if (!uid) return () => {};
+
+  const q = query(
+    collection(db, 'chats'),
+    where('participants', 'array-contains', uid),
+    orderBy('updatedAt', 'desc'),
+  );
+
+  return onSnapshot(
+    q,
+    (snap) => {
+      const chats = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Chat);
+      callback(chats);
+    },
+    onError,
+  );
 }

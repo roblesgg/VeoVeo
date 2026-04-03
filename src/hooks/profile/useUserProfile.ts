@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { 
-  obtenerPerfilUsuario, 
-  crearPerfilPorDefecto, 
-  actualizarUsername, 
-  actualizarFotoPerfil 
+import {
+  obtenerPerfilUsuario,
+  crearPerfilPorDefecto,
+  actualizarUsername,
+  actualizarFotoPerfil,
 } from '../../services/repositorioUsuarios';
-import { contarPeliculasPorEstado, listarPeliculasPorEstado } from '../../services/repositorioPeliculasUsuario';
-import type { UsuarioPerfil } from '../../types/usuario';
+import {
+  contarPeliculasPorEstado,
+  listarPeliculasPorEstado,
+} from '../../services/repositorioPeliculasUsuario';
+import type { UsuarioPerfil } from '../../types';
 
 export function useUserProfile() {
   const [usuario, setUsuario] = useState<UsuarioPerfil | null>(null);
@@ -25,19 +28,19 @@ export function useUserProfile() {
         u = await obtenerPerfilUsuario();
       }
       if (!u) throw new Error('No se pudo cargar el perfil');
-      
+
       setUsuario(u);
 
       const [nVistas, nPorVer, vistasList] = await Promise.all([
         contarPeliculasPorEstado('vista'),
         contarPeliculasPorEstado('por_ver'),
-        listarPeliculasPorEstado('vista')
+        listarPeliculasPorEstado('vista'),
       ]);
 
       setStats({
         vistas: nVistas,
         porVer: nPorVer,
-        resenas: vistasList.filter(p => p.valoracion && p.valoracion !== 0).length
+        resenas: vistasList.filter((p) => p.valoracion && p.valoracion !== 0).length,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error desconocido');
@@ -53,7 +56,7 @@ export function useUserProfile() {
   const handleUpdateUsername = async (name: string) => {
     try {
       await actualizarUsername(name);
-      setUsuario(prev => prev ? { ...prev, username: name } : null);
+      setUsuario((prev) => (prev ? { ...prev, username: name } : null));
       setMensaje('Nombre actualizado');
       return true;
     } catch (e) {
@@ -65,7 +68,7 @@ export function useUserProfile() {
   const handleUpdateAvatar = async (url: string) => {
     try {
       await actualizarFotoPerfil(url);
-      setUsuario(prev => prev ? { ...prev, fotoPerfil: url } : null);
+      setUsuario((prev) => (prev ? { ...prev, fotoPerfil: url } : null));
       setMensaje('Foto actualizada');
       return true;
     } catch (e) {
@@ -84,6 +87,6 @@ export function useUserProfile() {
     setMensaje,
     recargar: cargarPerfil,
     handleUpdateUsername,
-    handleUpdateAvatar
+    handleUpdateAvatar,
   };
 }

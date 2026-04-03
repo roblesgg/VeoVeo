@@ -2,18 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GradientBackground } from '../components/GradientBackground';
 import type { RootStackParamList } from '../navigation/types';
-import { desbloquearUsuario, obtenerBloqueadosUids, obtenerUsuarioPorUid } from '../services/repositorioUsuarios';
+import {
+  desbloquearUsuario,
+  obtenerBloqueadosUids,
+  obtenerUsuarioPorUid,
+} from '../services/repositorioUsuarios';
 import { useMontserrat } from '../theme/useMontserrat';
 
 type Fila = { uid: string; username: string };
@@ -68,9 +65,7 @@ export function BloqueadosScreen() {
           keyExtractor={(item) => item.uid}
           contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
           ListEmptyComponent={
-            <Text style={[styles.vacio, { fontFamily: ff }]}>
-              No tienes usuarios bloqueados
-            </Text>
+            <Text style={[styles.vacio, { fontFamily: ff }]}>No tienes usuarios bloqueados</Text>
           }
           renderItem={({ item }) => (
             <View style={styles.row}>
@@ -94,7 +89,9 @@ export function BloqueadosScreen() {
                 {quitando === item.uid ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={{ color: '#ff8a80', fontFamily: ff, fontSize: 14 }}>Desbloquear</Text>
+                  <Text style={{ color: '#ff8a80', fontFamily: ff, fontSize: 14 }}>
+                    Desbloquear
+                  </Text>
                 )}
               </Pressable>
             </View>

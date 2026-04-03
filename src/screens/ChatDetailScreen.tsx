@@ -1,7 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  StyleSheet, View, Text, FlatList, TextInput, Pressable, 
-  KeyboardAvoidingView, Platform, ActivityIndicator, Image 
+import {
+  StyleSheet,
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,7 +21,7 @@ import { RootStackParamList } from '../navigation/types';
 // Services/Types
 import { escucharMensajes, enviarMensaje as enviarMensajeChat } from '../services/repositorioChats';
 import { iniciarSesionMatch } from '../services/matchEngine';
-import { Message } from '../types/message';
+import { Message } from '../types';
 import { GradientTop, GlassSurface, GlassBorder } from '../theme/colors';
 import { getFirebaseAuth } from '../services/firebase';
 import { posterUrl } from '../services/tmdbClient';
@@ -51,10 +59,10 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
   const handleStartMatch = async () => {
     try {
-        const matchId = await iniciarSesionMatch([uidActual || ''], 3);
-        navigation.navigate('MovieMatch', { matchId, chatId });
+      const matchId = await iniciarSesionMatch([uidActual || ''], 3);
+      navigation.navigate('MovieMatch', { matchId, chatId });
     } catch (err) {
-        console.error(err);
+      console.error(err);
     }
   };
 
@@ -64,39 +72,44 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
     const isMovie = item.type === 'movie';
 
     if (isSystem) {
-        return (
-            <View style={styles.systemMsg}>
-                <BlurView intensity={20} tint="dark" style={styles.systemInner}>
-                    <Ionicons name="sparkles" size={16} color="#38bdf8" style={{marginRight: 8}} />
-                    <Text style={styles.systemText}>{item.text}</Text>
-                    {item.type === 'match_invite' && (
-                        <Pressable 
-                            style={styles.systemBtn}
-                            onPress={() => navigation.navigate('MovieMatch', { matchId: item.matchId!, chatId })}
-                        >
-                            <Text style={styles.systemBtnText}>ENTRAR</Text>
-                        </Pressable>
-                    )}
-                </BlurView>
-            </View>
-        );
+      return (
+        <View style={styles.systemMsg}>
+          <BlurView intensity={20} tint="dark" style={styles.systemInner}>
+            <Ionicons name="sparkles" size={16} color="#38bdf8" style={{ marginRight: 8 }} />
+            <Text style={styles.systemText}>{item.text}</Text>
+            {item.type === 'match_invite' && (
+              <Pressable
+                style={styles.systemBtn}
+                onPress={() =>
+                  navigation.navigate('MovieMatch', { matchId: item.matchId!, chatId })
+                }
+              >
+                <Text style={styles.systemBtnText}>ENTRAR</Text>
+              </Pressable>
+            )}
+          </BlurView>
+        </View>
+      );
     }
 
     if (isMovie && item.movieData) {
       return (
         <View style={[styles.msgWrapper, isMe ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
-          <Pressable 
+          <Pressable
             onPress={() => navigation.navigate('Pelicula', { movieId: item.movieData!.id })}
             style={({ pressed }) => [
               styles.movieCard,
               isMe ? styles.myMovieCard : styles.theirMovieCard,
-              { transform: [{ scale: pressed ? 0.98 : 1 }] }
+              { transform: [{ scale: pressed ? 0.98 : 1 }] },
             ]}
           >
             <View style={styles.movieInfo}>
               <View style={styles.moviePosterWrap}>
                 {item.movieData.posterPath ? (
-                  <Image source={{ uri: posterUrl(item.movieData.posterPath, 'w185')! }} style={styles.moviePoster} />
+                  <Image
+                    source={{ uri: posterUrl(item.movieData.posterPath, 'w185')! }}
+                    style={styles.moviePoster}
+                  />
                 ) : (
                   <View style={styles.moviePosterFallback}>
                     <Ionicons name="film" size={24} color="rgba(255,255,255,0.2)" />
@@ -104,15 +117,28 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
                 )}
               </View>
               <View style={styles.movieDetails}>
-                <Text style={styles.movieSubText} numberOfLines={1}>Sugerencia:</Text>
-                <Text style={styles.movieTitle} numberOfLines={2}>{item.movieData.title}</Text>
+                <Text style={styles.movieSubText} numberOfLines={1}>
+                  Sugerencia:
+                </Text>
+                <Text style={styles.movieTitle} numberOfLines={2}>
+                  {item.movieData.title}
+                </Text>
               </View>
             </View>
             {item.text && <Text style={styles.movieCaption}>{item.text}</Text>}
           </Pressable>
           <Text style={styles.msgTime}>
-            {item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
-             typeof item.timestamp === 'number' ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+            {item.timestamp?.toDate
+              ? new Date(item.timestamp.toDate()).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : typeof item.timestamp === 'number'
+                ? new Date(item.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '...'}
           </Text>
         </View>
       );
@@ -120,15 +146,20 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
     return (
       <View style={[styles.msgWrapper, isMe ? styles.myMsgWrapper : styles.theirMsgWrapper]}>
-        <BlurView 
-            intensity={isMe ? 40 : 15} 
-            tint="dark" 
-            style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
+        <BlurView
+          intensity={isMe ? 40 : 15}
+          tint="dark"
+          style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
         >
-            <Text style={styles.msgText}>{item.text}</Text>
+          <Text style={styles.msgText}>{item.text}</Text>
         </BlurView>
         <Text style={styles.msgTime}>
-            {item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'}
+          {item.timestamp?.toDate
+            ? new Date(item.timestamp.toDate()).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : '...'}
         </Text>
       </View>
     );
@@ -138,16 +169,16 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
     <View style={styles.container}>
       <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.headerInfo}>
-            <Text style={styles.headerName}>{otherUserName}</Text>
-            <Text style={styles.headerStatus}>En línea</Text>
+          <Text style={styles.headerName}>{otherUserName}</Text>
+          <Text style={styles.headerStatus}>En línea</Text>
         </View>
         <Pressable onPress={handleStartMatch} style={styles.gameBtn}>
-            <LinearGradient colors={['#38bdf8', '#818cf8']} style={styles.gameBtnInner}>
-                <Ionicons name="game-controller" size={20} color="#fff" />
-            </LinearGradient>
+          <LinearGradient colors={['#38bdf8', '#818cf8']} style={styles.gameBtnInner}>
+            <Ionicons name="game-controller" size={20} color="#fff" />
+          </LinearGradient>
         </Pressable>
       </BlurView>
 
@@ -155,42 +186,57 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
         ref={flatListRef}
         data={mensajes}
         renderItem={renderMessage}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
       />
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <BlurView intensity={60} tint="dark" style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-            <View style={styles.inputInner}>
-                <Pressable style={styles.attachBtn}>
-                    <Ionicons name="add" size={26} color="rgba(255,255,255,0.6)" />
-                </Pressable>
-                <Pressable 
-                  style={[styles.attachBtn, { marginLeft: 8 }]} 
-                  onPress={() => enviarMensajeChat(chatId, uidActual || '', { id: 550, title: 'Fight Club', poster_path: '/pB8S7S91uS06vbn0Sww9vpg69on.jpg' } as any, 'movie')}
-                >
-                    <Ionicons name="film-outline" size={24} color="#38bdf8" />
-                </Pressable>
-                <TextInput
-                    value={texto}
-                    onChangeText={setTexto}
-                    placeholder="Escribe un mensaje..."
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.input}
-                    multiline
-                />
-                <Pressable 
-                    onPress={handleSend} 
-                    style={[styles.sendBtn, !texto.trim() && { opacity: 0.5 }]}
-                    disabled={!texto.trim() || enviando}
-                >
-                    <Ionicons name="send" size={20} color="#fff" />
-                </Pressable>
-            </View>
+        <BlurView
+          intensity={60}
+          tint="dark"
+          style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}
+        >
+          <View style={styles.inputInner}>
+            <Pressable style={styles.attachBtn}>
+              <Ionicons name="add" size={26} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+            <Pressable
+              style={[styles.attachBtn, { marginLeft: 8 }]}
+              onPress={() =>
+                enviarMensajeChat(
+                  chatId,
+                  uidActual || '',
+                  {
+                    id: 550,
+                    title: 'Fight Club',
+                    poster_path: '/pB8S7S91uS06vbn0Sww9vpg69on.jpg',
+                  } as any,
+                  'movie',
+                )
+              }
+            >
+              <Ionicons name="film-outline" size={24} color="#38bdf8" />
+            </Pressable>
+            <TextInput
+              value={texto}
+              onChangeText={setTexto}
+              placeholder="Escribe un mensaje..."
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              style={styles.input}
+              multiline
+            />
+            <Pressable
+              onPress={handleSend}
+              style={[styles.sendBtn, !texto.trim() && { opacity: 0.5 }]}
+              disabled={!texto.trim() || enviando}
+            >
+              <Ionicons name="send" size={20} color="#fff" />
+            </Pressable>
+          </View>
         </BlurView>
       </KeyboardAvoidingView>
     </View>
@@ -199,9 +245,9 @@ export default function ChatDetailScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
@@ -217,42 +263,95 @@ const styles = StyleSheet.create({
   msgWrapper: { marginBottom: 16, maxWidth: '80%' },
   myMsgWrapper: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   theirMsgWrapper: { alignSelf: 'flex-start', alignItems: 'flex-start' },
-  bubble: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: GlassBorder },
+  bubble: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: GlassBorder,
+  },
   myBubble: { backgroundColor: 'rgba(56, 189, 248, 0.2)', borderBottomRightRadius: 4 },
   theirBubble: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderBottomLeftRadius: 4 },
   msgText: { color: '#fff', fontSize: 16 },
   msgTime: { color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: 4 },
-  inputContainer: { paddingTop: 10, paddingHorizontal: 20, borderTopWidth: 1, borderColor: GlassBorder },
-  inputInner: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 24, padding: 4, paddingLeft: 10 },
+  inputContainer: {
+    paddingTop: 10,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderColor: GlassBorder,
+  },
+  inputInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 24,
+    padding: 4,
+    paddingLeft: 10,
+  },
   attachBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, color: '#fff', fontSize: 16, paddingHorizontal: 12, maxHeight: 100 },
-  sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#38bdf8', alignItems: 'center', justifyContent: 'center' },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#38bdf8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   systemMsg: { alignSelf: 'center', marginVertical: 20, width: '90%' },
-  systemInner: { padding: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.3)' },
-  systemText: { color: '#fff', fontSize: 14, textAlign: 'center', fontWeight: '600', marginBottom: 10 },
-  systemBtn: { backgroundColor: '#38bdf8', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 12 },
+  systemInner: {
+    padding: 16,
+    borderRadius: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  systemText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  systemBtn: {
+    backgroundColor: '#38bdf8',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
   systemBtnText: { color: '#fff', fontSize: 13, fontWeight: '800' },
-  movieCard: { 
-    padding: 12, 
-    borderRadius: 20, 
-    width: 240, 
-    borderWidth: 1, 
+  movieCard: {
+    padding: 12,
+    borderRadius: 20,
+    width: 240,
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5
+    elevation: 5,
   },
   myMovieCard: { backgroundColor: 'rgba(56, 189, 248, 0.25)', borderBottomRightRadius: 4 },
   theirMovieCard: { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderBottomLeftRadius: 4 },
   movieInfo: { flexDirection: 'row', gap: 12, marginBottom: 8 },
-  moviePosterWrap: { width: 60, height: 90, borderRadius: 8, overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.3)' },
+  moviePosterWrap: {
+    width: 60,
+    height: 90,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
   moviePoster: { width: '100%', height: '100%' },
   moviePosterFallback: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   movieDetails: { flex: 1, justifyContent: 'center' },
-  movieSubText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+  movieSubText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
   movieTitle: { color: '#fff', fontSize: 15, fontWeight: '800', lineHeight: 18 },
-  movieCaption: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4, fontStyle: 'italic' }
+  movieCaption: { color: 'rgba(255,255,255,0.9)', fontSize: 14, marginTop: 4, fontStyle: 'italic' },
 });
-

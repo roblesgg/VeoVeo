@@ -1,73 +1,98 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Image, Animated, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GradientTop, GradientBottom } from '../theme/colors';
-
-const { width } = Dimensions.get('window');
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withRepeat, 
+  withSequence, 
+  withTiming, 
+  withDelay,
+  Easing
+} from 'react-native-reanimated';
+import { COLORS } from '../theme/colors';
 
 export function SplashView() {
-  const scale = React.useRef(new Animated.Value(0.8)).current;
-  const opacity = React.useRef(new Animated.Value(0)).current;
+  const opacity = useSharedValue(0);
+  const scale = useSharedValue(0.95);
+  const letterSpacing = useSharedValue(2);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 1,
-        tension: 10,
-        friction: 2,
-        useNativeDriver: true
-      }),
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true
-      })
-    ]).start();
+    // Initial entrance
+    opacity.value = withTiming(1, { duration: 1000 });
+    scale.value = withTiming(1, { duration: 1000, easing: Easing.out(Easing.back(1.5)) });
+    letterSpacing.value = withTiming(8, { duration: 1200 });
+
+    // Subtle breathing loop after entrance
+    setTimeout(() => {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.03, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        true
+      );
+    }, 1200);
   }, []);
+
+  const animatedTextStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+    letterSpacing: letterSpacing.value,
+  }));
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={[GradientTop, GradientBottom]} style={StyleSheet.absoluteFill} />
-      <Animated.View style={[styles.inner, { transform: [{ scale }], opacity }]}>
-        <View style={styles.logoRing}>
-           <Image 
-             source={require('../../assets/icon-transparent.png')} 
-             style={styles.logo} 
-             resizeMode="contain"
-           />
+      <LinearGradient 
+        colors={[COLORS.background, '#1e1b4b']} 
+        style={StyleSheet.absoluteFill} 
+      />
+      
+      <Animated.View style={styles.content}>
+        <Animated.Text style={[styles.text, animatedTextStyle]}>
+          VEOVEO
+        </Animated.Text>
+        <View style={styles.accentLineContainer}>
+          <Animated.View 
+            style={[
+              styles.accentLine, 
+              { opacity: 0.3 }
+            ]} 
+          />
         </View>
-        <Animated.Text style={styles.text}>VeoVeo</Animated.Text>
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' },
-  inner: { alignItems: 'center', justifyContent: 'center' },
-  logoRing: { 
-    width: 140, 
-    height: 140, 
-    borderRadius: 70, 
-    backgroundColor: 'rgba(255,255,255,0.05)', 
-    borderWidth: 2, 
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+  container: { 
+    flex: 1, 
     alignItems: 'center', 
-    justifyContent: 'center',
-    shadowColor: '#38bdf8',
-    shadowRadius: 30,
-    shadowOpacity: 0.3,
+    justifyContent: 'center', 
+    backgroundColor: COLORS.background 
   },
-  logo: { width: 80, height: 80 },
-  text: { 
-    marginTop: 24, 
-    fontSize: 42, 
-    fontWeight: '900', 
-    color: '#fff', 
-    letterSpacing: 4,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowRadius: 10,
-    textShadowOffset: { width: 0, height: 2 }
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
+  accentLineContainer: {
+    marginTop: 12,
+    width: 40,
+    height: 2,
+    alignItems: 'center',
+  },
+  accentLine: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: COLORS.primary,
+    borderRadius: 1,
   }
 });

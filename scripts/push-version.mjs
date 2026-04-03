@@ -29,14 +29,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function pushVersion() {
-  console.log(`🚀 Sincronizando versión v${version} con Firestore (${isTest ? 'MODO TEST' : 'MODO PRODUCCIÓN'})...`);
-  
+  console.log(
+    `🚀 Sincronizando versión v${version} con Firestore (${isTest ? 'MODO TEST' : 'MODO PRODUCCIÓN'})...`,
+  );
+
   const docRef = doc(db, 'configuracion', 'app');
-  
+
   const updateData = {};
   const field = isTest ? 'min_version_test' : 'min_version';
   updateData[field] = version;
-  
+
   // También actualizamos la URL de descarga por si acaso
   const downloadUrlField = isTest ? 'download_url_test' : 'download_url';
   updateData[downloadUrlField] = 'https://dripdev.dev';

@@ -26,7 +26,12 @@ const StatItem = ({ num, label, ff }: { num: string; label: string; ff: string }
 );
 
 const styles = StyleSheet.create({
-  statsRow: { flexDirection: 'row', width: '100%', justifyContent: 'space-evenly', marginBottom: 40 },
+  statsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-evenly',
+    marginBottom: 40,
+  },
   statItem: { alignItems: 'center' },
   statNum: { color: '#fff', fontSize: 18, fontWeight: '700' },
   statLabel: { color: '#d3d3d3', fontSize: 12, textAlign: 'center', marginTop: 4, lineHeight: 16 },

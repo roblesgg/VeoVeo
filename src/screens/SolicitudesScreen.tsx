@@ -1,12 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { aceptarSolicitud, obtenerSolicitudesPendientes, rechazarSolicitud } from '../services/repositorioSocial';
+import {
+  aceptarSolicitud,
+  obtenerSolicitudesPendientes,
+  rechazarSolicitud,
+} from '../services/repositorioSocial';
 import { GlassBorder, GlassSurface, GlassWhite } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
-import type { SolicitudAmistad } from '../types/solicitudAmistad';
+import type { SolicitudAmistad } from '../types';
 
 type Props = { onVolverClick: () => void };
 
@@ -81,7 +93,7 @@ export function SolicitudesScreen({ onVolverClick }: Props) {
           <ActivityIndicator color="#fff" size="large" />
         </View>
       ) : (
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
@@ -108,7 +120,7 @@ export function SolicitudesScreen({ onVolverClick }: Props) {
                       <Text style={styles.uid}>ID: {s.deUid.substring(0, 8)}...</Text>
                     </View>
                   </View>
-                  
+
                   <View style={styles.actions}>
                     <Pressable
                       style={[styles.btn, styles.btnOk, accionEnCurso === s.id && styles.disabled]}
@@ -151,20 +163,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titulo: { 
-    fontSize: 32, 
-    color: '#fff', 
+  titulo: {
+    fontSize: 32,
+    color: '#fff',
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyState: { 
-    marginTop: 60, 
+  emptyState: {
+    marginTop: 60,
     alignItems: 'center',
     opacity: 0.8,
   },
-  sub: { 
-    marginTop: 16, 
+  sub: {
+    marginTop: 16,
     color: 'rgba(255,255,255,0.5)',
     fontSize: 16,
     textAlign: 'center',
@@ -223,18 +235,18 @@ const styles = StyleSheet.create({
   },
   name: { color: '#fff', fontSize: 17, fontWeight: '700' },
   uid: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 },
-  actions: { 
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  btn: { 
-    borderRadius: 14, 
+  btn: {
+    borderRadius: 14,
     height: 38,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  btnOk: { 
+  btnOk: {
     backgroundColor: '#6C63FF',
     paddingHorizontal: 20,
     shadowColor: '#6C63FF',
@@ -243,7 +255,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  btnNo: { 
+  btnNo: {
     width: 38,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,

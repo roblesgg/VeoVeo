@@ -4,27 +4,27 @@
     "slug": "veoveo",
     "scheme": "veoveo",
     "version": "1.4.0",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#020617"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.roblesgg.veoveo"
     },
     "android": {
       "package": "com.roblesgg.veoveo",
       "adaptiveIcon": {
-        "backgroundColor": "#000000",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png"
+        "backgroundColor": "#020617",
+        "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 25
+      "versionCode": 25,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"

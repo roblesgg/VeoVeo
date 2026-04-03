@@ -58,25 +58,27 @@ export function FilterSortMenu({
   multiSelect = false,
 }: Props) {
   const insets = useSafeAreaInsets();
-  
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
       </Pressable>
-      
+
       <View style={[styles.sheet, { maxHeight: screenHeight * 0.8 }]}>
-        <Container intensity={100} tint="dark" style={[styles.sheetInner, { paddingBottom: insets.bottom + 20 }]}>
+        <Container
+          intensity={100}
+          tint="dark"
+          style={[styles.sheetInner, { paddingBottom: insets.bottom + 20 }]}
+        >
           <View style={styles.handle} />
-          
+
           <Text style={styles.sheetTitle}>{title}</Text>
-          
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}>
+
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 30 }}
+          >
             {options.map((opt) => (
               <Pressable
                 key={opt.value}
@@ -86,20 +88,22 @@ export function FilterSortMenu({
                   if (!filters) onClose();
                 }}
               >
-                <View style={[styles.iconWrap, currentValue === opt.value && styles.iconWrapActive]}>
-                  <Ionicons 
-                    name={opt.icon} 
-                    size={22} 
-                    color={currentValue === opt.value ? '#fff' : 'rgba(255,255,255,0.9)'} 
+                <View
+                  style={[styles.iconWrap, currentValue === opt.value && styles.iconWrapActive]}
+                >
+                  <Ionicons
+                    name={opt.icon}
+                    size={22}
+                    color={currentValue === opt.value ? '#fff' : 'rgba(255,255,255,0.9)'}
                   />
                 </View>
                 <View style={styles.itemText}>
-                  <Text style={[styles.itemLabel, currentValue === opt.value && styles.itemLabelActive]}>
+                  <Text
+                    style={[styles.itemLabel, currentValue === opt.value && styles.itemLabelActive]}
+                  >
                     {opt.label}
                   </Text>
-                  {opt.description && (
-                    <Text style={styles.itemDesc}>{opt.description}</Text>
-                  )}
+                  {opt.description && <Text style={styles.itemDesc}>{opt.description}</Text>}
                 </View>
                 {currentValue === opt.value && (
                   <Ionicons name="checkmark-circle" size={24} color="#6C63FF" />
@@ -112,7 +116,7 @@ export function FilterSortMenu({
                 <View style={styles.divider} />
                 <Text style={styles.sheetTitle}>{filterTitle || 'Filtrar por'}</Text>
                 {filters.map((opt) => {
-                  const isActive = multiSelect 
+                  const isActive = multiSelect
                     ? selectedFilters.includes(opt.value)
                     : currentFilter === opt.value;
 
@@ -130,23 +134,19 @@ export function FilterSortMenu({
                       }}
                     >
                       <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
-                        <Ionicons 
-                          name={opt.icon} 
-                          size={22} 
-                          color={isActive ? '#fff' : 'rgba(255,255,255,0.9)'} 
+                        <Ionicons
+                          name={opt.icon}
+                          size={22}
+                          color={isActive ? '#fff' : 'rgba(255,255,255,0.9)'}
                         />
                       </View>
                       <View style={styles.itemText}>
                         <Text style={[styles.itemLabel, isActive && styles.itemLabelActive]}>
                           {opt.label}
                         </Text>
-                        {opt.description && (
-                          <Text style={styles.itemDesc}>{opt.description}</Text>
-                        )}
+                        {opt.description && <Text style={styles.itemDesc}>{opt.description}</Text>}
                       </View>
-                      {isActive && (
-                        <Ionicons name="checkmark-circle" size={24} color="#6C63FF" />
-                      )}
+                      {isActive && <Ionicons name="checkmark-circle" size={24} color="#6C63FF" />}
                     </Pressable>
                   );
                 })}

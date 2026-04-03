@@ -1,4 +1,14 @@
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, arrayUnion, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  arrayUnion,
+  query,
+  where,
+} from 'firebase/firestore';
 import { getFirestoreDb } from './firebase';
 import { listarPeliculasPorEstadoDeUsuario } from './repositorioPeliculasUsuario';
 
@@ -15,23 +25,23 @@ export interface MatchSettings {
  */
 export async function iniciarSesionMatch(participantUids: string[], target = 3) {
   const matchId = `match_${Date.now()}_${participantUids.join('_')}`;
-  
+
   // Obtener intersección de listas "Por Ver" para priorizar
   // Nota: En una app real esto se haría en el servidor (Cloud Function)
   // Aquí lo hacemos localmente extrayendo las listas
-  
+
   const matchRef = doc(db, 'matches', matchId);
   await setDoc(matchRef, {
     id: matchId,
     participants: participantUids,
     settings: {
       targetMatches: target,
-      mode: 'watchlist_only'
+      mode: 'watchlist_only',
     },
     matchedMovies: [],
     votes: {}, // { movieId: { uid1: 'yes', uid2: 'no' } }
     status: 'active',
-    createdAt: Date.now()
+    createdAt: Date.now(),
   });
 
   return matchId;
@@ -42,16 +52,16 @@ export async function iniciarSesionMatch(participantUids: string[], target = 3) 
  */
 export async function obtenerCandidatosMatch(matchId: string, participants: string[]) {
   const { tmdbApi } = require('./tmdbClient');
-  
+
   // 1. Obtener "Por ver" de todos
   const lists = await Promise.all(
-    participants.map(uid => listarPeliculasPorEstadoDeUsuario(uid, 'por_ver'))
+    participants.map((uid) => listarPeliculasPorEstadoDeUsuario(uid, 'por_ver')),
   );
 
   // 2. Encontrar intersección (películas que están en más de una lista)
-  const allMovieIds = lists.flatMap(l => l.map(p => p.idPelicula));
+  const allMovieIds = lists.flatMap((l) => l.map((p) => p.idPelicula));
   const counts: Record<number, number> = {};
-  allMovieIds.forEach(id => counts[id] = (counts[id] || 0) + 1);
+  allMovieIds.forEach((id) => (counts[id] = (counts[id] || 0) + 1));
 
   // Ordenar por popularidad/frecuencia
   const priorityIds = Object.keys(counts)
@@ -76,7 +86,12 @@ export async function obtenerCandidatosMatch(matchId: string, participants: stri
   return priorityMovies;
 }
 
-export async function registrarVoto(matchId: string, userId: string, movieId: number, vote: 'yes' | 'no') {
+export async function registrarVoto(
+  matchId: string,
+  userId: string,
+  movieId: number,
+  vote: 'yes' | 'no',
+) {
   const matchRef = doc(db, 'matches', matchId);
   const snap = await getDoc(matchRef);
   if (!snap.exists()) return;
@@ -87,8 +102,8 @@ export async function registrarVoto(matchId: string, userId: string, movieId: nu
   votes[movieId][userId] = vote;
 
   const participants = data.participants as string[];
-  const everyoneVoted = participants.every(uid => votes[movieId][uid] !== undefined);
-  const everyoneSaidYes = participants.every(uid => votes[movieId][uid] === 'yes');
+  const everyoneVoted = participants.every((uid) => votes[movieId][uid] !== undefined);
+  const everyoneSaidYes = participants.every((uid) => votes[movieId][uid] === 'yes');
 
   const updates: any = { votes };
 

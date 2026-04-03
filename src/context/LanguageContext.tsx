@@ -45,7 +45,8 @@ const translations: Record<Language, Record<string, string>> = {
     reauth_failed: 'Error de re-autenticación. Verifica tu contraseña.',
     platforms: 'Mis Plataformas',
     share_app: 'Compartir App',
-    share_msg: '¡Echa un vistazo a VeoVeo! La mejor app para organizar tu cine con amigos. Únete aquí: ',
+    share_msg:
+      '¡Echa un vistazo a VeoVeo! La mejor app para organizar tu cine con amigos. Únete aquí: ',
     all: 'Todas',
   },
   en: {
@@ -65,7 +66,7 @@ const translations: Record<Language, Record<string, string>> = {
     por_ver: 'Watchlist',
     search: 'Search...',
     no_results: 'No results found',
-    empty_vistas: 'You haven\'t marked any movies as watched',
+    empty_vistas: "You haven't marked any movies as watched",
     empty_por_ver: 'Your watchlist is empty',
     sort: 'Sort',
     recientes: 'Recent',
@@ -85,7 +86,7 @@ const translations: Record<Language, Record<string, string>> = {
     share_app: 'Share App',
     share_msg: 'Check out VeoVeo! The best app to organize your movies with friends. Join here: ',
     all: 'All',
-  }
+  },
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);

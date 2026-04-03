@@ -21,9 +21,7 @@ export const SolicitudesBadge = React.memo(({ count, onPress, fontFamily }: Prop
         style={styles.gradient}
       >
         <Ionicons name="people" size={18} color="#fff" />
-        <Text style={[styles.text, { fontFamily }]}>
-          {count} solicitud(es) pendientes
-        </Text>
+        <Text style={[styles.text, { fontFamily }]}>{count} solicitud(es) pendientes</Text>
         <Ionicons name="chevron-forward" size={16} color="#fff" />
       </LinearGradient>
     </Pressable>
@@ -32,6 +30,12 @@ export const SolicitudesBadge = React.memo(({ count, onPress, fontFamily }: Prop
 
 const styles = StyleSheet.create({
   container: { marginHorizontal: 20, borderRadius: 20, overflow: 'hidden', marginTop: 12 },
-  gradient: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, gap: 12 },
+  gradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
   text: { color: '#fff', flex: 1, fontSize: 15, fontWeight: '700' },
 });

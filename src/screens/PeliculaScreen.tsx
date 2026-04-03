@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
-import { Image, ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import {
+  Image,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +15,6 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { posterUrl } from '../services/tmdbClient';
 import { cargarPlataformas } from '../storage/preferences';
-import { useCallback } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { useMontserrat } from '../theme/useMontserrat';
@@ -39,10 +46,22 @@ export function PeliculaScreen() {
   const fontFamily = ff || 'System';
 
   // Logic Hooks
-  const { cargando, error: tmdbError, detalles, reparto, providers, coleccion } = useMovieData(movieId);
-  const { 
-    peliculaBib, bibCargando, accionBib, userError, 
-    onPorVer, onToggleVista, onActualizarValoracion 
+  const {
+    cargando,
+    error: tmdbError,
+    detalles,
+    reparto,
+    providers,
+    coleccion,
+  } = useMovieData(movieId);
+  const {
+    peliculaBib,
+    bibCargando,
+    accionBib,
+    userError,
+    onPorVer,
+    onToggleVista,
+    onActualizarValoracion,
   } = useUserMovieStatus(movieId, detalles, providers);
 
   const [descExp, setDescExp] = useState(false);
@@ -55,7 +74,7 @@ export function PeliculaScreen() {
         const plots = await cargarPlataformas();
         setMisPlataformas(plots.map(Number));
       })();
-    }, [])
+    }, []),
   );
 
   const error = tmdbError || userError;
@@ -96,11 +115,11 @@ export function PeliculaScreen() {
           />
           <LinearGradient
             colors={[
-              'rgba(0,0,0,0)', 
-              'rgba(0,0,0,0)', 
-              'rgba(30,27,75,0.4)', 
+              'rgba(0,0,0,0)',
+              'rgba(0,0,0,0)',
+              'rgba(30,27,75,0.4)',
               GradientBottom,
-              GradientBottom
+              GradientBottom,
             ]}
             locations={[0, 0.2, 0.5, 0.75, 1]}
             style={StyleSheet.absoluteFillObject}
@@ -116,7 +135,11 @@ export function PeliculaScreen() {
         </Pressable>
 
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable onPress={() => shareMovie(movieId, detalles?.title || 'Película')} hitSlop={12} style={styles.iconBtn}>
+          <Pressable
+            onPress={() => shareMovie(movieId, detalles?.title || 'Película')}
+            hitSlop={12}
+            style={styles.iconBtn}
+          >
             <BlurView intensity={50} tint="dark" style={styles.blurBtn}>
               <Ionicons name="share-social-outline" size={22} color="#fff" />
             </BlurView>
@@ -130,16 +153,19 @@ export function PeliculaScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <MovieHeader 
-          detalles={detalles} 
-          fontFamily={fontFamily} 
-          misPlataformas={misPlataformas} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        <MovieHeader
+          detalles={detalles}
+          fontFamily={fontFamily}
+          misPlataformas={misPlataformas}
           providers={providers}
         />
-        
+
         <View style={styles.body}>
-          <MovieActions 
+          <MovieActions
             user={user}
             estadoPelicula={estadoPelicula}
             accionBib={accionBib}
@@ -148,7 +174,7 @@ export function PeliculaScreen() {
             onVista={() => (estadoPelicula === 2 ? onToggleVista(0) : setShowRatingModal(true))}
             fontFamily={fontFamily}
           />
-          <MovieRatingButton 
+          <MovieRatingButton
             peliculaUsuario={peliculaBib}
             onPress={() => setShowRatingModal(true)}
             fontFamily={fontFamily}
@@ -157,15 +183,12 @@ export function PeliculaScreen() {
           <MovieSocialProof movieId={movieId} fontFamily={fontFamily} />
 
           <Text style={[styles.sectionTitle, { fontFamily }]}>Sinopsis</Text>
-          <Text
-            style={[styles.overview, { fontFamily }]}
-            numberOfLines={descExp ? undefined : 3}
-          >
+          <Text style={[styles.overview, { fontFamily }]} numberOfLines={descExp ? undefined : 3}>
             {detalles.overview || 'Sinopsis no disponible.'}
           </Text>
           {detalles.overview && detalles.overview.length > 150 && (
-            <Pressable 
-              onPress={() => setDescExp(!descExp)} 
+            <Pressable
+              onPress={() => setDescExp(!descExp)}
               style={{ marginTop: -16, marginBottom: 24, alignSelf: 'flex-start' }}
             >
               <Text style={{ color: '#38bdf8', fontWeight: '700', fontFamily }}>
@@ -174,23 +197,25 @@ export function PeliculaScreen() {
             </Pressable>
           )}
 
-          <CollectionSaga 
-            coleccion={coleccion} 
-            fontFamily={fontFamily} 
-            onMovieClick={(id) => navigation.push('Pelicula', { movieId: id })} 
+          <CollectionSaga
+            coleccion={coleccion}
+            fontFamily={fontFamily}
+            onMovieClick={(id) => navigation.push('Pelicula', { movieId: id })}
           />
 
-          <MovieCast 
-            reparto={reparto} 
-            fontFamily={fontFamily} 
-            onActorClick={(id, name) => navigation.navigate('Actor', { actorId: id, actorName: name })} 
+          <MovieCast
+            reparto={reparto}
+            fontFamily={fontFamily}
+            onActorClick={(id, name) =>
+              navigation.navigate('Actor', { actorId: id, actorName: name })
+            }
           />
 
           <MovieProviders providers={providers} fontFamily={fontFamily} />
         </View>
       </ScrollView>
 
-      <MovieRatingModal 
+      <MovieRatingModal
         visible={showRatingModal}
         titulo={detalles.title}
         valorInicial={peliculaBib?.valoracion ?? 0}
@@ -221,13 +246,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconBtn: { width: 44, height: 44 },
-  blurBtn: { flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  blurBtn: {
+    flex: 1,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   body: { paddingHorizontal: 20 },
   fixedBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   backdropImg: { width: '100%', height: 750, resizeMode: 'cover', transform: [{ scale: 1.2 }] },
-  sectionTitle: { fontSize: 22, color: 'rgba(255,255,255,0.95)', fontWeight: '700', marginBottom: 12, marginTop: 16 },
+  sectionTitle: {
+    fontSize: 22,
+    color: 'rgba(255,255,255,0.95)',
+    fontWeight: '700',
+    marginBottom: 12,
+    marginTop: 16,
+  },
   overview: { color: '#cbd5e1', fontSize: 15, lineHeight: 24, marginBottom: 24 },
   errTitle: { color: '#fff', fontSize: 28, fontWeight: '800', marginTop: 16 },
   err: { color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginTop: 8, fontSize: 16 },
-  errBtn: { marginTop: 32, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 20 },
+  errBtn: {
+    marginTop: 32,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 20,
+  },
 });

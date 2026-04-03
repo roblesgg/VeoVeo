@@ -13,7 +13,11 @@ type Props = {
 
 export function MainBottomBar({ onTabChange, paginaActual }: Props) {
   const insets = useSafeAreaInsets();
-  const items: { iconActive: ComponentProps<typeof Ionicons>['name']; iconInactive: ComponentProps<typeof Ionicons>['name']; index: number }[] = [
+  const items: {
+    iconActive: ComponentProps<typeof Ionicons>['name'];
+    iconInactive: ComponentProps<typeof Ionicons>['name'];
+    index: number;
+  }[] = [
     { iconActive: 'compass', iconInactive: 'compass-outline', index: 0 },
     { iconActive: 'library', iconInactive: 'library-outline', index: 1 },
     { iconActive: 'layers', iconInactive: 'layers-outline', index: 2 },
@@ -21,23 +25,21 @@ export function MainBottomBar({ onTabChange, paginaActual }: Props) {
   ];
 
   return (
-    <View style={[
-      styles.wrap,
-      { bottom: Math.max(insets.bottom, 20) }
-    ]}>
-      <BlurView
-        intensity={95}
-        tint="dark"
-        style={styles.bar}
-      >
+    <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 20) }]}>
+      <BlurView intensity={95} tint="dark" style={styles.bar}>
         <View style={styles.innerBar}>
           {items.map(({ iconActive, iconInactive, index }) => (
-            <Pressable key={index} onPress={() => onTabChange(index)} style={styles.btn} hitSlop={12}>
+            <Pressable
+              key={index}
+              onPress={() => onTabChange(index)}
+              style={styles.btn}
+              hitSlop={12}
+            >
               <View style={[styles.iconWrap, paginaActual === index && styles.iconWrapActive]}>
-                <Ionicons 
-                  name={paginaActual === index ? iconActive : iconInactive} 
-                  size={26} 
-                  color={paginaActual === index ? "#fff" : "rgba(255,255,255,0.6)"} 
+                <Ionicons
+                  name={paginaActual === index ? iconActive : iconInactive}
+                  size={26}
+                  color={paginaActual === index ? '#fff' : 'rgba(255,255,255,0.6)'}
                 />
               </View>
             </Pressable>
@@ -83,5 +85,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrapActive: {}
+  iconWrapActive: {},
 });

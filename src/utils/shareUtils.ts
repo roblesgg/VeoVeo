@@ -10,7 +10,7 @@ const BASE_URL = 'https://veoveo.dripdev.dev/share';
 export const shareMovie = async (movieId: number, title: string) => {
   const url = `${BASE_URL}?type=movie&id=${movieId}`;
   const message = `¡Mira esta película en VeoVeo! 🍿\n\n*${title}*\n\n${url}`;
-  
+
   try {
     await Share.share({
       message,
@@ -25,7 +25,7 @@ export const shareMovie = async (movieId: number, title: string) => {
 export const shareActor = async (actorId: number, name: string) => {
   const url = `${BASE_URL}?type=actor&id=${actorId}`;
   const message = `Mira todo sobre *${name}* en VeoVeo 🎬\n\n${url}`;
-  
+
   try {
     await Share.share({
       message,

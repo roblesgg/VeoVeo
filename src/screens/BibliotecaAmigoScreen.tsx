@@ -17,9 +17,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listarPeliculasPorEstadoDeUsuario } from '../services/repositorioPeliculasUsuario';
 import { obtenerPerfilUsuarioPorUid } from '../services/repositorioUsuarios';
 import { posterUrl } from '../services/tmdbClient';
-import type { PeliculaUsuario } from '../types/peliculaUsuario';
-import type { UsuarioPerfil } from '../types/usuario';
-import { AccentBorder, CardSurface, GlassBorder, GlassSurface, GlassWhite, GradientBottom } from '../theme/colors';
+import type { PeliculaUsuario, UsuarioPerfil } from '../types';
+import {
+  AccentBorder,
+  CardSurface,
+  GlassBorder,
+  GlassSurface,
+  GlassWhite,
+  GradientBottom,
+} from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { useMontserrat } from '../theme/useMontserrat';
 import { GradientBackground } from '../components/GradientBackground';
@@ -45,7 +51,9 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
   const [cargando, setCargando] = useState(true);
   const [porVer, setPorVer] = useState<PeliculaUsuario[]>([]);
   const [vistas, setVistas] = useState<PeliculaUsuario[]>([]);
-  const [orden, setOrden] = useState<'recientes' | 'alpha' | 'fecha_peli' | 'valoracion'>('recientes');
+  const [orden, setOrden] = useState<'recientes' | 'alpha' | 'fecha_peli' | 'valoracion'>(
+    'recientes',
+  );
   const [mostrarMenu, setMostrarMenu] = useState(false);
 
   useEffect(() => {
@@ -69,7 +77,7 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
   }, [amigoUid]);
 
   const listBase = useMemo(() => {
-    let base = [...(seccion === 0 ? porVer : vistas)];
+    const base = [...(seccion === 0 ? porVer : vistas)];
     if (orden === 'alpha') {
       base.sort((a, b) => a.titulo.localeCompare(b.titulo));
     } else if (orden === 'fecha_peli') {
@@ -89,7 +97,7 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
     return listBase.filter((p) => p.titulo.toLowerCase().includes(q));
   }, [listBase, buscar]);
 
-  const resenasCount = vistas.filter(p => p.valoracion && p.valoracion !== 0).length;
+  const resenasCount = vistas.filter((p) => p.valoracion && p.valoracion !== 0).length;
 
   if (cargando) {
     return (
@@ -126,10 +134,30 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
         onClose={() => setMostrarMenu(false)}
         title="Ordenar Biblioteca"
         options={[
-          { label: 'Recientes', value: 'recientes', icon: 'time-outline', description: 'Películas añadidas últimamente.' },
-          { label: 'Título (A-Z)', value: 'alpha', icon: 'text-outline', description: 'Orden alfabético por nombre.' },
-          { label: 'Lanzamiento', value: 'fecha_peli', icon: 'calendar-outline', description: 'Por año de estreno en cines.' },
-          { label: 'Valoración', value: 'valoracion', icon: 'star-outline', description: 'Favoritas de tu amigo arriba.' },
+          {
+            label: 'Recientes',
+            value: 'recientes',
+            icon: 'time-outline',
+            description: 'Películas añadidas últimamente.',
+          },
+          {
+            label: 'Título (A-Z)',
+            value: 'alpha',
+            icon: 'text-outline',
+            description: 'Orden alfabético por nombre.',
+          },
+          {
+            label: 'Lanzamiento',
+            value: 'fecha_peli',
+            icon: 'calendar-outline',
+            description: 'Por año de estreno en cines.',
+          },
+          {
+            label: 'Valoración',
+            value: 'valoracion',
+            icon: 'star-outline',
+            description: 'Favoritas de tu amigo arriba.',
+          },
         ]}
         currentValue={orden}
         onSelect={setOrden}
@@ -153,7 +181,9 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
           )}
         </View>
 
-        <Text style={[styles.usernameText, { fontFamily: ff }]}>{usuario?.username || 'Usuario'}</Text>
+        <Text style={[styles.usernameText, { fontFamily: ff }]}>
+          {usuario?.username || 'Usuario'}
+        </Text>
 
         <View style={styles.statsRow}>
           <EstadisticaItem num={String(vistas.length)} label={'Películas\nVistas'} ff={ff} />
@@ -163,7 +193,12 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
 
         {/* Buscador */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="rgba(255,255,255,0.4)" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="rgba(255,255,255,0.4)"
+            style={styles.searchIcon}
+          />
           <TextInput
             value={buscar}
             onChangeText={setBuscar}
@@ -176,11 +211,21 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
         {/* Tabs Biblioteca */}
         <View style={styles.tabContainer}>
           <Container intensity={15} tint="dark" style={styles.tabRow}>
-            <Pressable onPress={() => setSeccion(0)} style={[styles.tabBtn, seccion === 0 && styles.tabOnBtn]}>
-              <Text style={[styles.tabText, seccion === 0 && styles.tabOnText, { fontFamily: ff }]}>Por Ver</Text>
+            <Pressable
+              onPress={() => setSeccion(0)}
+              style={[styles.tabBtn, seccion === 0 && styles.tabOnBtn]}
+            >
+              <Text style={[styles.tabText, seccion === 0 && styles.tabOnText, { fontFamily: ff }]}>
+                Por Ver
+              </Text>
             </Pressable>
-            <Pressable onPress={() => setSeccion(1)} style={[styles.tabBtn, seccion === 1 && styles.tabOnBtn]}>
-              <Text style={[styles.tabText, seccion === 1 && styles.tabOnText, { fontFamily: ff }]}>Vistas</Text>
+            <Pressable
+              onPress={() => setSeccion(1)}
+              style={[styles.tabBtn, seccion === 1 && styles.tabOnBtn]}
+            >
+              <Text style={[styles.tabText, seccion === 1 && styles.tabOnText, { fontFamily: ff }]}>
+                Vistas
+              </Text>
             </Pressable>
           </Container>
         </View>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { getFirestoreDb } from '../../services/firebase';
-import type { PeliculaUsuario } from '../../types/peliculaUsuario';
+import type { PeliculaUsuario } from '../../types';
 
 export function useLibraryData(user: any, refreshToken: number) {
   const [porVer, setPorVer] = useState<PeliculaUsuario[]>([]);
@@ -20,28 +20,36 @@ export function useLibraryData(user: any, refreshToken: number) {
     const db = getFirestoreDb();
     if (!db) return;
     const libRef = collection(db, 'usuarios', user.uid, 'peliculas');
-    
+
     // Listener para "Por Ver"
     const qPorVer = query(libRef, where('estado', '==', 'por_ver'));
-    const unsubPorVer = onSnapshot(qPorVer, (snap) => {
-      const data = snap.docs.map(doc => ({ ...doc.data() } as PeliculaUsuario));
-      setPorVer(data);
-      if (cargando) setCargando(false);
-    }, (err) => {
-      console.error(err);
-      setError('Error cargando biblioteca');
-    });
+    const unsubPorVer = onSnapshot(
+      qPorVer,
+      (snap) => {
+        const data = snap.docs.map((doc) => ({ ...doc.data() }) as PeliculaUsuario);
+        setPorVer(data);
+        if (cargando) setCargando(false);
+      },
+      (err) => {
+        console.error(err);
+        setError('Error cargando biblioteca');
+      },
+    );
 
     // Listener para "Vistas"
     const qVistas = query(libRef, where('estado', '==', 'vista'));
-    const unsubVistas = onSnapshot(qVistas, (snap) => {
-      const data = snap.docs.map(doc => ({ ...doc.data() } as PeliculaUsuario));
-      setVistas(data);
-      if (cargando) setCargando(false);
-    }, (err) => {
-      console.error(err);
-      setError('Error cargando biblioteca');
-    });
+    const unsubVistas = onSnapshot(
+      qVistas,
+      (snap) => {
+        const data = snap.docs.map((doc) => ({ ...doc.data() }) as PeliculaUsuario);
+        setVistas(data);
+        if (cargando) setCargando(false);
+      },
+      (err) => {
+        console.error(err);
+        setError('Error cargando biblioteca');
+      },
+    );
 
     return () => {
       unsubPorVer();
