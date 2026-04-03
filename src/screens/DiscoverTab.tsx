@@ -160,6 +160,15 @@ export function DiscoverTab({
           {t('discover')}
         </Text>
         <View style={styles.actionsTopRow}>
+          {modoEdicion && (
+            <Pressable
+              onPress={() => setMostrarDialogo(true)}
+              style={[styles.iconBtn, styles.addBtnGlass]}
+              hitSlop={8}
+            >
+              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setModoEdicion(!modoEdicion)}
             style={styles.iconBtn}
@@ -191,7 +200,12 @@ export function DiscoverTab({
           entering={FadeInDown}
           style={[styles.searchOverlay, { top: Math.max(insets.top, 12) + 80 }]}
         >
-          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={96} tint="dark" style={StyleSheet.absoluteFill}>
+            <LinearGradient
+              colors={['rgba(2, 6, 23, 0.4)', 'transparent']}
+              style={StyleSheet.absoluteFill}
+            />
+          </BlurView>
           <View style={styles.searchContainer}>
             <TextInput
               ref={searchInputRef}
@@ -400,6 +414,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   perfilFotoMini: { width: '100%', height: '100%' },
+  addBtnGlass: {
+    marginRight: 4,
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderRadius: 20,
+  },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 5 },
   searchOverlay: { position: 'absolute', left: 0, right: 0, zIndex: 90, paddingBottom: 20 },
   searchContainer: { marginHorizontal: 20 },

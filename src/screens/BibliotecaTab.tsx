@@ -17,10 +17,11 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '../context/AuthContext';
 import { useLibraryData } from '../hooks/movie/useLibraryData';
 import { posterUrl, tmdbApi } from '../services/tmdbClient';
-import { CardSurface, GradientTop } from '../theme/colors';
+import { CardSurface } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { FilterSortMenu } from '../components/FilterSortMenu';
 import { RatingBadge } from '../components/RatingBadge';
+import { LiquidGlassPanel } from '../components/LiquidGlassPanel';
 import { useLanguage } from '../context/LanguageContext';
 import * as preferences from '../storage/preferences';
 
@@ -143,25 +144,28 @@ export function BibliotecaTab({
 
   return (
     <View style={styles.flex}>
-      <View
+      <LiquidGlassPanel
         style={[
           styles.tabsHeaderOverlay,
           { height: Math.max(insets.top, 12) + 130 + (buscar ? 60 : 0) },
         ]}
+        rounded={false}
+        intensity={100}
       >
-        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
-        <LinearGradient colors={[GradientTop, 'transparent']} style={StyleSheet.absoluteFill} />
+        <LinearGradient
+          colors={['rgba(2, 6, 23, 0.1)', 'rgba(2, 6, 23, 0.45)', 'transparent']}
+          style={StyleSheet.absoluteFill}
+        />
         <View
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: 'rgba(255, 255, 255, 0.03)',
               borderBottomWidth: 1,
-              borderColor: 'rgba(255,255,255,0.1)',
+              borderColor: 'rgba(255,255,255,0.18)',
             },
           ]}
         />
-      </View>
+      </LiquidGlassPanel>
 
       <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
         <Text style={[styles.titulo, { fontFamily, flex: 1 }]} numberOfLines={1}>
@@ -200,18 +204,24 @@ export function BibliotecaTab({
       </View>
 
       {buscar && (
-        <TextInput
-          value={textoBuscar}
-          onChangeText={setTextoBuscar}
-          placeholder={t('search')}
-          placeholderTextColor="rgba(255,255,255,0.5)"
+        <LiquidGlassPanel
           style={[
-            styles.searchField,
+            styles.searchGlass,
             SHADOWS.macLight,
-            { fontFamily, top: Math.max(insets.top, 12) + 144 },
+            { top: Math.max(insets.top, 12) + 144 },
           ]}
-          autoFocus
-        />
+          contentStyle={styles.searchGlassContent}
+          intensity={95}
+        >
+          <TextInput
+            value={textoBuscar}
+            onChangeText={setTextoBuscar}
+            placeholder={t('search')}
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            style={[styles.searchField, { fontFamily }]}
+            autoFocus
+          />
+        </LiquidGlassPanel>
       )}
 
       {cargando ? (
@@ -383,17 +393,20 @@ const styles = StyleSheet.create({
   tab: { fontSize: 18, color: 'rgba(255,255,255,0.4)', fontWeight: '600' },
   tabActivo: { color: '#fff', fontWeight: '800' },
   searchField: {
+    flex: 1,
+    color: '#fff',
+    paddingHorizontal: 20,
+  },
+  searchGlass: {
     position: 'absolute',
     left: 20,
     right: 20,
     zIndex: 110,
-    borderRadius: 24,
-    backgroundColor: CardSurface,
-    paddingHorizontal: 20,
     height: 50,
-    color: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  searchGlassContent: {
+    flex: 1,
+    justifyContent: 'center',
   },
   tabsHeaderOverlay: {
     position: 'absolute',
@@ -402,6 +415,9 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 90,
     overflow: 'hidden',
+    borderWidth: 0,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
   },
   card: {
     width: '100%',

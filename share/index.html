@@ -1,102 +1,120 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Abriendo en VeoVeo...</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-            padding: 20px;
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        text-align: center;
+        padding: 20px;
+      }
+      .logo {
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 40px;
+        letter-spacing: -1px;
+        background: linear-gradient(to right, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .btn {
+        background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+        color: white;
+        padding: 16px 40px;
+        border-radius: 30px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 18px;
+        margin-top: 20px;
+        box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
+        display: inline-block;
+        transition: transform 0.2s;
+      }
+      .btn:active {
+        transform: scale(0.95);
+      }
+      .loading {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(56, 189, 248, 0.1);
+        border-top: 3px solid #38bdf8;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 24px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
-        .logo {
-            font-size: 32px;
-            font-weight: 800;
-            margin-bottom: 40px;
-            letter-spacing: -1px;
-            background: linear-gradient(to right, #38bdf8, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        100% {
+          transform: rotate(360deg);
         }
-        .btn {
-            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-            color: white;
-            padding: 16px 40px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 18px;
-            margin-top: 20px;
-            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
-            display: inline-block;
-            transition: transform 0.2s;
-        }
-        .btn:active { transform: scale(0.95); }
-        .loading {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(56, 189, 248, 0.1);
-            border-top: 3px solid #38bdf8;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 24px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        p { color: #94a3b8; margin: 10px 0; }
+      }
+      p {
+        color: #94a3b8;
+        margin: 10px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="logo">VeoVeo</div>
     <div class="loading"></div>
     <h2 id="tagline">Preparando contenido...</h2>
     <p id="sub">Intentando abrir la aplicación directamente.</p>
-    
+
     <a id="appLink" href="#" class="btn">Seguir en la App</a>
-    
-    <div style="margin-top: 50px;">
-        <p>¿Aún no tienes VeoVeo?</p>
-        <a href="https://dripdev.dev#download" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Descargar APK ahora</a>
+
+    <div style="margin-top: 50px">
+      <p>¿Aún no tienes VeoVeo?</p>
+      <a
+        href="https://dripdev.dev#download"
+        style="color: #38bdf8; text-decoration: none; font-weight: 600"
+        >Descargar APK ahora</a
+      >
     </div>
 
     <script>
-        const params = new URLSearchParams(window.location.search);
-        const type = params.get('type') || 'main';
-        const id = params.get('id');
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('type') || 'main';
+      const id = params.get('id');
 
-        const path = id ? `${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'main';
-        const schemeTest = `veoveotest://${path}`;
-        const schemeProd = `veoveo://${path}`;
-        
-        document.getElementById('appLink').href = schemeTest;
+      const path = id ? `${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'main';
+      const schemeTest = `veoveotest://${path}`;
+      const schemeProd = `veoveo://${path}`;
 
-        if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
-        else if (type === 'actor') document.getElementById('tagline').innerText = 'Abriendo perfil de actor...';
+      document.getElementById('appLink').href = schemeTest;
 
-        // Intento 1: Redirección inmediata a TEST
-        setTimeout(() => {
-            window.location.href = schemeTest;
-        }, 500);
+      if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
+      else if (type === 'actor')
+        document.getElementById('tagline').innerText = 'Abriendo perfil de actor...';
 
-        // Intento 2: Redirección a PROD si no abrió el anterior
-        setTimeout(() => {
-            window.location.href = schemeProd;
-            document.getElementById('appLink').href = schemeProd;
-        }, 1500);
+      // Intento 1: Redirección inmediata a TEST
+      setTimeout(() => {
+        window.location.href = schemeTest;
+      }, 500);
 
-        // Fallback detect
-        setTimeout(() => {
-            document.getElementById('sub').innerText = 'Si la app no se ha abierto, pulsa el botón.';
-            document.querySelector('.loading').style.display = 'none';
-        }, 4000);
+      // Intento 2: Redirección a PROD si no abrió el anterior
+      setTimeout(() => {
+        window.location.href = schemeProd;
+        document.getElementById('appLink').href = schemeProd;
+      }, 1500);
+
+      // Fallback detect
+      setTimeout(() => {
+        document.getElementById('sub').innerText = 'Si la app no se ha abierto, pulsa el botón.';
+        document.querySelector('.loading').style.display = 'none';
+      }, 4000);
     </script>
-</body>
+  </body>
 </html>
