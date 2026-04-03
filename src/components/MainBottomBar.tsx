@@ -3,7 +3,8 @@ import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { BottomBarTop, BottomBarBottom } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 
 type Props = {
@@ -26,7 +27,7 @@ export function MainBottomBar({ onTabChange, paginaActual }: Props) {
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 20) }]}>
-      <BlurView intensity={95} tint="dark" style={styles.bar}>
+      <BlurView intensity={90} tint="dark" style={styles.bar}>
         <View style={styles.innerBar}>
           {items.map(({ iconActive, iconInactive, index }) => (
             <Pressable
@@ -39,8 +40,20 @@ export function MainBottomBar({ onTabChange, paginaActual }: Props) {
                 <Ionicons
                   name={paginaActual === index ? iconActive : iconInactive}
                   size={26}
-                  color={paginaActual === index ? '#fff' : 'rgba(255,255,255,0.6)'}
+                  color={paginaActual === index ? '#fff' : 'rgba(255,255,255,0.5)'}
                 />
+                {paginaActual === index && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: -10,
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                )}
               </View>
             </Pressable>
           ))}
