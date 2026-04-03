@@ -86,11 +86,23 @@
       }
 
       /* Navbar */
+      .header-container {
+        position: relative;
+        z-index: 1000;
+        width: 100%;
+        height: 120px;
+        transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+      }
+
       nav {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 40px 0;
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+        transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
       }
 
       .logo {
@@ -98,8 +110,33 @@
         font-weight: 900;
         letter-spacing: -1px;
         background: var(--accent-gradient);
-        -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
+        transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      /* Sticky State */
+      .header-container.sticky {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 70px;
+        width: 100%;
+        background: rgba(2, 6, 23, 0.7);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+
+      .header-container.sticky nav {
+        padding: 15px 24px;
+        justify-content: center;
+      }
+
+      .header-container.sticky .logo {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        transform: translateY(0);
       }
 
       /* Hero Section */
@@ -114,13 +151,14 @@
       }
 
       h1 {
-        font-size: clamp(3rem, 10vw, 6rem);
+        font-size: clamp(3.5rem, 10vw, 6rem);
         font-weight: 900;
         line-height: 0.9;
         margin-bottom: 24px;
         letter-spacing: -3px;
         background: linear-gradient(to bottom, #fff, rgba(255,255,255,0.6));
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
       }
 
@@ -285,6 +323,7 @@
         h1 { font-size: 3.5rem; }
         .grid { gap: 16px; }
         .card { padding: 32px; }
+        .header-container.sticky nav { justify-content: center; }
       }
     </style>
   </head>
@@ -296,15 +335,17 @@
     </div>
 
     <div class="container">
-      <nav>
-        <div class="logo">VeoVeo</div>
-      </nav>
+      <div class="header-container" id="header">
+        <nav>
+          <div class="logo">VEOVEO</div>
+        </nav>
+      </div>
 
       <section class="hero">
-        <h1 class="reveal">Descarga VeoVeo.</h1>
-        <p class="reveal">El cinéfilo que llevas dentro merece una app a su altura. Social, premium y sin dramas.</p>
+        <h1 class="reveal">Cine sin dramas.</h1>
+        <p class="reveal">Encuentra qué ver con tus amigos en segundos. La app definitiva para el Match cinematográfico.</p>
         <div class="reveal">
-          <a href="https://veoveo.dripdev.dev/download" class="download-btn">Descargar para Android</a>
+          <a href="./veoveo-latest.apk" class="download-btn" download>Descargar App (v1.4.1)</a>
         </div>
       </section>
 
@@ -351,6 +392,16 @@
     </div>
 
     <script>
+      // Sticky Header Logic
+      const header = document.getElementById('header');
+      window.onscroll = () => {
+        if (window.scrollY > 50) {
+          header.classList.add('sticky');
+        } else {
+          header.classList.remove('sticky');
+        }
+      };
+
       // Scroll Reveal Logic
       const observerOptions = {
         threshold: 0.1
