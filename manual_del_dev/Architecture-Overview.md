@@ -15,10 +15,18 @@ VeoVeo es una aplicación de React Native construida sobre **Expo (SDK 54)**. Aq
 
 - **React Native & Expo**: El núcleo multiplataforma.
 - **Firebase**:
-  - **Auth**: Gestión de usuarios.
+  - **Auth**: Gestión de usuarios (incluye fix de timeout en procesos de autenticación).
   - **Firestore**: Base de datos para películas, amigos y configuración.
 - **TMDB API**: De donde sacamos toda la información de las películas y series.
 - **Expo linear gradient & Blur**: Para ese diseño "glassmorphism" elegante.
+
+### 🛠️ Nueva Arquitectura (Fabric)
+- **Estado actual:** 🔴 **Desactivada**.
+- **Razón:** Inestabilidades detectadas con librerías nativas como `react-native-skia` y `expo-blur`. Se recomienda usar la arquitectura clásica para garantizar fluidez y evitar crasheos de C++.
+
+### ☕ Entorno Requerido
+- **Java:** JDK 17.
+- **Variable de Sistema:** `JAVA_HOME` apuntando a la ruta del JDK 17 (ej. `C:\Program Files\Java\jdk-17`).
 
 ## 3. Estado de la Aplicación
 

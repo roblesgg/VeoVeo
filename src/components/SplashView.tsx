@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS } from '../theme/colors';
 
-export function SplashView() {
+export function SplashView({ fontFamily }: { fontFamily?: string }) {
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.95);
   const letterSpacing = useSharedValue(2);
@@ -50,7 +50,7 @@ export function SplashView() {
       />
       
       <Animated.View style={styles.content}>
-        <Animated.Text style={[styles.text, animatedTextStyle]}>
+        <Animated.Text style={[styles.text, animatedTextStyle, { fontFamily }]}>
           VEOVEO
         </Animated.Text>
         <View style={styles.accentLineContainer}>
@@ -61,7 +61,14 @@ export function SplashView() {
             ]} 
           />
         </View>
+        <Animated.Text style={[styles.betaText, animatedTextStyle, { fontFamily }]}>
+          BETA
+        </Animated.Text>
       </Animated.View>
+
+      <View style={[styles.footer, { paddingBottom: 40 }]}>
+         <Text style={[styles.footerText, { fontFamily }]}>DE DRIPDEV</Text>
+      </View>
     </View>
   );
 }
@@ -79,13 +86,20 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 48,
-    fontWeight: '900',
     color: '#fff',
     textTransform: 'uppercase',
   },
+  betaText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '900',
+    marginTop: 10,
+    letterSpacing: 4,
+    opacity: 0.6,
+  },
   accentLineContainer: {
     marginTop: 12,
-    width: 40,
+    width: 60,
     height: 2,
     alignItems: 'center',
   },
@@ -94,5 +108,19 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: COLORS.primary,
     borderRadius: 1,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  footerText: {
+    color: 'rgba(255,255,255,0.2)',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
   }
 });

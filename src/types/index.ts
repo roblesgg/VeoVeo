@@ -39,6 +39,7 @@ export type Chat = {
     senderId: string;
     timestamp: number;
   };
+  activeMatchId?: string | null;
   createdAt: number;
   name?: string;
   groupIcon?: string;
@@ -76,15 +77,10 @@ export type MovieMatch = {
     excludeSeen: boolean;
   };
   matchedMovies: number[];
+  votes: { [movieId: number]: string[] };
+  noVotes: { [movieId: number]: string[] };
   createdAt: number;
   finishedAt?: number;
-};
-
-export type PlayerVote = {
-  uid: string;
-  movieId: number;
-  vote: 'yes' | 'no';
-  timestamp: number;
 };
 
 // --- USER MOVIES ---
@@ -117,7 +113,7 @@ export type TierList = {
   tierMala: number[];
   tierNefasta: number[];
   publica: boolean;
-  portadaUrl?: string;
+  portadaUrl?: string | null;
 };
 
 export function nuevaTierListVacia(): TierList {
@@ -134,7 +130,7 @@ export function nuevaTierListVacia(): TierList {
     tierMala: [],
     tierNefasta: [],
     publica: false,
-    portadaUrl: undefined,
+    portadaUrl: null,
   };
 }
 
@@ -149,6 +145,8 @@ export interface Movie {
   overview: string;
   poster_path: string | null;
   release_date: string | null;
+  vote_average: number; // 🌟 Añadido para las estrellas!
+  genre_ids?: number[];
   popularity?: number;
   providers?: {
     flatrate: number[];
@@ -186,78 +184,5 @@ export interface MovieDetails {
   };
 }
 
-export interface CollectionDetails {
-  id: number;
-  name: string;
-  overview: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  parts: Movie[];
-}
-
-export interface CastMember {
-  id: number;
-  name: string;
-  character: string;
-  profile_path: string | null;
-  order: number;
-}
-
-export interface CrewMember {
-  id: number;
-  name: string;
-  job: string;
-  department: string;
-  profile_path: string | null;
-}
-
-export interface CreditsResponse {
-  id: number;
-  cast: CastMember[];
-  crew: CrewMember[];
-}
-
-export interface WatchProvider {
-  logo_path: string;
-  provider_id: number;
-  provider_name: string;
-  display_priority: number;
-}
-
-export interface WatchProvidersResponse {
-  id: number;
-  results: {
-    [countryCode: string]: {
-      link: string;
-      flatrate?: WatchProvider[];
-      rent?: WatchProvider[];
-      buy?: WatchProvider[];
-    };
-  };
-}
-
-export interface ActorDetails {
-  id: number;
-  name: string;
-  biography: string;
-  profile_path: string | null;
-  birthday: string | null;
-  deathday: string | null;
-  place_of_birth: string | null;
-}
-
-export interface ActorMovie {
-  id: number;
-  title: string;
-  poster_path: string | null;
-  character: string;
-  genre_ids: number[];
-  vote_average: number;
-  release_date: string;
-  popularity: number;
-}
-
-export interface ActorMovieCredits {
-  id: number;
-  cast: ActorMovie[];
-}
+export interface CreditsResponse { id: number; cast: any[]; crew: any[]; }
+export interface WatchProvider { logo_path: string; provider_id: number; provider_name: string; display_priority: number; }

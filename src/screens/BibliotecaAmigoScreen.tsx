@@ -12,18 +12,20 @@ import {
   Text,
   TextInput,
   View,
+  BackHandler,
+  Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listarPeliculasPorEstadoDeUsuario } from '../services/repositorioPeliculasUsuario';
 import { obtenerPerfilUsuarioPorUid } from '../services/repositorioUsuarios';
 import { posterUrl } from '../services/tmdbClient';
-import type { PeliculaUsuario, UsuarioPerfil } from '../types';
+import { PeliculaUsuario, UsuarioPerfil } from '../types';
 import {
-  AccentBorder,
+  COLORS,
+  GLASS,
   CardSurface,
   GlassBorder,
   GlassSurface,
-  GlassWhite,
   GradientBottom,
 } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
@@ -36,11 +38,13 @@ type Props = {
   amigoUid: string;
   onVolverClick: () => void;
   onPeliculaClick: (movieId: number) => void;
+  onEliminarAmigo?: (uid: string) => void;
+  onBloquearAmigo?: (uid: string) => void;
 };
 
 const Container = Platform.OS === 'ios' ? BlurView : View;
 
-export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick }: Props) {
+export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick, onEliminarAmigo, onBloquearAmigo }: Props) {
   const insets = useSafeAreaInsets();
   const { fontFamily, loaded: fontLoaded } = useMontserrat();
   const ff = fontFamily || 'System';
@@ -55,6 +59,7 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
     'recientes',
   );
   const [mostrarMenu, setMostrarMenu] = useState(false);
+  const [mostrarSocialMenu, setMostrarSocialMenu] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -75,6 +80,21 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
       }
     })();
   }, [amigoUid]);
+  
+  // 🛡️ [NUEVO] Cerrar buscador al pulsar "Atrás" en Android
+  useEffect(() => {
+    const onBackPress = () => {
+      if (buscar.length > 0) {
+        setBuscar('');
+        Keyboard.dismiss();
+        return true; 
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [buscar]);
 
   const listBase = useMemo(() => {
     const base = [...(seccion === 0 ? porVer : vistas)];
@@ -116,6 +136,16 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
       >
         <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
+        </BlurView>
+      </Pressable>
+
+      <Pressable
+        onPress={() => setMostrarSocialMenu(true)}
+        style={[styles.socialActionsBtn, { top: Math.max(insets.top, 12) + 8 }]}
+        hitSlop={12}
+      >
+        <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
+          <Ionicons name="ellipsis-vertical" size={24} color="#fff" />
         </BlurView>
       </Pressable>
 
@@ -163,12 +193,47 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
         onSelect={setOrden}
       />
 
+      {/* Menú de Acciones Sociales */}
+      <FilterSortMenu
+         visible={mostrarSocialMenu}
+         onClose={() => setMostrarSocialMenu(false)}
+         title="Gestionar Amistad"
+         options={[]}
+         currentValue=""
+         onSelect={() => {}}
+      >
+         <View style={styles.menuSocialSection}>
+            <Pressable 
+              style={styles.menuSocialBtn} 
+              onPress={() => {
+                setMostrarSocialMenu(false);
+                onEliminarAmigo?.(amigoUid);
+              }}
+            >
+               <Ionicons name="person-remove-outline" size={20} color="rgba(255,255,255,0.6)" />
+               <Text style={[styles.menuSocialText, { fontFamily: ff }]}>Dejar de ser amigo</Text>
+            </Pressable>
+            <View style={styles.menuDivider} />
+            <Pressable 
+              style={styles.menuSocialBtn} 
+              onPress={() => {
+                setMostrarSocialMenu(false);
+                onBloquearAmigo?.(amigoUid);
+              }}
+            >
+               <Ionicons name="ban-outline" size={20} color="#ff4444" />
+               <Text style={[styles.menuSocialText, { fontFamily: ff, color: '#ff4444' }]}>Bloquear contacto</Text>
+            </Pressable>
+         </View>
+      </FilterSortMenu>
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           { paddingTop: Math.max(insets.top, 12) + 44, paddingBottom: 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         {/* Header Perfil */}
         <View style={[styles.avatarWrap, SHADOWS.mac]}>
@@ -191,8 +256,19 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
           <EstadisticaItem num={String(resenasCount)} label="Reseñas" ff={ff} />
         </View>
 
+        {/* 🛡️ [NUEVO] Detector con Z-INDEX para capturar toques fuera */}
+        {buscar.length > 0 && (
+          <Pressable 
+            style={[StyleSheet.absoluteFillObject, { zIndex: 99 }]} 
+            onPress={() => {
+              setBuscar('');
+              Keyboard.dismiss();
+            }}
+          />
+        )}
+
         {/* Buscador */}
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { zIndex: 100 }]}>
           <Ionicons
             name="search"
             size={20}
@@ -206,6 +282,15 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
             placeholderTextColor="rgba(255,255,255,0.3)"
             style={[styles.searchField, { fontFamily: ff }]}
           />
+          {buscar.length > 0 && (
+            <Pressable 
+              onPress={() => setBuscar('')} 
+              style={styles.clearBtn}
+              hitSlop={8}
+            >
+              <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+            </Pressable>
+          )}
         </View>
 
         {/* Tabs Biblioteca */}
@@ -239,23 +324,24 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
         ) : (
           <View style={styles.grid}>
             {filtrada.map((p) => (
-              <Pressable
-                key={p.idPelicula}
-                style={[styles.card, SHADOWS.macLight]}
-                onPress={() => onPeliculaClick(p.idPelicula)}
-              >
-                {p.rutaPoster ? (
-                  <Image source={{ uri: posterUrl(p.rutaPoster, 'w200')! }} style={styles.poster} />
-                ) : (
-                  <View style={[styles.poster, styles.fallback]}>
-                    <Text style={[styles.fallbackText, { fontFamily: ff }]} numberOfLines={3}>
-                      {p.titulo}
-                    </Text>
-                  </View>
-                )}
+              <View key={p.idPelicula} style={styles.card}>
+                <Pressable
+                  style={[styles.cardInner, SHADOWS.macLight]}
+                  onPress={() => onPeliculaClick(p.idPelicula)}
+                >
+                  {p.rutaPoster ? (
+                    <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />
+                  ) : (
+                    <View style={[styles.poster, styles.fallback]}>
+                      <Text style={[styles.fallbackText, { fontFamily: ff }]} numberOfLines={3}>
+                        {p.titulo}
+                      </Text>
+                    </View>
+                  )}
 
-                <RatingBadge rating={p.valoracion} fontFamily={fontFamily} />
-              </Pressable>
+                  <RatingBadge rating={p.valoracion} fontFamily={fontFamily} hideText />
+                </Pressable>
+              </View>
             ))}
           </View>
         )}
@@ -283,6 +369,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   sortBtn: {
+    position: 'absolute',
+    right: 76,
+    zIndex: 10,
+  },
+  socialActionsBtn: {
     position: 'absolute',
     right: 20,
     zIndex: 10,
@@ -352,6 +443,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
   },
+  clearBtn: {
+    paddingLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   tabContainer: {
     width: '100%',
     marginBottom: 20,
@@ -383,10 +479,16 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   empty: { color: '#fff', textAlign: 'center', fontSize: 15 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', width: '100%', paddingHorizontal: 4 },
   card: {
-    width: '31%',
+    width: '33.33%',
     aspectRatio: 0.67,
+    padding: 4,
+    zIndex: 1001,
+  },
+  cardInner: {
+    width: '100%',
+    height: '100%',
     borderRadius: 14,
     backgroundColor: CardSurface,
     overflow: 'hidden',
@@ -406,4 +508,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
   },
   overlayPoop: { backgroundColor: 'rgba(139,69,19,0.85)' },
+  menuSocialSection: { paddingHorizontal: 4, marginTop: 8 },
+  menuDivider: { height: 1.5, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 12, marginHorizontal: 16 },
+  menuSocialBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16 },
+  menuSocialText: { color: 'rgba(255,255,255,0.7)', fontSize: 16, fontWeight: '600' },
 });

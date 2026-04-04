@@ -9,7 +9,10 @@ import {
   Text,
   TextInput,
   View,
+  Keyboard,
+  BackHandler,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTierListData } from '../hooks/tierlist/useTierListData';
 import { useTierListEditor } from '../hooks/tierlist/useTierListEditor';
 import { nuevaTierListVacia, todasLasPeliculasTierList } from '../types';
-import { AccentBorder, ErrorRed, CardSurface, GradientTop } from '../theme/colors';
+import { COLORS, CardSurface, GradientTop } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { FilterSortMenu } from '../components/FilterSortMenu';
 
@@ -60,6 +63,36 @@ export function TierListsTab({
   const [ordenPool, setOrdenPool] = useState<'recientes' | 'alpha' | 'valoracion'>('recientes');
   const [mostrarMenuPool, setMostrarMenuPool] = useState(false);
   const [pickedMovieId, setPickedMovieId] = useState<number | null>(null);
+
+  const toggleSearch = () => {
+    if (textoBuscarPool !== '') {
+      setTextoBuscarPool(''); // En el botón de la lupa sí borramos por ser acción explícita
+      Keyboard.dismiss();
+    } else {
+      setTextoBuscarPool(' ');
+    }
+  };
+
+  const closeSearchIfOutside = () => {
+    if (textoBuscarPool !== '') {
+      Keyboard.dismiss();
+      // 🛡️ [CAMBIO] Ya no borramos el texto al cerrar por click fuera
+    }
+  };
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        if (textoBuscarPool !== '') {
+          toggleSearch();
+          return true;
+        }
+        return false;
+      };
+
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [textoBuscarPool])
+  );
 
   const {
     cargando: cargandoData,
@@ -114,9 +147,12 @@ export function TierListsTab({
   }, [tierListActual, seleccionadas, peliculasVistas]);
 
   const handleGuardarConRefresco = async () => {
+    console.log('--- EVENTO: PULSADO FINALIZAR TIERLIST ---');
     try {
       await handleGuardar();
+      console.log('--- RESULTADO: GUARDADO EXITOSO ---');
     } catch (e) {
+      console.error('--- ERROR CRÍTICO AL GUARDAR:', e);
       Alert.alert('Error', e instanceof Error ? e.message : 'No se pudo guardar');
     }
   };
@@ -156,7 +192,7 @@ export function TierListsTab({
             </Text>
             <View style={styles.actionsTopRow}>
               <Pressable
-                onPress={() => setTextoBuscarPool(textoBuscarPool ? '' : ' ')}
+                onPress={toggleSearch}
                 style={styles.iconBtn}
                 hitSlop={8}
               >
@@ -176,17 +212,32 @@ export function TierListsTab({
           </View>
 
           {textoBuscarPool !== '' && (
-            <TextInput
-              value={textoBuscarPool}
-              onChangeText={setTextoBuscarPool}
-              placeholder="Buscar"
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              style={[
-                styles.searchField,
-                SHADOWS.macLight,
-                { fontFamily, marginTop: Math.max(insets.top, 12) + 90 },
-              ]}
-            />
+            <Pressable 
+              style={[StyleSheet.absoluteFillObject, { zIndex: 1200 }]} 
+              onPress={() => {
+                setTextoBuscarPool('');
+                Keyboard.dismiss();
+              }}
+            >
+              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            </Pressable>
+          )}
+
+          {textoBuscarPool !== '' && (
+            <View style={[styles.searchField, SHADOWS.macLight, { marginTop: Math.max(insets.top, 12) + 90, zIndex: 1000 }]}>
+              <TextInput
+                value={textoBuscarPool}
+                onChangeText={setTextoBuscarPool}
+                placeholder="Buscar"
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                style={{ flex: 1, color: '#fff', fontFamily }}
+              />
+              {textoBuscarPool.trim().length > 0 && (
+                <Pressable onPress={() => setTextoBuscarPool('')} style={{ paddingLeft: 8 }}>
+                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+                </Pressable>
+              )}
+            </View>
           )}
 
           <ScrollView
@@ -194,30 +245,35 @@ export function TierListsTab({
               styles.gridWrap,
               { paddingTop: textoBuscarPool !== '' ? 150 : 160 },
             ]}
+            keyboardDismissMode="on-drag"
+            style={[textoBuscarPool !== '' && { zIndex: 1001 }]} // 🛡️ [CAMBIO] Solo bloqueamos si estamos buscando
           >
-            <Pressable
-              style={[styles.newCard, SHADOWS.macLight]}
-              onPress={() => {
-                setTierListActual(nuevaTierListVacia());
-                setSeleccionadas([]);
-                onPantallaChange(2);
-              }}
-            >
-              <Ionicons name="add-circle-outline" size={34} color="#fff" />
-              <Text style={[styles.newCardText, { fontFamily }]}>Nueva TierList</Text>
-            </Pressable>
+            <View style={styles.newCard}>
+              <Pressable
+                style={[styles.newCardInner, SHADOWS.macLight]}
+                onPress={() => {
+                  setTierListActual(nuevaTierListVacia());
+                  setSeleccionadas([]);
+                  onPantallaChange(2);
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={34} color="#fff" />
+                <Text style={[styles.newCardText, { fontFamily }]}>Nueva TierList</Text>
+              </Pressable>
+            </View>
 
             {tierLists.map((tier) => (
-              <TierListCard
-                key={tier.id}
-                tier={tier}
-                peliculasMap={peliculasMap}
-                fontFamily={fontFamily}
-                onPress={() => {
-                  setTierListActual(tier);
-                  onPantallaChange(1);
-                }}
-              />
+              <View key={tier.id} style={{ width: '50%' }}>
+                <TierListCard
+                  tier={tier}
+                  peliculasMap={peliculasMap}
+                  fontFamily={fontFamily}
+                  onPress={() => {
+                    setTierListActual(tier);
+                    onPantallaChange(1);
+                  }}
+                />
+              </View>
             ))}
           </ScrollView>
           {cargando && <ActivityIndicator color="#fff" style={styles.loader} />}
@@ -248,14 +304,14 @@ export function TierListsTab({
 
           <View style={styles.rowActions}>
             <Pressable
-              style={[styles.actionBtn, { backgroundColor: AccentBorder }]}
+              style={[styles.actionBtn, { backgroundColor: COLORS.primary }]}
               onPress={() => onPantallaChange(3)}
             >
               <Ionicons name="create-outline" size={18} color="#fff" />
               <Text style={[styles.actionText, { fontFamily }]}>Editar</Text>
             </Pressable>
             <Pressable
-              style={[styles.actionBtn, { backgroundColor: ErrorRed }]}
+              style={[styles.actionBtn, { backgroundColor: COLORS.error }]}
               onPress={() =>
                 Alert.alert('Eliminar', '¿Seguro?', [
                   { text: 'No' },
@@ -395,7 +451,7 @@ export function TierListsTab({
 
           <View style={[styles.fixedFooter, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <Pressable
-              style={[styles.mainAction, { backgroundColor: AccentBorder }]}
+              style={[styles.mainAction, { backgroundColor: COLORS.primary }]}
               onPress={handleGuardarConRefresco}
             >
               <Text style={[styles.actionText, { fontFamily }]}>Finalizar TierList</Text>
@@ -464,19 +520,22 @@ const styles = StyleSheet.create({
   },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 5 },
   gridWrap: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 8, // Reduced from 16 to maximize card size
     paddingBottom: 140,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
   },
   newCard: {
-    width: '47%',
+    width: '50%',
     aspectRatio: 1,
+    padding: 6, // Reduced from 8
+  },
+  newCardInner: {
+    flex: 1,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: AccentBorder,
+    borderColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -508,7 +567,7 @@ const styles = StyleSheet.create({
   mainAction: {
     height: 54,
     borderRadius: 27,
-    backgroundColor: AccentBorder,
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',

@@ -36,6 +36,7 @@ type Props = {
   onToggleFilter?: (value: any) => void;
   filterTitle?: string;
   multiSelect?: boolean;
+  children?: React.ReactNode;
 };
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -56,6 +57,7 @@ export function FilterSortMenu({
   onToggleFilter,
   filterTitle,
   multiSelect = false,
+  children,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -152,6 +154,8 @@ export function FilterSortMenu({
                 })}
               </>
             )}
+
+            {children}
           </ScrollView>
         </Container>
       </View>

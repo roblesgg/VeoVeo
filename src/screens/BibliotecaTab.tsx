@@ -1,466 +1,293 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
   Image,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
+  Keyboard,
+  BackHandler,
+  ScrollView,
+  Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { useAuth } from '../context/AuthContext';
-import { useLibraryData } from '../hooks/movie/useLibraryData';
-import { posterUrl, tmdbApi } from '../services/tmdbClient';
-import { CardSurface } from '../theme/colors';
+
+import { useLibraryData as useBiblioteca } from '../hooks/movie/useLibraryData';
+import { tmdbApi, posterUrl } from '../services/tmdbClient';
+import * as preferences from '../storage/preferences';
+import { COLORS, CardSurface } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { FilterSortMenu } from '../components/FilterSortMenu';
-import { RatingBadge } from '../components/RatingBadge';
-import { LiquidGlassPanel } from '../components/LiquidGlassPanel';
 import { useLanguage } from '../context/LanguageContext';
-import * as preferences from '../storage/preferences';
-
-const { width: windowWidth } = Dimensions.get('window');
-const CARD_WIDTH = (windowWidth - 74) / 3;
-
-type Props = {
-  fontFamily: string;
-  refreshToken?: number;
-  onPeliculaClick: (movieId: number) => void;
-  onPerfilClick?: () => void;
-  userFoto?: string | null;
-  resetToken?: number;
-  esAmigo?: boolean;
-};
+import { useAuth } from '../context/AuthContext';
+import { RatingBadge } from '../components/RatingBadge';
 
 export function BibliotecaTab({
   fontFamily,
-  refreshToken = 0,
   onPeliculaClick,
   onPerfilClick,
   userFoto,
   resetToken = 0,
-}: Props) {
+}: {
+  fontFamily: string;
+  onPeliculaClick: (movieId: number) => void;
+  onPerfilClick?: () => void;
+  userFoto?: string | null;
+  resetToken?: number;
+}) {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const { user } = useAuth();
-  const listRef = React.useRef<FlatList>(null);
 
-  useEffect(() => {
-    if (resetToken > 0) {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
-    }
-  }, [resetToken]);
-
-  const [seccion, setSeccion] = useState<0 | 1>(0); // 0: Por Ver, 1: Vistas
-  const [buscar, setBuscar] = useState(false);
-  const [textoBuscar, setTextoBuscar] = useState('');
+  const [seccion, setSeccion] = useState<0 | 1>(0);
   const [orden, setOrden] = useState<'recientes' | 'alpha' | 'fecha_peli' | 'valoracion'>(
     'recientes',
   );
-  const [showFilters, setShowFilters] = useState(false);
-  const [misPlataformas, setMisPlataformas] = useState<number[]>([]);
+  
+  // 🛡️ Filtro de Selección Múltiple (Lista de nombres seleccionados)
+  const [platsSeleccionadas, setPlatsSeleccionadas] = useState<string[]>([]);
+  
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showPlatModal, setShowPlatModal] = useState(false);
+  const [buscar, setBuscar] = useState(false);
+  const [textoBuscar, setTextoBuscar] = useState('');
+  const [refreshToken, setRefreshToken] = useState(0);
 
-  const { t } = useLanguage();
-  const { porVer, vistas, cargando } = useLibraryData(user, refreshToken);
+  const [userPlats, setUserPlats] = useState<{ name: string, ids: number[] }[]>([]);
+
+  const searchInputRef = useRef<TextInput>(null);
+  const scrollerRef = useRef<ScrollView>(null);
+
+  const { porVer, vistas, cargando } = useBiblioteca(user, refreshToken);
 
   useEffect(() => {
-    void (async () => {
-      const savedOrden = await preferences.cargarOrdenBiblioteca(
-        seccion === 0 ? 'por_ver' : 'vistas',
-      );
-      const plots = await preferences.cargarPlataformas();
-      if (savedOrden) setOrden(savedOrden as any);
-      setMisPlataformas(plots.map(Number));
-    })();
-  }, [refreshToken, seccion]);
+    if (resetToken > 0) {
+      if (buscar) setBuscar(false);
+      else scrollerRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [resetToken, buscar]);
 
-  const handleSetOrden = async (val: any) => {
-    setOrden(val);
-    await preferences.guardarOrdenBiblioteca(seccion === 0 ? 'por_ver' : 'vistas', val);
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        const misPlatsIds = await preferences.cargarPlataformas();
+        const ids = misPlatsIds.map(Number);
+        try {
+          const res = await tmdbApi.obtenerProveedoresRegion('ES');
+          const all = res.results;
+          const grupos: { [n: string]: number[] } = {};
+          all.forEach((p: any) => {
+            if (ids.includes(p.provider_id)) {
+              let name = p.provider_name;
+              if (name.includes('Amazon') || name.includes('Prime Video')) name = 'Prime Video';
+              else if (name.includes('Apple TV')) name = 'Apple TV';
+              else if (name.includes('Disney')) name = 'Disney+';
+              else if (name.includes('HBO')) name = 'HBO Max';
+              else if (name.includes('Netflix')) name = 'Netflix';
+              else if (name.includes('SkyShowtime')) name = 'SkyShowtime';
+              else if (name.includes('Movistar')) name = 'Movistar Plus+';
+              if (!grupos[name]) grupos[name] = [];
+              grupos[name].push(p.provider_id);
+            }
+          });
+          setUserPlats(Object.keys(grupos).map(k => ({ name: k, ids: grupos[k] })));
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+      void preferences.cargarOrdenBiblioteca(seccion === 0 ? 'por_ver' : 'vistas').then(s => s && setOrden(s as any));
+    }, [seccion])
+  );
+
+  const togglePlataforma = (name: string) => {
+    setPlatsSeleccionadas(prev => 
+      prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
+    );
   };
 
-  const rowsData = useMemo(() => {
-    const raw = seccion === 0 ? porVer : vistas;
-    const base = [...raw];
-
-    if (orden === 'alpha') base.sort((a, b) => a.titulo.localeCompare(b.titulo));
-    else if (orden === 'fecha_peli')
-      base.sort((a, b) => (b.fechaLanzamiento || '').localeCompare(a.fechaLanzamiento || ''));
-    else if (orden === 'valoracion') base.sort((a, b) => (b.valoracion || 0) - (a.valoracion || 0));
-    else {
-      if (seccion === 1)
-        base.sort((a, b) => (b.fechaVisto || b.fechaAnadido) - (a.fechaVisto || a.fechaAnadido));
-      else base.sort((a, b) => b.fechaAnadido - a.fechaAnadido);
+  const renderContent = useMemo(() => {
+    let raw = [...(seccion === 0 ? porVer : vistas)];
+    
+    // 🛡️ Filtro por Selección Múltiple
+    if (platsSeleccionadas.length > 0) {
+      const allSelectedIds = userPlats
+        .filter(up => platsSeleccionadas.includes(up.name))
+        .flatMap(up => up.ids);
+        
+      raw = raw.filter(p => (p.providers?.flatrate || []).some(id => allSelectedIds.includes(id)));
     }
 
-    const qBase = textoBuscar.trim().toLowerCase();
-    const filtered = qBase ? base.filter((p: any) => p.titulo.toLowerCase().includes(qBase)) : base;
-
-    const result: any[] = [];
-    let currentRow: any[] = [];
-    let lastMonthHeader: string | null = null;
-    const now = new Date();
-    const currentMonthYear = `${now.getMonth()}-${now.getFullYear()}`;
-
-    filtered.forEach((p: any) => {
-      if (seccion === 1 && orden === 'recientes') {
-        const date = new Date(p.fechaVisto || p.fechaAnadido);
-        const monthYear = `${date.getMonth()}-${date.getFullYear()}`;
-        const monthName = date.toLocaleString('default', { month: 'long' });
-        const yearName = date.getFullYear();
-        const header = `${monthName} ${yearName}`;
-
-        if (header !== lastMonthHeader) {
-          if (currentRow.length > 0) {
-            result.push({ isRow: true, items: currentRow });
-            currentRow = [];
-          }
-          result.push({
-            isHeader: true,
-            title: monthYear === currentMonthYear ? 'Vistas este mes' : header,
-          });
-          lastMonthHeader = header;
-        }
-      }
-
-      currentRow.push(p);
-      if (currentRow.length === 3) {
-        result.push({ isRow: true, items: currentRow });
-        currentRow = [];
-      }
-    });
-
-    if (currentRow.length > 0) {
-      result.push({ isRow: true, items: currentRow });
+    if (textoBuscar.trim()) {
+      const q = textoBuscar.toLowerCase().trim();
+      raw = raw.filter(p => p.titulo.toLowerCase().includes(q));
     }
 
-    return result;
-  }, [porVer, vistas, seccion, textoBuscar, orden]);
+    if (orden === 'alpha') raw.sort((a, b) => a.titulo.localeCompare(b.titulo));
+    else if (orden === 'fecha_peli') raw.sort((a, b) => (b.fechaLanzamiento || '').localeCompare(a.fechaLanzamiento || ''));
+    else if (orden === 'valoracion') raw.sort((a, b) => (b.valoracion || 0) - (a.valoracion || 0));
+    else raw.sort((a, b) => b.fechaAnadido - a.fechaAnadido);
+
+    if (seccion === 1 && orden === 'recientes' && !textoBuscar) {
+      const ahora = Date.now();
+      const unaSemanaAtras = ahora - (7 * 24 * 60 * 60 * 1000);
+      const unMesAtras = ahora - (30 * 24 * 60 * 60 * 1000);
+      const semana = raw.filter(p => p.fechaAnadido > unaSemanaAtras);
+      const mes = raw.filter(p => p.fechaAnadido <= unaSemanaAtras && p.fechaAnadido > unMesAtras);
+      const anteriores = raw.filter(p => p.fechaAnadido <= unMesAtras);
+      return (
+        <>
+          {semana.length > 0 && (<><View style={styles.sectionHeader}><Text style={[styles.sectionHeaderText, { fontFamily }]}>Última semana</Text><View style={styles.sectionHeaderLine}/></View><View style={styles.grid}>{semana.map(renderCard)}</View></>)}
+          {mes.length > 0 && (<><View style={styles.sectionHeader}><Text style={[styles.sectionHeaderText, { fontFamily }]}>Último mes</Text><View style={styles.sectionHeaderLine}/></View><View style={styles.grid}>{mes.map(renderCard)}</View></>)}
+          {anteriores.length > 0 && (<><View style={styles.sectionHeader}><Text style={[styles.sectionHeaderText, { fontFamily }]}>Anteriores</Text><View style={styles.sectionHeaderLine}/></View><View style={styles.grid}>{anteriores.map(renderCard)}</View></>)}
+        </>
+      );
+    }
+    return <View style={styles.grid}>{raw.map(renderCard)}</View>;
+  }, [seccion, porVer, vistas, orden, textoBuscar, platsSeleccionadas, userPlats]);
+
+  function renderCard(p: any) {
+    return (
+      <View key={p.idPelicula} style={styles.gridItem}>
+        <Pressable style={[styles.card, SHADOWS.macLight]} onPress={() => onPeliculaClick(p.idPelicula)}>
+          <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />
+          {seccion === 1 && p.valoracion !== undefined && (
+            <RatingBadge rating={p.valoracion} fontFamily={fontFamily} hideText />
+          )}
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.flex}>
-      <LiquidGlassPanel
-        style={[
-          styles.tabsHeaderOverlay,
-          { height: Math.max(insets.top, 12) + 130 + (buscar ? 60 : 0) },
-        ]}
-        rounded={false}
-        intensity={100}
-      >
-        <LinearGradient
-          colors={['rgba(2, 6, 23, 0.1)', 'rgba(2, 6, 23, 0.45)', 'transparent']}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              borderBottomWidth: 1,
-              borderColor: 'rgba(255,255,255,0.18)',
-            },
-          ]}
-        />
-      </LiquidGlassPanel>
+    <View style={styles.container}>
+      <View style={[styles.headerContainer, { height: insets.top + (buscar ? 230 : 150) }]}>
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.glassOverlay} />
+        <View style={styles.headerBorder} />
 
-      <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
-        <Text style={[styles.titulo, { fontFamily, flex: 1 }]} numberOfLines={1}>
-          {seccion === 0 ? t('por_ver') : t('vistas')}
-        </Text>
-        <View style={styles.actionsTopRow}>
-          <Pressable onPress={() => setShowFilters(true)} hitSlop={8} style={styles.iconBtn}>
-            <Ionicons name="options-outline" size={26} color="#fff" />
-          </Pressable>
-          <Pressable onPress={() => setBuscar(!buscar)} hitSlop={8} style={styles.iconBtn}>
-            <Ionicons name="search-outline" size={28} color="#fff" />
-          </Pressable>
-          <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini} hitSlop={8}>
-            <BlurView intensity={30} tint="dark" style={styles.perfilInnerMini}>
-              {userFoto ? (
-                <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
-              ) : (
-                <Ionicons name="person" size={20} color="#fff" />
-              )}
-            </BlurView>
-          </Pressable>
+        <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
+          <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Biblioteca</Text>
+          <View style={styles.actionsTopRow}>
+            <Pressable onPress={() => setShowPlatModal(true)} style={[styles.iconBtn, platsSeleccionadas.length > 0 && styles.iconBtnOn]} hitSlop={8}>
+              <Ionicons name="tv-outline" size={26} color={platsSeleccionadas.length > 0 ? "#000" : "#fff"} />
+            </Pressable>
+            <Pressable onPress={() => setShowSortMenu(true)} style={styles.iconBtn} hitSlop={8}>
+              <Ionicons name="swap-vertical-outline" size={26} color="#fff" />
+            </Pressable>
+            <Pressable onPress={() => setBuscar(!buscar)} style={styles.iconBtn} hitSlop={8}>
+              <Ionicons name="search-outline" size={28} color="#fff" />
+            </Pressable>
+          </View>
         </View>
+
+        <View style={[styles.tabsContainer, { top: Math.max(insets.top, 12) + 90 }]}>
+          <Pressable onPress={() => setSeccion(0)} style={[styles.tabBtn, seccion === 0 && styles.tabBtnActive]}><Text style={[styles.tabText, { fontFamily }, seccion === 0 && styles.tabTextActive]}>POR VER</Text></Pressable>
+          <View style={styles.tabDivider} />
+          <Pressable onPress={() => setSeccion(1)} style={[styles.tabBtn, seccion === 1 && styles.tabBtnActive]}><Text style={[styles.tabText, { fontFamily }, seccion === 1 && styles.tabTextActive]}>VISTAS</Text></Pressable>
+        </View>
+
+        {buscar && (
+          <View style={[styles.searchFieldContainer, SHADOWS.macLight]}>
+            <TextInput ref={searchInputRef} value={textoBuscar} onChangeText={setTextoBuscar} placeholder="Buscar título..." placeholderTextColor="rgba(255,255,255,0.4)" style={[styles.searchTextInput, { fontFamily }]} autoFocus />
+          </View>
+        )}
       </View>
 
-      <View style={[styles.tabs, { top: Math.max(insets.top, 12) + 96 }]}>
-        <Pressable onPress={() => setSeccion(0)}>
-          <Text style={[styles.tab, { fontFamily }, seccion === 0 && styles.tabActivo]}>
-            {t('por_ver')}
-          </Text>
-        </Pressable>
-        <Pressable onPress={() => setSeccion(1)}>
-          <Text style={[styles.tab, { fontFamily }, seccion === 1 && styles.tabActivo]}>
-            {t('vistas')}
-          </Text>
-        </Pressable>
-      </View>
-
-      {buscar && (
-        <LiquidGlassPanel
-          style={[
-            styles.searchGlass,
-            SHADOWS.macLight,
-            { top: Math.max(insets.top, 12) + 144 },
-          ]}
-          contentStyle={styles.searchGlassContent}
-          intensity={95}
-        >
-          <TextInput
-            value={textoBuscar}
-            onChangeText={setTextoBuscar}
-            placeholder={t('search')}
-            placeholderTextColor="rgba(255,255,255,0.5)"
-            style={[styles.searchField, { fontFamily }]}
-            autoFocus
-          />
-        </LiquidGlassPanel>
-      )}
-
-      {cargando ? (
-        <ActivityIndicator color="#fff" style={{ marginTop: 200 }} />
-      ) : (
-        <FlatList
-          ref={listRef}
-          data={rowsData}
-          keyExtractor={(p, i) => String(i)}
-          contentContainerStyle={{
-            paddingHorizontal: 20,
-            paddingTop: (buscar ? 100 : 0) + Math.max(insets.top, 12) + 140,
-            paddingBottom: 140,
-          }}
-          renderItem={({ item: r }) => {
-            if (r.isHeader) {
-              return (
-                <View style={styles.monthHeader}>
-                  <View style={styles.line} />
-                  <Text style={[styles.monthTitle, { fontFamily }]}>{r.title}</Text>
-                  <View style={styles.line} />
-                </View>
-              );
-            }
-            return (
-              <View style={styles.moviesRow}>
-                {r.items.map((p: any) => (
-                  <BibliotecaMovieItem
-                    key={p.idPelicula}
-                    p={p}
-                    fontFamily={fontFamily}
-                    misPlataformas={misPlataformas}
-                    onPeliculaClick={onPeliculaClick}
-                  />
-                ))}
-                {r.items.length < 3 && <View style={{ flex: 3 - r.items.length }} />}
-              </View>
-            );
-          }}
-          ListEmptyComponent={
-            <Text style={[styles.empty, { fontFamily }]}>
-              {buscar ? t('no_results') : seccion === 0 ? t('empty_por_ver') : t('empty_vistas')}
+      <ScrollView ref={scrollerRef} contentContainerStyle={{ paddingTop: insets.top + (buscar ? 240 : 160), paddingBottom: 140, paddingHorizontal: 8 }} refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => setRefreshToken(p => p + 1)} tintColor="#fff" progressViewOffset={100} />}>
+        {platsSeleccionadas.length > 0 && (
+          <View style={styles.activeFilterBar}>
+            <Ionicons name="funnel" size={14} color={COLORS.primary} style={{ marginRight: 8 }} />
+            <Text style={[styles.activeFilterText, { fontFamily }]} numberOfLines={1}>
+               {platsSeleccionadas.join(', ')}
             </Text>
-          }
-        />
-      )}
+            <Pressable onPress={() => setPlatsSeleccionadas([])} style={styles.clearFilterBtn} hitSlop={8}><Text style={styles.clearFilterText}>BORRAR</Text></Pressable>
+          </View>
+        )}
+        {renderContent}
+      </ScrollView>
 
-      <FilterSortMenu
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-        title={t('sort')}
+      {/* 🛡️ Modal de Plataformas MULTI-SELECCIÓN (Solo Nombres) */}
+      <Modal visible={showPlatModal} transparent animationType="fade">
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowPlatModal(false)}>
+          <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalTitle, { fontFamily }]}>Filtrar plataformas</Text>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+              <Pressable style={[styles.platItem, platsSeleccionadas.length === 0 && styles.platItemOn]} onPress={() => { setPlatsSeleccionadas([]); setShowPlatModal(false); }}>
+                 <Text style={[styles.platItemText, platsSeleccionadas.length === 0 && { color: '#000' }]}>Todas las plataformas</Text>
+                 {platsSeleccionadas.length === 0 && <Ionicons name="checkmark-circle" size={20} color="#000" />}
+              </Pressable>
+              {userPlats.map(p => (
+                <Pressable key={p.name} style={[styles.platItem, platsSeleccionadas.includes(p.name) && styles.platItemOn]} onPress={() => togglePlataforma(p.name)}>
+                  <Text style={[styles.platItemText, platsSeleccionadas.includes(p.name) && { color: '#000' }]}>{p.name}</Text>
+                  <Ionicons name={platsSeleccionadas.includes(p.name) ? "checkbox" : "square-outline"} size={22} color={platsSeleccionadas.includes(p.name) ? "#000" : "rgba(255,255,255,0.3)"} />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable style={styles.modalCloseBtn} onPress={() => setShowPlatModal(false)}><Text style={styles.modalCloseText}>LISTO</Text></Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <FilterSortMenu 
+        visible={showSortMenu} 
+        onClose={() => setShowSortMenu(false)} 
+        title="Ordenar Biblioteca" 
         options={[
-          { label: t('recientes'), value: 'recientes', icon: 'time-outline' },
-          { label: t('alpha'), value: 'alpha', icon: 'text-outline' },
-          { label: t('fecha_peli'), value: 'fecha_peli', icon: 'calendar-outline' },
-          { label: t('valoracion'), value: 'valoracion', icon: 'star-outline' },
-        ]}
-        currentValue={orden}
-        onSelect={handleSetOrden}
-        filterTitle={t('platforms')}
+          { label: 'Recientes', value: 'recientes', icon: 'time-outline', description: 'Últimas añadidas arriba.' }, 
+          { label: 'Título (A-Z)', value: 'alpha', icon: 'text-outline', description: 'Por nombre alfabéticamente.' }, 
+          { label: 'Lanzamiento', value: 'fecha_peli', icon: 'calendar-outline', description: 'Por año de estreno en cines.' },
+          { label: 'Valoración', value: 'valoracion', icon: 'star-outline', description: 'Tus favoritas primero.' }
+        ]} 
+        currentValue={orden} 
+        onSelect={(v) => { setOrden(v as any); setShowSortMenu(false); }} 
       />
     </View>
   );
 }
 
-function BibliotecaMovieItem({
-  p,
-  fontFamily,
-  misPlataformas,
-  onPeliculaClick,
-}: {
-  p: any;
-  fontFamily: string;
-  misPlataformas: number[];
-  onPeliculaClick: any;
-}) {
-  const [providers, setProviders] = useState<{ flatrate: number[]; rent: number[] } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void (async () => {
-      try {
-        const res = await tmdbApi.obtenerDondeVerConCache(p.idPelicula);
-        const resES = res.results?.['ES'];
-        if (active) {
-          setProviders({
-            flatrate: resES?.flatrate?.map((pr: any) => pr.provider_id) || [],
-            rent: [...(resES?.rent || []), ...(resES?.buy || [])].map((pr: any) => pr.provider_id),
-          });
-        }
-      } catch (e) {}
-    })();
-    return () => {
-      active = false;
-    };
-  }, [p.idPelicula]);
-
-  const hasDot = useMemo(() => {
-    if (!providers) return false;
-    return (
-      providers.flatrate.some((pid) => misPlataformas.includes(pid)) ||
-      providers.rent.some((pid) => misPlataformas.includes(pid))
-    );
-  }, [providers, misPlataformas]);
-
-  const dotColor = useMemo(() => {
-    if (!providers) return 'transparent';
-    return providers.flatrate.some((pid) => misPlataformas.includes(pid)) ? '#2ecc71' : '#f39c12';
-  }, [providers, misPlataformas]);
-
-  return (
-    <View style={{ width: CARD_WIDTH, margin: 6 }}>
-      <Pressable
-        style={[styles.card, SHADOWS.macLight]}
-        onPress={() => onPeliculaClick(p.idPelicula)}
-      >
-        {p.rutaPoster ? (
-          <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />
-        ) : (
-          <View style={[styles.poster, styles.noPoster]}>
-            <Text style={[styles.noPosterText, { fontFamily }]} numberOfLines={3}>
-              {p.titulo}
-            </Text>
-          </View>
-        )}
-        {hasDot && <View style={[styles.dot, { backgroundColor: dotColor }]} />}
-        <RatingBadge rating={p.valoracion} fontFamily={fontFamily} />
-      </Pressable>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  titulo: { color: '#fff', fontSize: 34, fontWeight: '800' },
-  headerRow: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    zIndex: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  container: { flex: 1, backgroundColor: '#020617' },
+  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 },
+  headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
+  titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
   actionsTopRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  perfilBtnMini: { marginLeft: 4 },
-  perfilInnerMini: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  perfilFotoMini: { width: '100%', height: '100%' },
-  iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  tabs: {
-    position: 'absolute',
-    alignSelf: 'center',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-    zIndex: 100,
-  },
-  tab: { fontSize: 18, color: 'rgba(255,255,255,0.4)', fontWeight: '600' },
-  tabActivo: { color: '#fff', fontWeight: '800' },
-  searchField: {
-    flex: 1,
-    color: '#fff',
-    paddingHorizontal: 20,
-  },
-  searchGlass: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    zIndex: 110,
-    height: 50,
-  },
-  searchGlassContent: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  tabsHeaderOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 90,
-    overflow: 'hidden',
-    borderWidth: 0,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
-  card: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 16,
-    backgroundColor: CardSurface,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
+  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  iconBtnOn: { backgroundColor: COLORS.primary, borderRadius: 12 },
+  tabsContainer: { position: 'absolute', left: 0, right: 0, height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  tabBtn: { paddingHorizontal: 20, height: '100%', justifyContent: 'center' },
+  tabBtnActive: { borderBottomWidth: 3, borderBottomColor: COLORS.primary },
+  tabText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
+  tabTextActive: { color: '#fff' },
+  tabDivider: { width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.1)' },
+  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+  headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+  searchFieldContainer: { position: 'absolute', top: 175, left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, zIndex: 100 },
+  searchTextInput: { flex: 1, color: '#fff', fontSize: 16 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  gridItem: { width: '33.33%', padding: 4 },
+  card: { width: '100%', aspectRatio: 2/3, borderRadius: 16, backgroundColor: CardSurface, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   poster: { width: '100%', height: '100%' },
-  noPoster: { justifyContent: 'center', padding: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
-  noPosterText: { color: '#fff', fontSize: 12, textAlign: 'center' },
-  empty: { color: '#888', textAlign: 'center', marginTop: 100, fontSize: 16 },
-  dot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.5,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 20,
-    paddingHorizontal: 4,
-  },
-  monthTitle: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  line: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
-  moviesRow: { flexDirection: 'row', width: '100%' },
+  ratingBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.75)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.2)' },
+  ratingText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  sectionHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, marginTop: 12, marginBottom: 12 },
+  sectionHeaderText: { color: COLORS.primary, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  sectionHeaderLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,107,0,0.2)', marginLeft: 16 },
+  activeFilterBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,107,0,0.1)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, marginBottom: 16, marginHorizontal: 4 },
+  activeFilterText: { color: '#fff', fontSize: 13, flex: 1, fontWeight: '600' },
+  clearFilterBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 10 },
+  clearFilterText: { color: COLORS.primary, fontSize: 11, fontWeight: '900' },
+  modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { width: '100%', backgroundColor: '#1e293b', borderRadius: 32, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', ...SHADOWS.macLight },
+  modalTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 20 },
+  platItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 16, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
+  platItemOn: { backgroundColor: COLORS.primary },
+  platItemText: { flex: 1, color: '#fff', fontSize: 16, fontWeight: '700' },
+  modalCloseBtn: { marginTop: 24, backgroundColor: '#fff', height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
+  modalCloseText: { color: '#000', fontSize: 15, fontWeight: '900', letterSpacing: 1 },
 });

@@ -7,9 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { doc, onSnapshot } from 'firebase/firestore';
 import * as Notifications from 'expo-notifications';
 import { getFirestoreDb } from '../services/firebase';
-import { GradientBottom, AccentColor, Slate300, CardSurface } from '../theme/colors';
+import { GradientBottom, AccentColor, CardSurface, COLORS } from '../theme/colors';
+import { useMontserrat } from '../theme/useMontserrat';
 
 export function UpdateGuard({ children }: { children: React.ReactNode }) {
+  const { fontFamily } = useMontserrat();
+  const ff = fontFamily ?? 'System';
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const [minVersion, setMinVersion] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState('https://dripdev.dev');
@@ -134,30 +137,30 @@ export function UpdateGuard({ children }: { children: React.ReactNode }) {
               <Ionicons name="rocket-outline" size={50} color={AccentColor} />
             </View>
 
-            <Text style={styles.title}>Actualización Obligatoria</Text>
+            <Text style={[styles.title, { fontFamily: ff }]}>Actualización Obligatoria</Text>
 
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { fontFamily: ff }]}>
               Esta versión incluye cambios estructurales necesarios (Ajustes, Idiomas, Filtros
               persistentes) que requieren una instalación limpia del nuevo APK.
             </Text>
 
             <View style={styles.changelogBox}>
-              <Text style={styles.changelogTitle}>¿Qué hay de nuevo?</Text>
-              <Text style={styles.changelogItem}>
+              <Text style={[styles.changelogTitle, { fontFamily: ff }]}>¿Qué hay de nuevo?</Text>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>
                 • 🌐 Todas las plataformas de streaming disponibles
               </Text>
-              <Text style={styles.changelogItem}>• 🔎 Buscador de servicios en Ajustes</Text>
-              <Text style={styles.changelogItem}>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>• 🔎 Buscador de servicios en Ajustes</Text>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>
                 • 🟢/🟠 Indicadores de Suscripción y Alquiler
               </Text>
-              <Text style={styles.changelogItem}>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>
                 • ⚡ Filtros de biblioteca dinámicos y rápidos
               </Text>
-              <Text style={styles.changelogItem}>• 📱 Mejoras de diseño y rendimiento general</Text>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>• 📱 Mejoras de diseño y rendimiento general</Text>
             </View>
 
             <View style={styles.badge}>
-              <Text style={styles.versionInfo}>
+              <Text style={[styles.versionInfo, { fontFamily: ff }]}>
                 {isTest ? 'MODO TESTER' : 'MODO PRODUCCIÓN'} • Tu versión: {currentVersion} →
                 Requerida: {minVersion}
               </Text>
@@ -173,11 +176,11 @@ export function UpdateGuard({ children }: { children: React.ReactNode }) {
                 end={{ x: 1, y: 0 }}
                 style={styles.gradientBtn}
               >
-                <Text style={styles.buttonText}>Descargar Nueva App (APK)</Text>
+                <Text style={[styles.buttonText, { fontFamily: ff }]}>Descargar Nueva App (APK)</Text>
               </LinearGradient>
             </Pressable>
 
-            <Text style={styles.note}>
+            <Text style={[styles.note, { fontFamily: ff }]}>
               Al ser un cambio de núcleo nativo, las actualizaciones automáticas no bastan. ¡Instala
               el nuevo APK para seguir disfrutando!
             </Text>
@@ -214,7 +217,6 @@ const styles = StyleSheet.create({
   title: {
     color: '#fff',
     fontSize: 26,
-    fontWeight: '900',
     marginBottom: 12,
     textAlign: 'center',
     letterSpacing: -0.5,

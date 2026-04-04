@@ -7,17 +7,23 @@ Aquí guardamos los fallos típicos que nos han pasado y cómo se arreglan.
 - **Síntoma**: Después de subir la v1.3.1, los usuarios siguen bajando la v1.3.0.
 - **Causa**: El navegador tiene el archivo cacheado o Netlify está respondiendo con el ETag antiguo.
 - **Solución**:
-  1. **Renombrar**: Cambia el nombre del archivo APK en `landing/` (ej: añade `final-v1` al final).
+  1. **Renombrar**: Cambia el nombre del archivo APK en `landing/` (ej: usa `veoveo-test.apk`).
   2. **Link**: Actualiza el link en `index.html`.
   3. **Push**: Haz push a GitHub. Esto rompe la caché sí o sí.
 
 ## 2. La app se queda bloqueada cargando al inicio
 
-- **Síntoma**: Círculo de carga infinito al abrir la app.
-- **Causa**: `UpdateGuard` no puede conectar con Firestore para comprobar la versión mínima.
-- **Solución**:
-  1. Revisa que el `.env` tenga las variables de Firebase bien puestas.
-  2. Comprueba que el documento `configuracion/app` en Firestore existe.
+### ⚪ Pantalla Blanca o Gris al Arrancar
+1.  **Causa:** Casi siempre se debe a un error de sintaxis en `index.js` o un cuelgue en la inicialización de Firebase.
+2.  **Solución:** 
+    - Hemos implementado un **Auth Timeout** de 5 segundos que fuerza la navegación al Login si Firebase no responde.
+    - Asegúrate de que `newArchEnabled` esté en `false` en `app.json`.
+    - Limpia la caché con `npm start -- --clear`.
+
+### ☕ Error de JAVA_HOME o Compilación Android
+1.  **Error:** `JAVA_HOME is set to an invalid directory`.
+2.  **Solución:** Configura la variable de entorno para que apunte a un **JDK 17** válido. En PowerShell puedes usar: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"`.
+documento `configuracion/app` en Firestore existe.
 
 ## 3. Error PERMISSION_DENIED al ejecutar scripts
 

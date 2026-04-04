@@ -5,11 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BackHandler, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MainBottomBar } from '../components/MainBottomBar';
+import { LiquidBottomBar } from '../components/LiquidBottomBar';
 import type { RootStackParamList } from '../navigation/types';
 import { GradientBottom, GradientTop } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { obtenerPerfilUsuario } from '../services/repositorioUsuarios';
+import { eliminarAmigo, bloquearUsuario } from '../services/repositorioSocial';
 import { useMontserrat } from '../theme/useMontserrat';
 import { SplashView } from '../components/SplashView';
 import { BibliotecaAmigoScreen } from './BibliotecaAmigoScreen';
@@ -89,7 +90,7 @@ export function MainScreen() {
     return () => sub.remove();
   }, [isFocused, mostrarBibliotecaAmigo, mostrarSolicitudes, paginaActual, pantallaTierList]);
 
-  if (!appReady) return <SplashView />;
+  if (!appReady) return <SplashView fontFamily={ff} />;
 
   const showBottomBar =
     !mostrarBibliotecaAmigo &&
@@ -102,6 +103,24 @@ export function MainScreen() {
 
   const navigateActor = (id: number, name: string) => {
     navigation.navigate('Actor', { actorId: id, actorName: name });
+  };
+
+  const handleEliminarAmigoDesdeBib = async (uid: string) => {
+    try {
+      await eliminarAmigo(uid);
+      setMostrarBibliotecaAmigo(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleBloquearAmigoDesdeBib = async (uid: string) => {
+    try {
+      await bloquearUsuario(uid);
+      setMostrarBibliotecaAmigo(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -123,7 +142,6 @@ export function MainScreen() {
           <BibliotecaTab
             fontFamily={ff}
             resetToken={resetToken}
-            refreshToken={bibRefresh}
             onPeliculaClick={navigatePelicula}
             onPerfilClick={() => navigation.navigate('Perfil')}
             userFoto={userProfile?.fotoPerfil || user?.photoURL}
@@ -149,6 +167,8 @@ export function MainScreen() {
               amigoUid={amigoUidSeleccionado}
               onVolverClick={() => setMostrarBibliotecaAmigo(false)}
               onPeliculaClick={navigatePelicula}
+              onEliminarAmigo={handleEliminarAmigoDesdeBib}
+              onBloquearAmigo={handleBloquearAmigoDesdeBib}
             />
           ) : (
             <SocialTab
@@ -158,15 +178,7 @@ export function MainScreen() {
                 setMostrarBibliotecaAmigo(true);
               }}
               onSolicitudesClick={() => setMostrarSolicitudes(true)}
-              onChatClick={() => navigation.navigate('ChatList')}
-              onChatConAmigo={async (uid) => {
-                const { crearChat } = await import('../services/repositorioChats');
-                const chatId = await crearChat([uid]);
-                const otherUserName = (
-                  await import('../services/repositorioSocial')
-                ).buscarUsuarios(uid);
-                navigation.navigate('ChatDetail', { chatId, otherUserName: 'Amigo' });
-              }}
+              onChatClick={(chatId, participants, chatName) => navigation.navigate('ChatDetail', { chatId, participants, chatName })}
               onPerfilClick={() => navigation.navigate('Perfil')}
               userFoto={userProfile?.fotoPerfil || user?.photoURL}
             />
@@ -175,7 +187,7 @@ export function MainScreen() {
       </View>
 
       {showBottomBar ? (
-        <MainBottomBar onTabChange={handleTabPress} paginaActual={paginaActual} />
+        <LiquidBottomBar onTabChange={handleTabPress} paginaActual={paginaActual} />
       ) : null}
     </LinearGradient>
   );

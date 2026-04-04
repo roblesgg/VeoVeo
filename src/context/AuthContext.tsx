@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const unsub = onAuthStateChanged(auth, (u) => {
+      console.log('🛡️ [Auth] Sesión detectada:', u ? u.email : 'Ninguna');
       setUser(u);
       setLoading(false);
       if (u) {
@@ -69,7 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         void require('../services/userPreferences').sincronizarPreferenciasConFirestore(u.uid);
       }
     });
-    return unsub;
+
+    // 🕒 Timeout de seguridad: no dejar al usuario en gris más de 5s
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ [Auth] La sesión tarda demasiado en responder. Forzando paso a Login.');
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => {
+      unsub();
+      clearTimeout(timer);
+    };
   }, [auth]);
 
   useEffect(() => {

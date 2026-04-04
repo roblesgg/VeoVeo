@@ -63,7 +63,9 @@ export function useTierListEditor(onSuccess: () => void) {
       }
       onSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar TierList');
+      const msg = e instanceof Error ? e.message : 'Error al guardar TierList';
+      setError(msg);
+      throw e; // Lanzamos el error para que la UI lo capture y muestre la alerta
     } finally {
       setCargando(false);
     }

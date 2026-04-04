@@ -6,14 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { posterUrl } from '../../services/tmdbClient';
 import type { Movie } from '../../types';
 import { PLATAFORMAS_DEFS } from '../../screens/AjustesScreen';
+import { RatingBadge } from '../RatingBadge';
 
 type Props = {
   item: Movie;
   onPeliculaClick: (id: number) => void;
   misPlataformas?: number[];
+  libraryMap?: { [id: number]: { estado: 'por_ver' | 'vista', valoracion: number } };
 };
 
-export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [] }: Props) => {
+export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [], libraryMap = {} }: Props) => {
   const isFlatrate = item.providers?.flatrate?.some((p) => misPlataformas.includes(p));
   const isRent = !isFlatrate && item.providers?.rent?.some((p) => misPlataformas.includes(p));
 
@@ -39,6 +41,14 @@ export const PosterItem = memo(({ item, onPeliculaClick, misPlataformas = [] }: 
         {(isFlatrate || isRent) && (
           <View style={[styles.dot, { backgroundColor: isFlatrate ? '#2ecc71' : '#f39c12' }]} />
         )}
+
+        {libraryMap[item.id]?.estado === 'vista' ? (
+          <RatingBadge rating={libraryMap[item.id].valoracion} hideText />
+        ) : libraryMap[item.id]?.estado === 'por_ver' ? (
+          <View style={styles.eyeBadge}>
+            <Ionicons name="eye" size={14} color="#3498db" />
+          </View>
+        ) : null}
       </Pressable>
     </View>
   );
@@ -64,5 +74,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 2,
     elevation: 3,
+  },
+  eyeBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 152, 219, 0.4)',
   },
 });
