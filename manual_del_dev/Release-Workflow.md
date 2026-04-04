@@ -18,8 +18,9 @@ En lugar de esperar colas en Expo, compilamos localmente en unos 12-15 minutos:
 ## 3. Actualizar la Web (Landing Page)
 
 1. Mueve la APK generada a la carpeta `/landing`.
-2. Cámbiale el nombre a algo descriptivo (ej: `veoveo-v1.3.2.apk`).
-3. Actualiza el archivo `/landing/index.html`:
+2. Cámbiale el nombre a algo descript- **Fichero final:** `veoveo-latest.apk`.
+- **EAS Build:** Si usas EAS, asegúrate de descargar el artefacto y renombrarlo.
+- **Testeo:** Antes de subir nada a la raíz, sube el archivo como `veoveo-test.apk` para que el desarrollador pueda validarlo en su terminal de Metro.
    - Busca la línea del botón de descarga (`href="./..."`).
    - Pon el nombre del nuevo APK.
    - Actualiza el texto visual: `Descargar Android (v1.3.2)`.

@@ -11,8 +11,9 @@ export type RootStackParamList = {
   Pelicula: { movieId: number };
   Verification: undefined;
   ChatList: undefined;
-  ChatDetail: { chatId: string; otherUserName: string; otherUserFoto?: string | null };
-  MovieMatch: { matchId: string; chatId: string };
+  ChatDetail: { chatId: string; chatName?: string; participants: string[]; activeMatchId?: string | null };
+  MovieMatch: { matchId: string };
+  MatchConfig: { chatId: string; participants: string[] };
 };
 
 export type AppNavigation = NativeStackNavigationProp<RootStackParamList>;

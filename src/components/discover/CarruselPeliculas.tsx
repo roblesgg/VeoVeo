@@ -30,6 +30,7 @@ type Props = {
   drag: () => void;
   isActive: boolean;
   misPlataformas?: number[];
+  libraryMap?: { [id: number]: { estado: 'por_ver' | 'vista', valoracion: number } };
 };
 
 export const CarruselPeliculas = memo(
@@ -44,6 +45,7 @@ export const CarruselPeliculas = memo(
     drag,
     isActive,
     misPlataformas = [],
+    libraryMap = {},
   }: Props) => {
     const [refreshing, setRefreshing] = useState(false);
     const lastCall = useRef(0);
@@ -123,6 +125,7 @@ export const CarruselPeliculas = memo(
               item={item}
               onPeliculaClick={onPeliculaClick}
               misPlataformas={misPlataformas}
+              libraryMap={libraryMap}
             />
           )}
         />

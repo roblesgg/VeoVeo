@@ -90,21 +90,20 @@
       const id = params.get('id');
 
       const path = id ? `${type === 'movie' ? 'movie' : 'actor'}/${id}` : 'main';
-      const schemeTest = `veoveotest://${path}`;
       const schemeProd = `veoveo://${path}`;
 
-      document.getElementById('appLink').href = schemeTest;
+      document.getElementById('appLink').href = schemeProd;
 
       if (type === 'movie') document.getElementById('tagline').innerText = 'Abriendo película...';
       else if (type === 'actor')
         document.getElementById('tagline').innerText = 'Abriendo perfil de actor...';
 
-      // Intento 1: Redirección inmediata a TEST
+      // Intento 1: Redirección inmediata a PROD
       setTimeout(() => {
-        window.location.href = schemeTest;
+        window.location.href = schemeProd;
       }, 500);
 
-      // Intento 2: Redirección a PROD si no abrió el anterior
+      // Intento 2: Redirección forzada
       setTimeout(() => {
         window.location.href = schemeProd;
         document.getElementById('appLink').href = schemeProd;

@@ -13,22 +13,19 @@ import {
   RuntimeShader,
 } from '@shopify/react-native-skia';
 
-interface AppleLiquidGlassProps {
+interface PremiumGlassProps {
   children?: React.ReactNode;
   style?: ViewStyle;
   borderRadius?: number;
   blurAmount?: number;
   saturation?: number;
   distortion?: number;
-  aberration?: number;
 }
 
-// THE ELITE SAUCE: Advanced Apple Refraction Shader
 const source = Skia.RuntimeEffect.Make(`
   uniform shader image;
   uniform float2 size;
   uniform float distortion;
-  uniform float aberration;
 
   half4 main(float2 pos) {
     float2 center = size / 2.0;
@@ -36,31 +33,21 @@ const source = Skia.RuntimeEffect.Make(`
     float d = length(off);
     float maxD = length(center);
     
-    // Lens distortion (bending)
+    // Lens Refraction logic
     float f = 1.0 + distortion * (d / maxD);
     float2 uv = center + off * f;
     
-    // Chromatic Aberration (R/G/B Splitting)
-    float2 rUV = center + off * (f + aberration * 0.005);
-    float2 bUV = center + off * (f - aberration * 0.005);
-    
-    half r = image.eval(rUV).r;
-    half g = image.eval(uv).g;
-    half b = image.eval(bUV).b;
-    half a = image.eval(uv).a;
-    
-    return half4(r, g, b, a);
+    return image.eval(uv);
   }
 `)!;
 
-export const AppleLiquidGlass: React.FC<AppleLiquidGlassProps> = ({
+export const PremiumGlass: React.FC<PremiumGlassProps> = ({
   children,
   style,
   borderRadius = 32,
   blurAmount = 25,
-  saturation = 1.35,
+  saturation = 1.4,
   distortion = 0.08,
-  aberration = 1.2,
 }) => {
   const [layout, setLayout] = React.useState({ width: 0, height: 0 });
 
@@ -79,7 +66,6 @@ export const AppleLiquidGlass: React.FC<AppleLiquidGlassProps> = ({
       <Canvas style={StyleSheet.absoluteFill}>
         {layout.width > 0 && (
           <Group>
-            {/* The Lens Refraction Backdrop */}
             <RoundedRect
               x={0}
               y={0}
@@ -88,22 +74,16 @@ export const AppleLiquidGlass: React.FC<AppleLiquidGlassProps> = ({
               r={borderRadius}
               color="transparent"
             >
-              <BackdropFilter filter={
-                <Blur blur={blurAmount}>
-                  <ColorMatrix matrix={matrix} />
-                </Blur>
-              }>
+              <BackdropFilter filter={<Blur blur={blurAmount}><ColorMatrix matrix={matrix} /></Blur>}>
                 <RuntimeShader 
                   source={source} 
                   uniforms={{ 
                     size: vec(layout.width, layout.height),
-                    distortion: distortion,
-                    aberration: aberration
+                    distortion: distortion
                   }} 
                 />
               </BackdropFilter>
               
-              {/* Layer 2: Ultra-Translucent Midnight Deep Tint */}
               <LinearGradient
                 start={vec(0, 0)}
                 end={vec(0, layout.height)}
@@ -111,7 +91,6 @@ export const AppleLiquidGlass: React.FC<AppleLiquidGlassProps> = ({
               />
             </RoundedRect>
 
-            {/* Layer 3: Crystal Perimeter Highlight */}
             <RoundedRect
               x={0}
               y={0}
@@ -119,21 +98,12 @@ export const AppleLiquidGlass: React.FC<AppleLiquidGlassProps> = ({
               height={layout.height}
               r={borderRadius}
               color="transparent"
+              strokeWidth={1.2}
             >
-               <LinearGradient
+              <LinearGradient
                 start={vec(0, 0)}
-                end={vec(0, layout.height)}
-                colors={['rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.02)']}
-              />
-               <View 
-                style={[
-                  StyleSheet.absoluteFill, 
-                  { 
-                    borderWidth: 1.2, 
-                    borderColor: 'rgba(255,255,255,0.08)', 
-                    borderRadius 
-                  }
-                ]} 
+                end={vec(0, 40)}
+                colors={['rgba(255, 255, 255, 0.25)', 'transparent']}
               />
             </RoundedRect>
           </Group>

@@ -27,7 +27,7 @@ export function MainBottomBar({ onTabChange, paginaActual }: Props) {
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 20) }]}>
-      <BlurView intensity={90} tint="dark" style={styles.bar}>
+      <BlurView intensity={95} tint="dark" style={styles.bar}>
         <View style={styles.innerBar}>
           {items.map(({ iconActive, iconInactive, index }) => (
             <Pressable

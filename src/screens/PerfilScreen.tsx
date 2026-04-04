@@ -19,7 +19,7 @@ import { useMontserrat } from '../theme/useMontserrat';
 import { useLanguage } from '../context/LanguageContext';
 import { GradientBackground } from '../components/GradientBackground';
 import { SHADOWS } from '../theme/theme';
-import { AccentBorder } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 
 // Hooks
 import { useUserProfile } from '../hooks/profile/useUserProfile';
@@ -126,7 +126,7 @@ export function PerfilScreen() {
           onPress={() => Share.share({ message: `${t('share_msg')} https://dripdev.dev` })}
         >
           <Ionicons name="share-social-outline" size={22} color="#fff" />
-          <Text style={[styles.shareText, { fontFamily }]}>{t('share_app')}</Text>
+          <Text style={[styles.shareText, { fontFamily }]}>Compartir aplicación</Text>
         </Pressable>
 
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -4,
     right: -4,
-    backgroundColor: AccentBorder,
+    backgroundColor: COLORS.primary,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   errText: { color: '#ff8a80', textAlign: 'center', fontSize: 16 },
   retryBtn: {
     marginTop: 16,
-    backgroundColor: AccentBorder,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
@@ -213,4 +213,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   shareText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  logoutBtn: {
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#ff4444',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
 });

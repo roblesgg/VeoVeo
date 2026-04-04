@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ErrorRed } from '../../theme/colors';
+import { COLORS } from '../../theme/colors';
 
 type OptionProps = {
   texto: string;
@@ -13,10 +13,10 @@ type OptionProps = {
 
 const OpcionRow = ({ texto, icon, onPress, destructive, fontFamily }: OptionProps) => (
   <Pressable style={styles.opcionRow} onPress={onPress}>
-    <Text style={[styles.opcionText, destructive && { color: ErrorRed }, { fontFamily }]}>
+    <Text style={[styles.opcionText, destructive && { color: '#ff4444' }, { fontFamily }]}>
       {texto}
     </Text>
-    <Ionicons name={icon} size={20} color="#888" />
+    <Ionicons name={icon} size={20} color={destructive ? '#ff4444' : '#888'} />
   </Pressable>
 );
 
@@ -32,22 +32,22 @@ export const ProfileOptions = React.memo(
     return (
       <View style={styles.optionsCard}>
         <OpcionRow
-          texto="Ajustes"
+          texto="Ajustes de la aplicación"
           icon="settings-outline"
           onPress={onAjustes}
           fontFamily={fontFamily}
         />
         <View style={styles.divider} />
         <OpcionRow
-          texto="Bloqueados"
+          texto="Usuarios bloqueados"
           icon="close-outline"
           onPress={onBloqueados}
           fontFamily={fontFamily}
         />
         <View style={styles.divider} />
         <OpcionRow
-          texto="Desconectar"
-          icon="arrow-forward-outline"
+          texto="Cerrar sesión"
+          icon="log-out-outline"
           onPress={onLogout}
           destructive
           fontFamily={fontFamily}

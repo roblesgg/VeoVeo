@@ -1,136 +1,94 @@
-import {
-  collection,
-  doc,
+import { 
+  collection, 
+  doc, 
+  addDoc, 
   getDoc,
-  setDoc,
-  updateDoc,
-  onSnapshot,
-  query,
-  where,
+  onSnapshot, 
+  updateDoc, 
   arrayUnion,
-  getDocs,
+  getFirestore
 } from 'firebase/firestore';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
-import type { MovieMatch, PlayerVote } from '../types';
-import { enviarMensaje } from './repositorioChats';
+import { MovieMatch, MatchStatus } from '../types';
 
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
-}
+const obtenerDb = () => getFirestore();
 
-function dbOrThrow() {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
-
-/** Inicia una partida de Match */
 export async function iniciarMatch(
-  chatId: string,
-  participantes: string[],
-  settings: MovieMatch['settings'],
+  chatId: string, 
+  creatorId: string, 
+  participants: string[], 
+  settings: { targetMatches: number, excludeSeen: boolean }
 ): Promise<string> {
-  const db = dbOrThrow();
-  const uidActual = uidOrThrow();
-
-  const matchRef = doc(collection(db, 'matches'));
-  const nuevaPartida: Omit<MovieMatch, 'id'> = {
+  const db = obtenerDb();
+  const matchesRef = collection(db, 'matches');
+  const docRef = await addDoc(matchesRef, {
     chatId,
-    creatorId: uidActual,
-    participants: Array.from(new Set([...participantes, uidActual])),
+    creatorId,
+    participants,
     status: 'active',
     settings,
     matchedMovies: [],
-    createdAt: Date.now(),
-  };
-
-  await setDoc(matchRef, nuevaPartida);
-
-  // Notificar en el chat
-  await enviarMensaje(
-    chatId,
-    '¡Ha empezado un nuevo Movie Match! 🎬🍿 Desliza para elegir peli.',
-    'match_invite',
-    matchRef.id,
-  );
-
-  return matchRef.id;
+    votes: {},
+    noVotes: {},
+    createdAt: Date.now()
+  });
+  
+  // Guardamos el match activo en el chat
+  await updateDoc(doc(db, 'chats', chatId), {
+    activeMatchId: docRef.id
+  });
+  
+  return docRef.id;
 }
 
-/** Registra un voto de un usuario para una película */
-export async function registrarVoto(
-  matchId: string,
-  movieId: number,
-  voto: 'yes' | 'no',
-): Promise<void> {
-  const db = dbOrThrow();
-  const uidActual = uidOrThrow();
+export function observarMatch(matchId: string, callback: (m: MovieMatch) => void) {
+  const db = obtenerDb();
+  return onSnapshot(doc(db, 'matches', matchId), (snap) => {
+    if (snap.exists()) {
+      callback({ id: snap.id, ...snap.data() } as MovieMatch);
+    }
+  });
+}
 
-  const votoRef = doc(db, 'matches', matchId, 'votos', `${uidActual}_${movieId}`);
-  await setDoc(votoRef, {
-    uid: uidActual,
-    movieId,
-    vote: voto,
-    timestamp: Date.now(),
+export async function votarPelicula(matchId: string, uid: string, movieId: number, vote: 'yes' | 'no') {
+  const db = obtenerDb();
+  const matchDoc = doc(db, 'matches', matchId);
+  const snap = await getDoc(matchDoc);
+  if (!snap.exists()) return;
+  
+  const data = snap.data() as MovieMatch;
+  const isYes = vote === 'yes';
+  
+  const field = isYes ? `votes.${movieId}` : `noVotes.${movieId}`;
+  
+  await updateDoc(matchDoc, {
+    [field]: arrayUnion(uid)
   });
 
-  // Verificar si hay match (todos han dicho 'yes')
-  if (voto === 'yes') {
-    await verificarMatch(matchId, movieId);
-  }
-}
-
-async function verificarMatch(matchId: string, movieId: number) {
-  const db = dbOrThrow();
-  const matchSnap = await getDoc(doc(db, 'matches', matchId));
-  if (!matchSnap.exists()) return;
-
-  const matchData = matchSnap.data() as MovieMatch;
-  const participantes = matchData.participants;
-
-  // Consultar todos los votos para esta película
-  const votosQ = query(
-    collection(db, 'matches', matchId, 'votos'),
-    where('movieId', '==', movieId),
-    where('vote', '==', 'yes'),
-  );
-  const votosSnap = await getDocs(votosQ);
-
-  if (votosSnap.size === participantes.length) {
-    // ¡MATCH ENCONTRADO!
-    await updateDoc(doc(db, 'matches', matchId), {
-      matchedMovies: arrayUnion(movieId),
-    });
-
-    // Notificar en el chat
-    await enviarMensaje(
-      matchData.chatId,
-      `¡MATCH! 🎉 Todos queréis ver esta película.`,
-      'match_result',
-      matchId,
-    );
-
-    // Si llegamos al objetivo, finalizar
-    if (matchData.matchedMovies.length + 1 >= matchData.settings.targetMatches) {
-      await updateDoc(doc(db, 'matches', matchId), { status: 'finished', finishedAt: Date.now() });
+  // 🛡️ Comprobación de Match Total
+  if (isYes) {
+    const updatedSnap = await getDoc(matchDoc);
+    const updatedData = updatedSnap.data() as MovieMatch;
+    const currentVotes = updatedData.votes[movieId] || [];
+    
+    // Si TODOS han votado que sí
+    if (currentVotes.length === data.participants.length) {
+      await updateDoc(matchDoc, {
+        matchedMovies: arrayUnion(movieId)
+      });
+      
+      // Comprobar si hemos llegado al objetivo
+      const finalSnap = await getDoc(matchDoc);
+      const finalData = finalSnap.data() as MovieMatch;
+      if (finalData.matchedMovies.length >= data.settings.targetMatches) {
+        await updateDoc(matchDoc, {
+          status: 'finished' as MatchStatus,
+          finishedAt: Date.now()
+        });
+        // Cerramos el match en el chat
+        await updateDoc(doc(db, 'chats', data.chatId), {
+           activeMatchId: null
+        });
+      }
     }
   }
-}
-
-/** Observa una partida de Match en tiempo real */
-export function observarMatch(matchId: string, callback: (match: MovieMatch) => void): () => void {
-  const db = dbOrThrow();
-  return onSnapshot(
-    doc(db, 'matches', matchId),
-    (snap) => {
-      if (snap.exists()) {
-        callback({ ...snap.data(), id: snap.id } as MovieMatch);
-      }
-    },
-    (err) => {
-      console.error('Error en observarMatch:', err);
-    },
-  );
 }

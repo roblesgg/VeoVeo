@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { GradientBackground } from '../components/GradientBackground';
 import type { RootStackParamList } from '../navigation/types';
-import { AccentBorder, ErrorRed } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { useMontserrat } from '../theme/useMontserrat';
 
@@ -148,7 +148,7 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center' },
   pad: { paddingHorizontal: 32 },
-  logo: { fontSize: 48, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 40 },
+  logo: { fontSize: 48, color: '#fff', textAlign: 'center', marginBottom: 40 },
   warn: { color: '#ffcc80', marginBottom: 16, textAlign: 'center', fontSize: 13 },
   input: {
     borderRadius: 24,
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
-  err: { color: ErrorRed, marginBottom: 16, textAlign: 'center', fontSize: 14 },
+  err: { color: COLORS.error, marginBottom: 16, textAlign: 'center', fontSize: 14 },
   btn: {
     height: 50,
     borderRadius: 30,

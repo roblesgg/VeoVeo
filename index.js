@@ -1,5 +1,5 @@
 import { registerRootComponent } from 'expo';
 import App from './App';
 
-// This forces Metro to correctly bundle all modules starting from the root App.
+// El punto de entrada debe ser lo más simple posible para asegurar que Metro empaquete todo
 registerRootComponent(App);

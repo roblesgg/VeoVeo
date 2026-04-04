@@ -28,6 +28,7 @@ export async function crearTierList(t: TierList): Promise<string> {
     creadorUid: uid,
     fechaCreacion: now,
     ultimaModificacion: now,
+    portadaUrl: t.portadaUrl ?? null,
   };
   await setDoc(docRef, tierConId);
   return docRef.id;
@@ -43,7 +44,11 @@ export async function obtenerTierLists(): Promise<TierList[]> {
 export async function actualizarTierList(t: TierList): Promise<void> {
   const uid = uidOrThrow();
   if (!t.id) throw new Error('TierList sin id');
-  const updated: TierList = { ...t, ultimaModificacion: Date.now() };
+  const updated: TierList = { 
+    ...t, 
+    ultimaModificacion: Date.now(),
+    portadaUrl: t.portadaUrl || null // 🛡️ Fix
+  };
   await setDoc(doc(baseRef(uid), t.id), updated);
 }
 

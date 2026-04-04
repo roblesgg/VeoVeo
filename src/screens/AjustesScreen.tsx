@@ -1,7 +1,6 @@
-import { deleteUser } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,61 +11,42 @@ import {
   Text,
   TextInput,
   View,
+  Switch, // 🆕 El interruptor real
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { getFirebaseAuth } from '../services/firebase';
 import { GradientBackground } from '../components/GradientBackground';
 import { BlurView } from 'expo-blur';
 import { SHADOWS } from '../theme/theme';
 import { Ionicons } from '@expo/vector-icons';
 import type { RootStackParamList } from '../navigation/types';
 import { useMontserrat } from '../theme/useMontserrat';
-import { useLanguage } from '../context/LanguageContext';
 import * as preferences from '../storage/preferences';
-import { tmdbApi, posterUrl } from '../services/tmdbClient';
-import { COLORS, GRADIENTS, GLASS } from '../theme/colors';
-import { InputModal } from '../components/InputModal';
-
-export interface Platform {
-  id: number;
-  name: string;
-  color: string;
-  logo_path: string;
-}
+import { tmdbApi } from '../services/tmdbClient';
+import { COLORS } from '../theme/colors';
 
 export function AjustesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const { user, logout, linkGoogleAccount, unlinkGoogleAccount, changePassword, reauthenticate } =
-    useAuth();
-  const { t, language, setLanguage } = useLanguage();
-  const { fontFamily, loaded } = useMontserrat();
-  const ff = fontFamily ?? 'System';
-  const [busy, setBusy] = useState(false);
+  const { user } = useAuth();
+  const { fontFamily: ff } = useMontserrat();
+  const fontFamily = ff || 'System';
+
   const [adulto, setAdulto] = useState(false);
   const [misPlataformas, setMisPlataformas] = useState<number[]>([]);
   const [allPlataformas, setAllPlataformas] = useState<any[]>([]);
   const [busquedaPlataforma, setBusquedaPlataforma] = useState('');
   const [cargandoPlats, setCargandoPlats] = useState(false);
-  const [showPassModal, setShowPassModal] = useState(false);
 
   useEffect(() => {
-    console.log('--- AJUSTES MOUNTED ---');
     void preferences.cargarPreferenciaAdulto().then(setAdulto);
-    void preferences.cargarPlataformas().then((res) => {
-      console.log('--- AJUSTES LOADED:', res);
-      setMisPlataformas(res.map(Number));
-    });
+    void preferences.cargarPlataformas().then(res => setMisPlataformas(res.map(Number)));
 
     void (async () => {
       setCargandoPlats(true);
       try {
         const res = await tmdbApi.obtenerProveedoresRegion('ES');
-        // Sort alphabetically
-        setAllPlataformas(
-          res.results.sort((a: any, b: any) => a.provider_name.localeCompare(b.provider_name)),
-        );
+        setAllPlataformas(agruparPlataformas(res.results));
       } catch (e) {
         console.error(e);
       } finally {
@@ -75,465 +55,152 @@ export function AjustesScreen() {
     })();
   }, []);
 
-  const togglePlataforma = async (id: number) => {
-    console.log('--- TOGGLING PLATFORM:', id);
-    const next = misPlataformas.includes(id)
-      ? misPlataformas.filter((x) => x !== id)
-      : [...misPlataformas, id];
+  const handleToggleAdulto = async (val: boolean) => {
+    setAdulto(val);
+    await preferences.guardarPreferenciaAdulto(val);
+  };
+
+  const handleTogglePlataforma = async (ids: number[]) => {
+    let next: number[];
+    const isPresent = ids.some(id => misPlataformas.includes(id));
+    if (isPresent) {
+      next = misPlataformas.filter(id => !ids.includes(id));
+    } else {
+      next = [...misPlataformas, ...ids];
+    }
     setMisPlataformas(next);
     await preferences.guardarPlataformas(next.map(String));
     if (user) {
-      void require('../services/userPreferences').guardarPreferenciaFirestore(
-        user.uid,
-        'plataformas',
-        next,
-      );
+      void require('../services/userPreferences').guardarPreferenciaFirestore(user.uid, 'plataformas', next);
     }
   };
 
-  const eliminarCuenta = () => {
-    Alert.prompt(
-      t('delete_account'),
-      t('confirm_delete'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        {
-          text: t('delete'),
-          style: 'destructive',
-          onPress: async (password?: string) => {
-            if (!password) return;
-            const auth = getFirebaseAuth();
-            const u = auth?.currentUser;
-            if (!u) return;
-            setBusy(true);
-            try {
-              await reauthenticate(password);
-              await deleteUser(u);
-              await logout();
-            } catch (e) {
-              Alert.alert(t('error'), t('reauth_failed'));
-            } finally {
-              setBusy(false);
-            }
-          },
-        },
-      ],
-      'secure-text',
-    );
-  };
+  const filteredPlats = useMemo(() => {
+    const q = busquedaPlataforma.trim().toLowerCase();
+    if (!q) return allPlataformas;
+    return allPlataformas.filter(p => p.searchTerms.includes(q) || p.name.toLowerCase().includes(q));
+  }, [allPlataformas, busquedaPlataforma]);
 
-  const cambiarPass = () => setShowPassModal(true);
-
-  if (!loaded) {
-    return <GradientBackground style={{ paddingTop: insets.top }} />;
-  }
 
   return (
-    <GradientBackground style={{ flex: 1 }}>
-      <View style={{ flex: 1, paddingHorizontal: 24 }}>
-        <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backBtnHeader}>
-            <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
-              <Ionicons name="chevron-back" size={24} color={COLORS.text} />
-            </BlurView>
+    <GradientBackground style={styles.flex}>
+      <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerRow}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={28} color="#fff" />
           </Pressable>
-          <Text style={[styles.titulo, { fontFamily: ff }]}>{t('settings')}</Text>
+          <Text style={[styles.titulo, { fontFamily }]}>Ajustes</Text>
+        </View>
+      </BlurView>
+
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 90, paddingBottom: 100 }]} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { fontFamily }]}>Privacidad y Contenido</Text>
+          <View style={[styles.card, SHADOWS.macLight]}>
+             <View style={{ flex: 1 }}>
+                <Text style={[styles.cardTitle, { fontFamily }]}>Mostrar contenido para adultos</Text>
+                <Text style={[styles.cardDesc, { fontFamily }]}>Incluye resultados de cine erótico y mayores de +18 años.</Text>
+             </View>
+             <Switch
+                value={adulto}
+                onValueChange={handleToggleAdulto}
+                trackColor={{ false: "#334155", true: COLORS.primary }}
+                thumbColor={adulto ? "#fff" : "#94a3b8"}
+             />
+          </View>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100, paddingTop: Math.max(insets.top, 12) + 70 }}
-        >
-          {busy ? <ActivityIndicator color="#fff" style={{ marginBottom: 24 }} /> : null}
-
-          {/* Account Section */}
-          <View style={styles.section}>
-            <Text style={[styles.secLabel, { fontFamily: ff }]}>{t('account')}</Text>
-            <BlurView intensity={20} tint="dark" style={styles.glassRow}>
-              <Ionicons name="logo-google" size={24} color={COLORS.text} style={{ marginRight: 16 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { fontFamily: ff }]}>Google Cloud</Text>
-                <Text style={[styles.rowSubtitle, { fontFamily: ff }]}>
-                  {user?.providerData.some((p) => p.providerId === 'google.com')
-                    ? t('linked')
-                    : t('not_linked')}
-                </Text>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { fontFamily }]}>Mis Plataformas de Streaming</Text>
+          
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.infoText, { fontFamily }]}>
+                Selecciona las plataformas que pagas para que marquemos con colores dónde ver cada película:
+              </Text>
+              <View style={styles.legendRow}>
+                <View style={[styles.dot, { backgroundColor: '#2ecc71' }]} />
+                <Text style={styles.legendText}>Disponible en tus plataformas</Text>
               </View>
-              {user?.providerData.some((p) => p.providerId === 'google.com') ? (
-                <Pressable
-                  style={[styles.linkBtn, { backgroundColor: 'rgba(255,255,255,0.1)' }]}
-                  onPress={async () => {
-                    Alert.alert(t('unlink'), t('confirm_unlink'), [
-                      { text: t('cancel'), style: 'cancel' },
-                      {
-                        text: t('unlink'),
-                        style: 'destructive',
-                        onPress: async () => {
-                          setBusy(true);
-                          try {
-                            await unlinkGoogleAccount();
-                            Alert.alert(t('success'), 'OK');
-                          } catch (e) {
-                            Alert.alert(t('error'), 'Error');
-                          } finally {
-                            setBusy(false);
-                          }
-                        },
-                      },
-                    ]);
-                  }}
-                >
-                  <Text style={[styles.linkBtnText, { color: '#fff' }]}>{t('unlink')}</Text>
-                </Pressable>
-              ) : (
-                <Pressable
-                  style={styles.linkBtn}
-                  onPress={async () => {
-                    setBusy(true);
-                    try {
-                      await linkGoogleAccount();
-                    } catch (e) {
-                      Alert.alert(t('error'), 'Error');
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  <Text style={[styles.linkBtnText, { fontFamily: ff }]}>{t('link')}</Text>
-                </Pressable>
-              )}
-            </BlurView>
-
-            <Pressable style={[styles.rowItem, { marginTop: 12 }]} onPress={cambiarPass}>
-              <Ionicons name="key-outline" size={20} color="#fff" style={{ marginRight: 12 }} />
-              <Text style={[styles.rowTitle, { fontFamily: ff, flex: 1 }]}>
-                {t('change_password')}
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.3)" />
-            </Pressable>
-          </View>
-
-          {/* Streaming Platforms Section (Simplified) */}
-          <View style={styles.section}>
-            <Text style={[styles.secLabel, { fontFamily: ff }]}>{t('platforms')}</Text>
-
-            <View style={styles.helpBox}>
-              <Ionicons name="information-circle-outline" size={20} color="rgba(255,255,255,0.6)" />
-              <Text style={[styles.helpText, { fontFamily: ff }]}>
-                Selecciona tus plataformas para ver un{' '}
-                <Text style={{ color: '#2ecc71', fontWeight: '700' }}>punto verde</Text> si está
-                incluida en tu suscripción, o{' '}
-                <Text style={{ color: '#f39c12', fontWeight: '700' }}>naranja</Text> si es de
-                alquiler.
-              </Text>
-            </View>
-
-            <View style={styles.macList}>
-              <TextInput
-                value={busquedaPlataforma}
-                onChangeText={setBusquedaPlataforma}
-                placeholder="Buscar plataforma..."
-                placeholderTextColor="rgba(255,255,255,0.4)"
-                style={styles.platSearch}
-              />
-              <ScrollView style={{ maxHeight: 400 }} nestedScrollEnabled>
-                {cargandoPlats ? (
-                  <ActivityIndicator color="#fff" style={{ margin: 20 }} />
-                ) : (
-                  allPlataformas
-                    .filter(
-                      (p) =>
-                        !busquedaPlataforma ||
-                        p.provider_name.toLowerCase().includes(busquedaPlataforma.toLowerCase()),
-                    )
-                    .map((p, idx, arr) => (
-                      <Pressable
-                        key={p.provider_id}
-                        onPress={() => togglePlataforma(p.provider_id)}
-                        style={[styles.macItem, idx === arr.length - 1 && { borderBottomWidth: 0 }]}
-                      >
-                        <Text style={[styles.macItemText, { fontFamily: ff }]}>
-                          {p.provider_name}
-                        </Text>
-                        {misPlataformas.includes(p.provider_id) ? (
-                          <Ionicons name="checkbox" size={24} color={COLORS.secondary} />
-                        ) : (
-                          <Ionicons name="square-outline" size={24} color={COLORS.textMuted} />
-                        )}
-                      </Pressable>
-                    ))
-                )}
-              </ScrollView>
-            </View>
-          </View>
-          {/* Language Section */}
-          <View style={styles.section}>
-            <Text style={[styles.secLabel, { fontFamily: ff }]}>{t('language')}</Text>
-            <View style={styles.rowItem}>
-              <Ionicons
-                name="language-outline"
-                size={20}
-                color="#fff"
-                style={{ marginRight: 12 }}
-              />
-              <Text style={[styles.rowTitle, { fontFamily: ff, flex: 1 }]}>
-                {language === 'es' ? 'Español' : 'English'}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Pressable
-                  onPress={() => setLanguage('es')}
-                  style={[styles.langBtn, language === 'es' && styles.langBtnActive]}
-                >
-                  <Text style={styles.langBtnText}>ES</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setLanguage('en')}
-                  style={[styles.langBtn, language === 'en' && styles.langBtnActive]}
-                >
-                  <Text style={styles.langBtnText}>EN</Text>
-                </Pressable>
+              <View style={styles.legendRow}>
+                <View style={[styles.dot, { backgroundColor: '#f39c12' }]} />
+                <Text style={styles.legendText}>Disponible (streaming o alquiler)</Text>
               </View>
             </View>
           </View>
 
-          {/* Adult Content Switch */}
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1, marginRight: 12 }}>
-              <Text style={[styles.switchLabel, { fontFamily: ff }]}>{t('content_adult')}</Text>
-              <Text style={[styles.switchDesc, { fontFamily: ff }]}>{t('content_adult_desc')}</Text>
-            </View>
-            <Pressable
-              onPress={async () => {
-                const next = !adulto;
-                setAdulto(next);
-                await preferences.guardarPreferenciaAdulto(next);
-              }}
-              style={[styles.macSwitch, adulto && styles.macSwitchOn]}
-            >
-              <View style={[styles.macSwitchDot, adulto && styles.macSwitchDotOn]} />
-            </Pressable>
+          <TextInput 
+            value={busquedaPlataforma} 
+            onChangeText={setBusquedaPlataforma} 
+            placeholder="Buscar (ej: Amazon, Movistar, HBO...)" 
+            placeholderTextColor="rgba(255,255,255,0.4)" 
+            style={[styles.platSearch, { fontFamily }]} 
+          />
+          <View style={styles.platsContainer}>
+            {cargandoPlats ? <ActivityIndicator color="#fff" /> : 
+              filteredPlats.map(p => (
+                <Pressable 
+                  key={p.name} 
+                  onPress={() => handleTogglePlataforma(p.ids)} 
+                  style={[styles.platItem, p.ids.some((id: number) => misPlataformas.includes(id)) && styles.platItemActive]}
+                >
+                  <Image source={{ uri: `https://image.tmdb.org/t/p/original${p.logo}` }} style={styles.platLogo} />
+                  <Text style={[styles.platName, { fontFamily }]} numberOfLines={1}>{p.name}</Text>
+                  {p.ids.some((id: number) => misPlataformas.includes(id)) && <Ionicons name="checkmark-circle" size={16} color="#000" style={styles.check} />}
+                </Pressable>
+              ))
+            }
           </View>
-
-          {/* Delete Account Action */}
-          <Pressable style={styles.danger} onPress={eliminarCuenta} disabled={busy}>
-            <Text style={[styles.dangerText, { fontFamily: ff }]}>{t('delete_account')}</Text>
-          </Pressable>
-
-          {/* TMDB Footer */}
-          <View style={styles.tmdbContainer}>
-            <Image
-              source={{
-                uri: 'https://www.themoviedb.org/assets/2/v4/logos/v2/blue_square_2-d537fb228cf3ded904ef09b136fe3fec72548ebc1fea3fbbd1ad9e36364db38b.png',
-              }}
-              style={styles.tmdbLogo}
-              resizeMode="contain"
-            />
-            <Text style={[styles.tmdbText, { fontFamily: ff }]}>
-              Este producto utiliza la API de TMDB pero no está avalado ni certificado por TMDB.
-            </Text>
-          </View>
-
-          <Text style={[styles.version, { fontFamily: ff }]}>v1.2.3 - Official</Text>
-        </ScrollView>
-      </View>
-
-      <InputModal
-        visible={showPassModal}
-        title={t('change_password')}
-        placeholder={t('enter_password')}
-        fontFamily={ff}
-        onClose={() => setShowPassModal(false)}
-        onConfirm={async (newPass) => {
-          setShowPassModal(false);
-          if (!newPass) return;
-          setBusy(true);
-          try {
-            await changePassword(newPass);
-            Alert.alert(t('success'), t('password_changed'));
-          } catch (e) {
-            Alert.alert(t('error'), e instanceof Error ? e.message : 'Error');
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
+        </View>
+      </ScrollView>
     </GradientBackground>
   );
 }
 
+// 🍿 IDs Oficiales de TMDB para España (Logic unchanged)
+function agruparPlataformas(lista: any[]) {
+  const grupos: { [nombre: string]: { ids: number[], name: string, logo: string, searchTerms: string } } = {};
+  lista.forEach(p => {
+    let name = p.provider_name;
+    let alias = name.toLowerCase();
+    if (name.includes('Amazon') || name.includes('Prime Video')) { name = 'Prime Video'; alias += ' amazon prime amz'; }
+    else if (name.includes('Apple TV')) { name = 'Apple TV+'; alias += ' itunes apple+'; }
+    else if (name.includes('Disney')) { name = 'Disney+'; alias += ' dsn disneyplus'; }
+    else if (name.includes('HBO')) { name = 'HBO Max'; alias += ' hbomax max'; }
+    else if (name.includes('Netflix')) { name = 'Netflix'; alias += ' nflx netf'; }
+    else if (name.includes('SkyShowtime')) { name = 'SkyShowtime'; alias += ' sky showtime'; }
+    else if (name.includes('Movistar')) { name = 'Movistar Plus+'; alias += ' m+ movstar movistar+'; }
+
+    if (!grupos[name]) { grupos[name] = { ids: [], name, logo: p.logo_path, searchTerms: alias }; }
+    grupos[name].ids.push(p.provider_id);
+    grupos[name].searchTerms += ` ${alias}`;
+  });
+  return Object.values(grupos).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 const styles = StyleSheet.create({
-  titulo: {
-    fontSize: 28,
-    color: '#fff',
-    fontWeight: '700',
-    lineHeight: 34,
-  },
-  headerRow: {
-    position: 'absolute',
-    left: 20,
-    right: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    zIndex: 10,
-    gap: 12,
-  },
-  backBtnHeader: {
-    width: 44,
-    height: 44,
-  },
-  danger: {
-    marginTop: 24,
-    backgroundColor: 'rgba(255,80,80,0.15)',
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  dangerText: { color: '#ff8a80', fontWeight: '600', fontSize: 16 },
-  backBtn: {
-    position: 'absolute',
-    left: 20,
-    top: 4,
-    zIndex: 10,
-  },
-  backBtnInner: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    overflow: 'hidden',
-  },
-  langBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  langBtnActive: { backgroundColor: '#fff' },
-  langBtnText: { color: '#888', fontWeight: '700', fontSize: 12 },
-  langBtnActiveText: { color: '#000' },
-  version: {
-    color: 'rgba(255,255,255,0.15)',
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 12,
-  },
-  tmdbContainer: {
-    marginTop: 40,
-    alignItems: 'center',
-    opacity: 0.6,
-  },
-  tmdbLogo: {
-    width: 60,
-    height: 60,
-    marginBottom: 12,
-  },
-  tmdbText: {
-    color: '#fff',
-    fontSize: 11,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    lineHeight: 16,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 16,
-    borderRadius: 16,
-    marginTop: 16,
-  },
-  switchLabel: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  switchDesc: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 },
-  macSwitch: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 2,
-    justifyContent: 'center',
-  },
-  macSwitchOn: { backgroundColor: COLORS.success },
-  macSwitchDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  macSwitchDotOn: { alignSelf: 'flex-end' },
-  section: { marginTop: 32 },
-  secLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 13,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  rowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 16,
-    borderRadius: 16,
-  },
-  rowTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  rowSubtitle: { color: 'rgba(255,255,255,0.4)', fontSize: 13 },
-  glassRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-  },
-  linkBtn: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  linkBtnText: { color: '#000', fontSize: 13, fontWeight: '700' },
-  macList: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  macItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  macItemText: { color: '#fff', fontSize: 16, flex: 1, fontWeight: '500' },
-  helpBox: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-    gap: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  helpText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
-    lineHeight: 18,
-    flex: 1,
-  },
-  platSearch: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 12,
-    color: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-    fontSize: 15,
-  },
+  flex: { flex: 1, backgroundColor: '#020617' },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 16 },
+  backBtn: { padding: 4 },
+  titulo: { color: '#fff', fontSize: 22, fontWeight: '900', marginLeft: 8 },
+  scroll: { paddingHorizontal: 20 },
+  section: { marginBottom: 32 },
+  sectionTitle: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase' },
+  card: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  cardTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  cardDesc: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' },
+  infoBox: { flexDirection: 'row', gap: 10, backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: 14, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.2)' },
+  infoText: { flex: 1, color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18, marginBottom: 10 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: '600' },
+  platsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  platItem: { width: '31%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  platItemActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  platLogo: { width: 36, height: 36, borderRadius: 10, marginBottom: 8 },
+  platName: { color: '#fff', fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  check: { position: 'absolute', top: 4, right: 4 },
+  platSearch: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, color: '#fff', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
 });

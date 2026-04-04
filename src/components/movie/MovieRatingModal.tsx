@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { AccentBorder } from '../../theme/colors';
+import { COLORS } from '../../theme/colors';
 import { SHADOWS } from '../../theme/theme';
 
 type Props = {
@@ -110,12 +110,12 @@ export const MovieRatingModal = React.memo(
                   onPress={handleGuardar}
                   disabled={valorSel === 0 && !valorNegativa}
                   style={[
-                    styles.modalActionMain,
+                    styles.saveBtnMain,
                     valorSel === 0 && !valorNegativa && { opacity: 0.4 },
                   ]}
                 >
                   <Text
-                    style={{ color: AccentBorder, fontFamily, fontWeight: '800', fontSize: 16 }}
+                    style={{ color: '#fff', fontFamily, fontWeight: '800', fontSize: 16 }}
                   >
                     Guardar
                   </Text>
@@ -169,6 +169,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  modalActionSec: { padding: 10 },
-  modalActionMain: { padding: 10 },
+  modalActionSec: { padding: 10, alignSelf: 'center' },
+  saveBtnMain: { 
+    backgroundColor: '#38bdf8',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#38bdf8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 });

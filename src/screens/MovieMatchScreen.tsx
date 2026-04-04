@@ -1,357 +1,318 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  Image,
-  Pressable,
   ActivityIndicator,
   Dimensions,
-  Animated,
-  PanResponder,
-  Modal,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  runOnJS,
+  interpolate,
+  Extrapolate
+} from 'react-native-reanimated';
+import { PanGestureHandler } from 'react-native-gesture-handler';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
-// Services
-import { observarMatch } from '../services/repositorioMatches';
-import { obtenerCandidatosMatch, registrarVoto } from '../services/matchEngine';
-import { MovieMatch as MatchType } from '../types';
-import { GlassBorder, GradientTop, GradientBottom } from '../theme/colors';
-import { getFirebaseAuth } from '../services/firebase';
+import { useAuth } from '../context/AuthContext';
+import { observarMatch, votarPelicula } from '../services/repositorioMatches';
+import { tmdbApi, posterUrl } from '../services/tmdbClient';
+import { MovieMatch, MovieDetails } from '../types';
+import { COLORS } from '../theme/colors';
+import { SHADOWS } from '../theme/theme';
 
-const { width, height } = Dimensions.get('window');
-const SWIPE_THRESHOLD = 120;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
-type Props = NativeStackScreenProps<RootStackParamList, 'MovieMatch'>;
-
-export default function MovieMatchScreen({ navigation, route }: Props) {
-  const { matchId, chatId } = route.params;
+export function MovieMatchScreen() {
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const uid = getFirebaseAuth()?.currentUser?.uid || '';
-
-  const [match, setMatch] = useState<MatchType | null>(null);
-  const [candidates, setCandidates] = useState<any[]>([]);
+  const { user } = useAuth();
+  
+  const { matchId } = route.params;
+  const [match, setMatch] = useState<MovieMatch | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [queue, setQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showMatchModal, setShowMatchModal] = useState<any>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [currentDetails, setCurrentDetails] = useState<MovieDetails | null>(null);
 
-  const position = useRef(new Animated.ValueXY()).current;
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
+  // 1. Escuchar el match
   useEffect(() => {
-    const unsub = observarMatch(matchId, (m: any) => {
-      setMatch(m);
-      if (loading && m.participants) {
-        loadCandidates(m.participants);
-      }
-    });
-    return unsub;
+    return observarMatch(matchId, setMatch);
   }, [matchId]);
 
-  const loadCandidates = async (participants: string[]) => {
-    try {
-      const movies = await obtenerCandidatosMatch(matchId, participants);
-      setCandidates(movies);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+  // 2. Cargar pelis inteligentes (Por Ver de otros + Sugeridas)
+  useEffect(() => {
+    if (!match || !user || queue.length > 0) return; // Solo cargar al inicio
+    void (async () => {
+       try {
+         const db = getFirestore();
+         let watchlistMovies: any[] = [];
+         let seenSeeds: number[] = [];
+         
+         // 1. Obtener "Por Ver" de los otros y nuestras "Vistas" como semillas
+         for (const uid of match.participants) {
+            const isMe = uid === user.uid;
+            
+            // Watchlist del otro
+            if (!isMe) {
+              const libRef = doc(db, 'usuarios', uid, 'biblioteca', 'por_ver');
+              const snap = await getDoc(libRef);
+              if (snap.exists()) {
+                const data = snap.data() as { peliculas: any[] };
+                if (data.peliculas) watchlistMovies.push(...data.peliculas);
+              }
+            }
+
+            // Nuestras vistas con buena nota (Semillas)
+            const vistasRef = doc(db, 'usuarios', uid, 'biblioteca', 'vistas');
+            const vistasSnap = await getDoc(vistasRef);
+            if (vistasSnap.exists()) {
+              const data = vistasSnap.data() as { peliculas: any[] };
+              if (data.peliculas) {
+                const highRated = data.peliculas.filter(p => p.valoracion >= 4).map(p => p.idPelicula);
+                seenSeeds.push(...highRated);
+              }
+            }
+         }
+
+         // 2. Filtrar pelis que YA HEMOS VOTADO en este match (Importante para reentrada)
+         const votedIds = new Set<string>();
+         const currentVotes = (match.votes || {}) as Record<string, string[]>;
+         const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
+
+         Object.keys(currentVotes).forEach(mid => { 
+           if (currentVotes[mid]?.includes(user.uid)) votedIds.add(mid); 
+         });
+         Object.keys(currentNoVotes).forEach(mid => { 
+           if (currentNoVotes[mid]?.includes(user.uid)) votedIds.add(mid); 
+         });
+
+         let finalQueue: any[] = [];
+
+         // Añadir Watchlist filtrada
+         const filteredWatchlist = watchlistMovies
+           .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
+           .filter(p => !votedIds.has(String(p.idPelicula)))
+           .map(p => ({
+              id: p.idPelicula,
+              title: p.titulo,
+              poster_path: p.rutaPoster,
+              release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : ''
+           }));
+         
+         finalQueue.push(...filteredWatchlist);
+
+         // 3. Recomendaciones basadas en semillas (si faltan o para mezclar)
+         if (seenSeeds.length > 0 && finalQueue.length < 20) {
+            const seed = seenSeeds[Math.floor(Math.random() * seenSeeds.length)];
+            const recommendations = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', 1);
+            const filteredRecs = recommendations.results
+              .filter((p: any) => p.vote_average > 6.0) // Solo calidad
+              .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
+              .map((p: any) => ({
+                id: p.id,
+                title: p.title,
+                poster_path: p.poster_path,
+                release_date: p.release_date?.split('-')[0] || ''
+              }));
+            
+            // Mezclamos un poco
+            finalQueue.push(...filteredRecs);
+         }
+
+         // 4. Ultimo recurso: Populares de calidad
+         if (finalQueue.length < 5) {
+            const popular = await tmdbApi.obtenerPopulares('es-ES', 1);
+            finalQueue.push(...popular.results.filter((p: any) => p.vote_average > 6.5 && !votedIds.has(String(p.id))));
+         }
+
+         setQueue(finalQueue);
+       } catch (e) {
+         console.error(e);
+       } finally {
+         setLoading(false);
+       }
+    })();
+  }, [match, user]);
+
+  // 3. Cargar detalles para el modal de info
+  useEffect(() => {
+    if (queue[currentIndex]) {
+      void tmdbApi.obtenerDetallesPelicula(Number(queue[currentIndex].id)).then(setCurrentDetails);
+    }
+  }, [currentIndex, queue]);
+
+  const onSwipeComplete = useCallback((direction: 'right' | 'left') => {
+    if (!user || !match || !queue[currentIndex]) return;
+    const movieId = queue[currentIndex].id;
+    void votarPelicula(matchId, user.uid, movieId, direction === 'right' ? 'yes' : 'no');
+    
+    translateX.value = 0;
+    translateY.value = 0;
+    setCurrentIndex(prev => prev + 1);
+  }, [currentIndex, matchId, queue, user, match]);
+
+  const onGestureEvent = (event: any) => {
+    translateX.value = event.nativeEvent.translationX;
+    translateY.value = event.nativeEvent.translationY;
+  };
+
+  const onHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.state === 5) { // END
+      if (Math.abs(event.nativeEvent.translationX) > SWIPE_THRESHOLD) {
+        const direction = event.nativeEvent.translationX > 0 ? 'right' : 'left';
+        translateX.value = withSpring(direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100);
+        runOnJS(onSwipeComplete)(direction);
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
     }
   };
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderMove: (event, gesture) => {
-      position.setValue({ x: gesture.dx, y: gesture.dy });
-    },
-    onPanResponderRelease: (event, gesture) => {
-      if (gesture.dx > SWIPE_THRESHOLD) {
-        forceSwipe('right');
-      } else if (gesture.dx < -SWIPE_THRESHOLD) {
-        forceSwipe('left');
-      } else {
-        resetPosition();
-      }
-    },
+  const cardStyle = useAnimatedStyle(() => {
+    const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2], [-10, 0, 10], Extrapolate.CLAMP);
+    return {
+      transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${rotate}deg` }],
+    };
   });
 
-  const forceSwipe = (direction: 'right' | 'left') => {
-    const x = direction === 'right' ? width : -width;
-    Animated.timing(position, {
-      toValue: { x, y: 0 },
-      duration: 250,
-      useNativeDriver: false,
-    }).start(() => onSwipeComplete(direction));
-  };
+  const likeOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 1], Extrapolate.CLAMP),
+  }));
 
-  const onSwipeComplete = async (direction: 'right' | 'left') => {
-    const movie = candidates[currentIndex];
-    const isMatch = await registrarVoto(
-      matchId,
-      uid,
-      movie.id,
-      direction === 'right' ? 'yes' : 'no',
-    );
+  const nopeOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolate.CLAMP),
+  }));
 
-    if (isMatch) {
-      setShowMatchModal(movie);
-    }
-
-    position.setValue({ x: 0, y: 0 });
-    setCurrentIndex(currentIndex + 1);
-  };
-
-  const resetPosition = () => {
-    Animated.spring(position, {
-      toValue: { x: 0, y: 0 },
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const getCardStyle = () => {
-    const rotate = position.x.interpolate({
-      inputRange: [-width * 1.5, 0, width * 1.5],
-      outputRange: ['-30deg', '0deg', '30deg'],
-    });
-
-    return {
-      ...position.getLayout(),
-      transform: [{ rotate }],
-    };
-  };
-
-  const renderCard = () => {
-    if (currentIndex >= candidates.length) {
-      return (
-        <View style={styles.emptyCard}>
-          <Ionicons name="sparkles" size={64} color="#38bdf8" />
-          <Text style={styles.emptyText}>Buscando más recomendaciones...</Text>
-          <Pressable onPress={() => navigation.goBack()} style={styles.exitBtn}>
-            <Text style={{ color: '#fff', fontWeight: '800' }}>SALIR</Text>
-          </Pressable>
-        </View>
-      );
-    }
-
-    const item = candidates[currentIndex];
-
+  if (loading || !match) {
     return (
-      <Animated.View style={[styles.cardContainer, getCardStyle()]} {...panResponder.panHandlers}>
-        <Image
-          source={{ uri: `https://image.tmdb.org/t/p/w780${item.poster_path || item.posterPath}` }}
-          style={styles.cardImage}
-        />
-        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.cardOverlay}>
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {item.title}
-          </Text>
-          <View style={styles.cardInfoRow}>
-            <BlurView intensity={30} style={styles.badge} tint="dark">
-              <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.badgeText}>
-                {(item.vote_average || item.voteAverage || 0).toFixed(1)}
-              </Text>
-            </BlurView>
-            <Pressable
-              onPress={() => navigation.navigate('Pelicula', { movieId: item.id })}
-              style={styles.infoBtn}
-            >
-              <Ionicons name="information-circle-outline" size={28} color="#fff" />
-            </Pressable>
-          </View>
-        </LinearGradient>
-      </Animated.View>
+      <View style={[styles.container, { justifyContent: 'center' }]}>
+        <ActivityIndicator color="#fff" size="large" />
+      </View>
     );
-  };
+  }
+
+  const currentMovie = queue[currentIndex];
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={[GradientTop, '#000']} style={StyleSheet.absoluteFill} />
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 10 }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="close" size={28} color="#fff" />
-        </Pressable>
-        <View style={styles.matchesCounter}>
-          <Text style={styles.counterLabel}>Matches</Text>
-          <Text style={styles.counterValue}>
-            {match?.matchedMovies?.length || 0} / {match?.settings?.targetMatches || 3}
-          </Text>
-        </View>
-        <View style={{ width: 44 }} />
-      </View>
-
-      <View style={styles.cardSpace}>
-        {loading ? <ActivityIndicator size="large" color="#38bdf8" /> : renderCard()}
-      </View>
-
-      {/* Footer Actions */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 40 }]}>
-        <Pressable onPress={() => forceSwipe('left')} style={[styles.actionBtn, styles.noBtn]}>
-          <Ionicons name="close" size={32} color="#ff8a80" />
-        </Pressable>
-        <Pressable onPress={() => forceSwipe('right')} style={[styles.actionBtn, styles.yesBtn]}>
-          <Ionicons name="heart" size={32} color="#7CFC9A" />
-        </Pressable>
-      </View>
-
-      <Modal visible={!!showMatchModal} transparent animationType="fade">
-        <View style={styles.matchModal}>
-          <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={['rgba(56, 189, 248, 0.4)', 'transparent']}
-            style={StyleSheet.absoluteFill}
-          />
-
-          <Ionicons name="sparkles" size={80} color="#FFD700" style={{ marginBottom: 20 }} />
-          <Text style={styles.matchTitle}>¡IT'S A MATCH!</Text>
-          <Text style={styles.matchSub}>A ambos os apetece ver</Text>
-
-          <View style={styles.matchCard}>
-            <Image
-              source={{ uri: `https://image.tmdb.org/t/p/w500${showMatchModal?.poster_path}` }}
-              style={styles.matchPoster}
-            />
-            <Text style={styles.matchMovieTitle}>{showMatchModal?.title}</Text>
-          </View>
-
-          <Pressable onPress={() => setShowMatchModal(null)} style={styles.matchActionBtn}>
-            <Text style={styles.matchActionText}>CONTINUAR</Text>
+      <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
+        <View style={styles.headerRow}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
+            <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
+          <Text style={styles.headerTitle}>Match Movie</Text>
+          <View style={styles.matchCounter}>
+            <Ionicons name="flame" size={16} color="#ff6b00" />
+            <Text style={styles.countText}>{match.matchedMovies.length} Matches</Text>
+          </View>
         </View>
-      </Modal>
+      </BlurView>
+
+      <View style={styles.deck}>
+        {match.status === 'finished' ? (
+          <View style={styles.emptyDeck}>
+             <Ionicons name="trophy" size={80} color="#f1c40f" />
+             <Text style={styles.matchFinishedTitle}>¡Objetivo conseguido!</Text>
+             <Text style={styles.matchFinishedSub}>Habéis encontrado {match.matchedMovies.length} pelis que os gustan a todos.</Text>
+             <Pressable style={styles.btnCerrar} onPress={() => navigation.goBack()}>
+                <Text style={styles.btnCerrarText}>Volver al chat</Text>
+             </Pressable>
+          </View>
+        ) : currentIndex < queue.length ? (
+          <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
+            <Animated.View style={[styles.card, cardStyle, SHADOWS.macLight]}>
+              <Image source={{ uri: posterUrl(currentMovie.poster_path, 'w500')! }} style={styles.poster} />
+              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.cardGradient}>
+                <View style={styles.movieInfo}>
+                  <Text style={styles.movieTitle}>{currentMovie.title}</Text>
+                  <Text style={styles.movieYear}>{currentMovie.release_date}</Text>
+                </View>
+                <Pressable onPress={() => setShowInfo(true)} style={styles.infoBtn}><Ionicons name="information-circle-outline" size={34} color="#fff" /></Pressable>
+              </LinearGradient>
+              <Animated.View style={[styles.badge, styles.likeBadge, likeOpacity]}><Text style={styles.badgeText}>SÍ</Text></Animated.View>
+              <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}><Text style={styles.badgeText}>NO</Text></Animated.View>
+            </Animated.View>
+          </PanGestureHandler>
+        ) : (
+          <View style={styles.emptyDeck}>
+             <ActivityIndicator color={COLORS.primary} size="large" />
+             <Text style={styles.emptyText}>Buscando más recomendaciones...</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
+         <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(-SCREEN_WIDTH - 100); runOnJS(onSwipeComplete)('left'); }}><Ionicons name="close" size={32} color="#ff5050" /></Pressable>
+         <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(SCREEN_WIDTH + 100); runOnJS(onSwipeComplete)('right'); }}><Ionicons name="heart" size={32} color="#2ecc71" /></Pressable>
+      </View>
+
+      {showInfo && currentDetails && (
+        <View style={StyleSheet.absoluteFillObject}>
+           <Pressable onPress={() => setShowInfo(false)} style={StyleSheet.absoluteFillObject}><BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} /></Pressable>
+           <View style={[styles.infoModal, { bottom: insets.bottom + 100 }]}>
+              <Text style={styles.modalTitle}>{currentDetails.title}</Text>
+              <ScrollView style={styles.modalScroll}>
+                 <Text style={styles.modalOverview}>{currentDetails.overview}</Text>
+                 <View style={styles.modalDetails}><Text style={styles.modalMeta}>⭐ {currentDetails.vote_average?.toFixed(1)}</Text><Text style={styles.modalMeta}>📅 {currentDetails.release_date}</Text></View>
+              </ScrollView>
+           </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    zIndex: 100,
-  },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  matchesCounter: { alignItems: 'center' },
-  counterLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  counterValue: { color: '#fff', fontSize: 20, fontWeight: '800' },
-  cardSpace: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  cardContainer: {
-    width: width - 40,
-    height: Math.min(height * 0.7, 550),
-    borderRadius: 30,
-    backgroundColor: '#111',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  cardImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  cardOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, paddingTop: 100 },
-  cardTitle: { color: '#fff', fontSize: 32, fontWeight: '800', marginBottom: 12 },
-  cardInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  badgeText: { color: '#fff', fontSize: 16, fontWeight: '700', marginLeft: 6 },
-  infoBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  container: { flex: 1, backgroundColor: '#020617' },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 0.5, borderColor: 'rgba(255,255,255,0.1)' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  backBtn: { padding: 8 },
+  headerTitle: { flex: 1, color: '#fff', fontSize: 17, fontWeight: '700', textAlign: 'center' },
+  matchCounter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,107,0,0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 6 },
+  countText: { color: '#ff6b00', fontSize: 12, fontWeight: '900' },
+  deck: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
+  card: { width: SCREEN_WIDTH * 0.85, height: SCREEN_HEIGHT * 0.6, borderRadius: 24, overflow: 'hidden', backgroundColor: '#1e293b' },
+  poster: { width: '100%', height: '100%' },
+  cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, padding: 20, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  movieInfo: { flex: 1 },
+  movieTitle: { color: '#fff', fontSize: 24, fontWeight: '800' },
+  movieYear: { color: 'rgba(255,255,255,0.4)', fontSize: 16, marginTop: 4 },
+  infoBtn: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: 50, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 3 },
+  badgeText: { fontSize: 32, fontWeight: '900' },
+  likeBadge: { right: 40, borderColor: '#2ecc71', color: '#2ecc71', transform: [{ rotate: '15deg' }] },
+  nopeBadge: { left: 40, borderColor: '#ff5050', color: '#ff5050', transform: [{ rotate: '-15deg' }] },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: 40 },
-  actionBtn: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#111',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  noBtn: { borderColor: 'rgba(255,138,128,0.4)' },
-  yesBtn: { borderColor: 'rgba(124,252,154,0.4)' },
-  emptyCard: { alignItems: 'center', gap: 20, padding: 40 },
-  emptyText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  exitBtn: {
-    marginTop: 20,
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  matchModal: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  matchTitle: {
-    color: '#fff',
-    fontSize: 42,
-    fontWeight: '900',
-    letterSpacing: 2,
-    textShadowColor: '#38bdf8',
-    textShadowRadius: 20,
-  },
-  matchSub: { color: '#38bdf8', fontSize: 18, fontWeight: '700', marginTop: 10, marginBottom: 40 },
-  matchCard: {
-    width: 220,
-    height: 350,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  matchPoster: { width: '100%', height: '100%' },
-  matchMovieTitle: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    color: '#fff',
-    padding: 12,
-    textAlign: 'center',
-    fontWeight: '800',
-  },
-  matchActionBtn: {
-    marginTop: 60,
-    backgroundColor: '#38bdf8',
-    paddingHorizontal: 50,
-    paddingVertical: 18,
-    borderRadius: 40,
-    shadowColor: '#38bdf8',
-    shadowRadius: 20,
-  },
-  matchActionText: { color: '#fff', fontSize: 18, fontWeight: '900' },
+  roundBtn: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  emptyDeck: { alignItems: 'center', gap: 20, paddingHorizontal: 40 },
+  emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, textAlign: 'center' },
+  matchFinishedTitle: { color: '#fff', fontSize: 28, fontWeight: '900', textAlign: 'center', marginTop: 10 },
+  matchFinishedSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 30 },
+  btnCerrar: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 20 },
+  btnCerrarText: { color: '#000', fontWeight: '800', fontSize: 16 },
+  infoModal: { position: 'absolute', left: 24, right: 24, backgroundColor: '#1e293b', borderRadius: 24, padding: 24, maxHeight: 300 },
+  modalTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 12 },
+  modalScroll: { flex: 1 },
+  modalOverview: { color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 22 },
+  modalDetails: { flexDirection: 'row', gap: 20, marginTop: 20 },
+  modalMeta: { color: COLORS.primary, fontWeight: '800' },
 });

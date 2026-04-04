@@ -13,8 +13,9 @@ import { BloqueadosScreen } from '../screens/BloqueadosScreen';
 import { PeliculaScreen } from '../screens/PeliculaScreen';
 import { VerificationScreen } from '../screens/VerificationScreen';
 import ChatListScreen from '../screens/ChatListScreen';
-import ChatDetailScreen from '../screens/ChatDetailScreen';
-import MovieMatchScreen from '../screens/MovieMatchScreen';
+import { ChatDetailScreen } from '../screens/ChatDetailScreen';
+import { MovieMatchScreen } from '../screens/MovieMatchScreen';
+import { MatchConfigScreen } from '../screens/MatchConfigScreen';
 import { COLORS } from '../theme/colors';
 import type { RootStackParamList } from './types';
 
@@ -74,7 +75,8 @@ export function RootNavigator() {
               <Stack.Screen name="ChatList" component={ChatListScreen} />
               <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
               <Stack.Screen name="MovieMatch" component={MovieMatchScreen} />
-            </>
+              <Stack.Screen name="MatchConfig" component={MatchConfigScreen} />
+          </>
           )}
         </Stack.Navigator>
       )}

@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -14,40 +13,30 @@ import {
   TextInput,
   View,
   Keyboard,
+  BackHandler,
+  ScrollView,
 } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 
 import { useDescubrir } from '../hooks/useDescubrir';
 import { useDiscoverSearch } from '../hooks/useDiscoverSearch';
-import { posterUrl } from '../services/tmdbClient';
+import { posterUrl, profileUrl } from '../services/tmdbClient';
+import { RatingBadge } from '../components/RatingBadge';
+import { useLibraryStatus } from '../hooks/useLibraryStatus';
 import {
   cargarCarruselesActivos,
   guardarCarruselesActivos,
   cargarPlataformas,
 } from '../storage/preferences';
-import { COLORS, GRADIENTS, GLASS } from '../theme/colors';
+import { COLORS, CardSurface } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 
-// Modular Components
 import { CarruselPeliculas } from '../components/discover/CarruselPeliculas';
 import { CategoryModal } from '../components/discover/CategoryModal';
-
 import { useLanguage } from '../context/LanguageContext';
-
-const { width: windowWidth } = Dimensions.get('window');
-
-type Props = {
-  fontFamily: string;
-  estaActiva: boolean;
-  onPeliculaClick: (movieId: number) => void;
-  onActorClick: (actorId: number, actorName: string) => void;
-  onPerfilClick?: () => void;
-  userFoto?: string | null;
-  resetToken?: number;
-};
 
 export function DiscoverTab({
   fontFamily,
@@ -57,12 +46,23 @@ export function DiscoverTab({
   onPerfilClick,
   userFoto,
   resetToken = 0,
-}: Props) {
+}: {
+  fontFamily: string;
+  estaActiva: boolean;
+  onPeliculaClick: (movieId: number) => void;
+  onActorClick: (actorId: number, actorName: string) => void;
+  onPerfilClick?: () => void;
+  userFoto?: string | null;
+  resetToken?: number;
+}) {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const { useAuth: useAuthLocal } = require('../context/AuthContext');
+  const { user } = useAuthLocal();
 
   const mainListRef = useRef<any>(null);
   const searchInputRef = useRef<TextInput>(null);
+  const libraryMap = useLibraryStatus(); // 🛡️ Cerebro de biblioteca
 
   const [carruselesActivos, setCarruselesActivos] = useState<string[]>([]);
   const [buscarAtiva, setBuscarAtiva] = useState(false);
@@ -75,8 +75,8 @@ export function DiscoverTab({
     cargando,
     cargarCarrusel,
     recargarTodosLosCarruseles,
-    limpiarCarrusel,
   } = useDescubrir(carruselesActivos);
+
   const {
     textoBuscar,
     setTextoBuscar,
@@ -86,22 +86,7 @@ export function DiscoverTab({
     setTipoBusqueda,
   } = useDiscoverSearch();
 
-  const { profileUrl } = require('../services/tmdbClient');
-  const { useAuth } = require('../context/AuthContext');
-  const { user } = useAuth();
-
-  // Reset logic: Scroll to Top
-  useEffect(() => {
-    if (resetToken > 0) {
-      if (buscarAtiva) {
-        setBuscarAtiva(false);
-        setTextoBuscar('');
-      } else {
-        mainListRef.current?.scrollToOffset?.({ offset: 0, animated: true });
-      }
-    }
-  }, [resetToken]);
-
+  // Initial load
   useEffect(() => {
     void (async () => {
       const saved = await cargarCarruselesActivos();
@@ -110,6 +95,7 @@ export function DiscoverTab({
     })();
   }, []);
 
+  // Sync platforms
   useFocusEffect(
     useCallback(() => {
       void (async () => {
@@ -124,264 +110,209 @@ export function DiscoverTab({
       setCarruselesActivos(next);
       void guardarCarruselesActivos(next);
       if (user) {
-        void require('../services/userPreferences').guardarPreferenciaFirestore(
-          user.uid,
-          'carruseles',
-          next,
-        );
+        void require('../services/userPreferences').guardarPreferenciaFirestore(user.uid, 'carruseles', next);
       }
     },
     [user],
   );
 
-  const onRefresh = () => recargarTodosLosCarruseles();
-
   const toggleSearch = () => {
     const newState = !buscarAtiva;
     setBuscarAtiva(newState);
-    if (newState) {
-      setTimeout(() => searchInputRef.current?.focus(), 100);
-    } else {
-      setTextoBuscar('');
-      Keyboard.dismiss();
-    }
+    if (newState) setTimeout(() => searchInputRef.current?.focus(), 100);
+    else Keyboard.dismiss();
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (buscarAtiva || textoBuscar.length >= 2) {
+          setTextoBuscar('');
+          setBuscarAtiva(false);
+          Keyboard.dismiss();
+          return true;
+        }
+        return false;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => sub.remove();
+    }, [buscarAtiva, textoBuscar])
+  );
 
   return (
     <View style={styles.flex}>
-      <LinearGradient
-        colors={[COLORS.background, 'transparent']}
-        style={styles.topFade}
-        pointerEvents="none"
-      />
+      {/* 🛡️ Header Adaptativo (Estilo Biblioteca) */}
+      <View style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 100) }]}>
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.glassOverlay} />
+        <View style={styles.headerBorder} />
 
-      <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
-        <Text style={[styles.titulo, { fontFamily, flex: 1 }]} numberOfLines={1}>
-          {t('discover')}
-        </Text>
-        <View style={styles.actionsTopRow}>
-          {modoEdicion && (
-            <Pressable
-              onPress={() => setMostrarDialogo(true)}
-              style={[styles.iconBtn, styles.addBtnGlass]}
-              hitSlop={8}
-            >
-              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
-            </Pressable>
-          )}
-          <Pressable
-            onPress={() => setModoEdicion(!modoEdicion)}
-            style={styles.iconBtn}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={modoEdicion ? 'checkmark-circle' : 'create-outline'}
-              size={26}
-              color="#fff"
-            />
-          </Pressable>
-          <Pressable onPress={toggleSearch} style={styles.iconBtn} hitSlop={8}>
-            <Ionicons name="search-outline" size={28} color="#fff" />
-          </Pressable>
-          <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini} hitSlop={8}>
-            <BlurView intensity={30} tint="dark" style={styles.perfilInnerMini}>
-              {userFoto ? (
-                <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
-              ) : (
-                <Ionicons name="person" size={20} color="#fff" />
-              )}
-            </BlurView>
-          </Pressable>
-        </View>
-      </View>
-
-      {buscarAtiva && (
-        <Animated.View
-          entering={FadeInDown}
-          style={[styles.searchOverlay, { top: Math.max(insets.top, 12) + 80 }]}
-        >
-          <BlurView intensity={96} tint="dark" style={StyleSheet.absoluteFill}>
-            <LinearGradient
-              colors={['rgba(2, 6, 23, 0.4)', 'transparent']}
-              style={StyleSheet.absoluteFill}
-            />
-          </BlurView>
-          <View style={styles.searchContainer}>
-            <TextInput
-              ref={searchInputRef}
-              value={textoBuscar}
-              onChangeText={setTextoBuscar}
-              placeholder={tipoBusqueda === 'movie' ? 'Buscar películas...' : 'Buscar actores...'}
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              style={[styles.searchField, SHADOWS.macLight, { fontFamily }]}
-            />
-            <View style={styles.typeSelector}>
-              <Pressable
-                onPress={() => setTipoBusqueda('movie')}
-                style={[styles.typeBtn, tipoBusqueda === 'movie' && { backgroundColor: COLORS.primary, borderColor: COLORS.primary }]}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    { fontFamily },
-                    tipoBusqueda === 'movie' && { color: COLORS.background },
-                  ]}
-                >
-                  Películas
-                </Text>
+        <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
+          <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Explorar</Text>
+          <View style={styles.actionsTopRow}>
+            {modoEdicion && (
+              <Pressable onPress={() => setMostrarDialogo(true)} style={styles.iconBtn}>
+                <Ionicons name="add-circle" size={32} color={COLORS.primary} />
               </Pressable>
-              <Pressable
-                onPress={() => setTipoBusqueda('person')}
-                style={[styles.typeBtn, tipoBusqueda === 'person' && { backgroundColor: COLORS.primary, borderColor: COLORS.primary }]}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    { fontFamily },
-                    tipoBusqueda === 'person' && { color: COLORS.background },
-                  ]}
-                >
-                  Actores
-                </Text>
+            )}
+            <Pressable onPress={() => setModoEdicion(!modoEdicion)} style={styles.iconBtn}>
+              <Ionicons name={modoEdicion ? 'checkmark-circle' : 'create-outline'} size={26} color="#fff" />
+            </Pressable>
+            <Pressable onPress={toggleSearch} style={styles.iconBtn}>
+              <Ionicons name="search-outline" size={28} color="#fff" />
+            </Pressable>
+            <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini}>
+              <View style={styles.perfilInnerMini}>
+                {userFoto ? <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} /> : <Ionicons name="person" size={22} color="#fff" />}
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
+        {buscarAtiva && (
+          <Animated.View entering={FadeInDown} style={[styles.searchArea, { top: Math.max(insets.top, 12) + 80 }]}>
+            <View style={[styles.searchField, SHADOWS.macLight]}>
+              <TextInput
+                ref={searchInputRef}
+                value={textoBuscar}
+                onChangeText={setTextoBuscar}
+                placeholder={tipoBusqueda === 'movie' ? 'Buscar películas...' : 'Buscar actores...'}
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                style={{ flex: 1, color: '#fff', fontFamily }}
+              />
+              {textoBuscar.length > 0 && (
+                <Pressable onPress={() => setTextoBuscar('')} style={styles.clearBtn} hitSlop={8}>
+                  <Ionicons name="close-circle" size={20} color="rgba(255,255,255,0.4)" />
+                </Pressable>
+              )}
+            </View>
+            <View style={styles.typeSelector}>
+              <Pressable onPress={() => setTipoBusqueda('movie')} style={[styles.typeBtn, tipoBusqueda === 'movie' && styles.typeBtnActive]}>
+                <Text style={[styles.typeBtnText, tipoBusqueda === 'movie' && { color: '#000' }]}>Películas</Text>
+              </Pressable>
+              <Pressable onPress={() => setTipoBusqueda('person')} style={[styles.typeBtn, tipoBusqueda === 'person' && styles.typeBtnActive]}>
+                <Text style={[styles.typeBtnText, tipoBusqueda === 'person' && { color: '#000' }]}>Actores</Text>
               </Pressable>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        )}
+      </View>
+
+      {/* 📦 Contenido Principal */}
+      <View style={styles.content}>
+        {modoEdicion ? (
+          <DraggableFlatList
+            data={carruselesActivos}
+            keyExtractor={(item) => item}
+            onDragEnd={({ data }) => persistCarruseles(data)}
+            renderItem={(params) => (
+              <ScaleDecorator>
+                <CarruselPeliculas
+                  titulo={params.item}
+                  drag={params.drag}
+                  isActive={params.isActive}
+                  modoEdicion
+                  fontFamily={fontFamily}
+                  peliculas={peliculasPorCarrusel[params.item] ?? []}
+                  cargarCarrusel={cargarCarrusel}
+                  onPeliculaClick={onPeliculaClick}
+                  onEliminar={() => persistCarruseles(carruselesActivos.filter(c => c !== params.item))}
+                  misPlataformas={misPlataformas}
+                  libraryMap={libraryMap}
+                />
+              </ScaleDecorator>
+            )}
+            contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 110), paddingBottom: 140 }}
+          />
+        ) : (
+          <FlatList
+            ref={mainListRef}
+            data={carruselesActivos}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => (
+              <CarruselPeliculas
+                titulo={item}
+                peliculas={peliculasPorCarrusel[item] ?? []}
+                onPeliculaClick={onPeliculaClick}
+                cargarCarrusel={cargarCarrusel}
+                misPlataformas={misPlataformas}
+                fontFamily={fontFamily}
+                modoEdicion={false}
+                onEliminar={() => {}}
+                drag={() => {}}
+                isActive={false}
+                libraryMap={libraryMap}
+              />
+            )}
+            refreshControl={<RefreshControl refreshing={cargando} onRefresh={recargarTodosLosCarruseles} tintColor="#fff" progressViewOffset={100} />}
+            contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 110), paddingBottom: 140 }}
+            keyboardDismissMode="on-drag"
+          />
+        )}
+      </View>
+
+      {/* 🔍 Resultados de Búsqueda (Cae justo después de la cabecera) */}
+      {(buscarAtiva || textoBuscar.length >= 2) && (
+        <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 1200 }]} onPress={() => { setBuscarAtiva(false); Keyboard.dismiss(); }}>
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        </Pressable>
       )}
 
-      {textoBuscar.length >= 2 && buscarAtiva ? (
-        <View style={[styles.busquedaBox, { marginTop: Math.max(insets.top, 12) + 210 }]}>
+      {textoBuscar.length >= 2 && (
+        <Animated.View 
+          entering={FadeIn} 
+          exiting={FadeOut} 
+          style={[styles.busquedaBox, { top: insets.top + (buscarAtiva ? 210 : 100) }]}
+        >
           {buscando ? (
             <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
           ) : (
             <FlatList
-              key={tipoBusqueda}
               data={resultadosBusqueda}
               keyExtractor={(item) => String(item.id)}
               numColumns={tipoBusqueda === 'movie' ? 3 : 2}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }}
-              renderItem={({ item }) =>
-                tipoBusqueda === 'movie' ? (
-                  <View style={styles.busquedaPosterGrid}>
-                    <Pressable
-                      onPress={() => onPeliculaClick(item.id)}
-                      style={styles.searchPosterCard}
-                    >
-                      {item.poster_path ? (
-                        <Image
-                          source={{ uri: posterUrl(item.poster_path, 'w342')! }}
-                          style={styles.fullPoster}
-                        />
-                      ) : (
-                        <View style={styles.posterFallback}>
-                          <Text style={styles.fallbackText}>{item.title}</Text>
-                        </View>
-                      )}
-                      {item.vote_average > 0 && (
-                        <View style={styles.searchBadge}>
-                          <Text style={styles.searchBadgeText}>{item.vote_average.toFixed(1)}</Text>
-                        </View>
-                      )}
-                    </Pressable>
-                  </View>
-                ) : (
+              contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 140 }}
+              onScroll={(e) => {
+                if (e.nativeEvent.contentOffset.y < -60) {
+                  setBuscarAtiva(false);
+                  setTextoBuscar('');
+                  Keyboard.dismiss();
+                }
+              }}
+              onScrollBeginDrag={() => Keyboard.dismiss()}
+              renderItem={({ item }) => (
+                <View style={tipoBusqueda === 'movie' ? styles.movieGridItem : styles.actorGridItem}>
                   <Pressable
-                    onPress={() => onActorClick(item.id, item.name)}
-                    style={styles.actorCard}
+                    onPress={() => tipoBusqueda === 'movie' ? onPeliculaClick(item.id) : onActorClick(item.id, item.name)}
+                    style={[styles.resultCard, SHADOWS.macLight]}
                   >
-                    <View style={styles.actorImgWrapper}>
-                      {item.profile_path ? (
-                        <Image
-                          source={{ uri: profileUrl(item.profile_path) }}
-                          style={styles.actorImg}
-                        />
-                      ) : (
-                        <View style={styles.actorFallback}>
-                          <Ionicons name="person" size={30} color="rgba(255,255,255,0.2)" />
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.actorTitle, { fontFamily }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
+                    <Image
+                      source={{ uri: tipoBusqueda === 'movie' ? posterUrl(item.poster_path, 'w342')! : profileUrl(item.profile_path)! }}
+                      style={styles.fullImg}
+                    />
+                    {tipoBusqueda === 'movie' && (
+                       libraryMap[item.id]?.estado === 'vista' ? (
+                         <RatingBadge rating={libraryMap[item.id].valoracion} hideText />
+                       ) : libraryMap[item.id]?.estado === 'por_ver' ? (
+                         <View style={styles.eyeBadge}><Ionicons name="eye" size={14} color="#3498db" /></View>
+                       ) : null
+                     )}
+                    {tipoBusqueda === 'person' && (
+                      <Text style={styles.actorName} numberOfLines={1}>{item.name}</Text>
+                    )}
                   </Pressable>
-                )
-              }
+                </View>
+              )}
             />
           )}
-        </View>
-      ) : modoEdicion ? (
-        <DraggableFlatList
-          data={carruselesActivos}
-          keyExtractor={(item) => item}
-          onDragEnd={({ data }) => persistCarruseles(data)}
-          renderItem={(params) => (
-            <ScaleDecorator>
-              <CarruselPeliculas
-                titulo={params.item}
-                drag={params.drag}
-                isActive={params.isActive}
-                modoEdicion
-                fontFamily={fontFamily}
-                peliculas={peliculasPorCarrusel[params.item] ?? []}
-                cargarCarrusel={cargarCarrusel}
-                onEliminar={() => {
-                  limpiarCarrusel(params.item);
-                  persistCarruseles(carruselesActivos.filter((c) => c !== params.item));
-                }}
-                onPeliculaClick={onPeliculaClick}
-                misPlataformas={misPlataformas}
-              />
-            </ScaleDecorator>
-          )}
-          contentContainerStyle={{ paddingTop: 160, paddingBottom: 140 }}
-          activationDistance={20}
-        />
-      ) : (
-        <FlatList
-          ref={mainListRef}
-          data={carruselesActivos}
-          keyExtractor={(item) => item}
-          renderItem={({ item }) => (
-            <CarruselPeliculas
-              titulo={item}
-              modoEdicion={false}
-              fontFamily={fontFamily}
-              peliculas={peliculasPorCarrusel[item] ?? []}
-              cargarCarrusel={cargarCarrusel}
-              onEliminar={() => {}}
-              onPeliculaClick={onPeliculaClick}
-              drag={() => {}}
-              isActive={false}
-              misPlataformas={misPlataformas}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={cargando}
-              onRefresh={onRefresh}
-              tintColor="#fff"
-              progressViewOffset={100}
-            />
-          }
-          contentContainerStyle={{ paddingTop: 160, paddingBottom: 140 }}
-          removeClippedSubviews
-          initialNumToRender={5}
-        />
+        </Animated.View>
       )}
 
       <CategoryModal
         visible={mostrarDialogo}
         onClose={() => setMostrarDialogo(false)}
         carruselesActivos={carruselesActivos}
-        onToggle={(nombre) => {
-          if (carruselesActivos.includes(nombre)) {
-            limpiarCarrusel(nombre);
-            persistCarruseles(carruselesActivos.filter((c) => c !== nombre));
-          } else {
-            persistCarruseles([...carruselesActivos, nombre]);
-          }
-        }}
+        onToggle={(name) => persistCarruseles(carruselesActivos.includes(name) ? carruselesActivos.filter(c => c !== name) : [...carruselesActivos, name])}
         fontFamily={fontFamily}
       />
     </View>
@@ -389,101 +320,47 @@ export function DiscoverTab({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  titulo: { color: '#fff', fontSize: 34, fontWeight: '800' },
-  headerRow: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    zIndex: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  flex: { flex: 1, backgroundColor: '#020617' },
+  content: { flex: 1 },
+  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2000 },
+  headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
+  titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
   actionsTopRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   perfilBtnMini: { marginLeft: 4 },
-  perfilInnerMini: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
+  perfilInnerMini: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   perfilFotoMini: { width: '100%', height: '100%' },
-  addBtnGlass: {
-    marginRight: 4,
-    backgroundColor: 'rgba(14, 165, 233, 0.1)',
-    borderRadius: 20,
-  },
-  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 5 },
-  searchOverlay: { position: 'absolute', left: 0, right: 0, zIndex: 90, paddingBottom: 20 },
-  searchContainer: { marginHorizontal: 20 },
-  searchField: {
-    borderRadius: 24,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 20,
-    height: 52,
-    color: COLORS.text,
-    borderWidth: 1.5,
-    borderColor: GLASS.border,
-    marginBottom: 12,
-  },
-  typeSelector: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
-  typeBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: GLASS.white,
-    borderWidth: 1,
-    borderColor: GLASS.border,
-  },
-  typeBtnText: { color: COLORS.textMuted, fontSize: 13, fontWeight: '700' },
-  busquedaBox: { flex: 1 },
-  busquedaPosterGrid: { flex: 1 / 3, margin: 6 },
-  searchPosterCard: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: GLASS.white,
-    borderWidth: 1,
-    borderColor: GLASS.border,
-  },
-  fullPoster: { width: '100%', height: '100%' },
-  posterFallback: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 10 },
-  fallbackText: { color: COLORS.textMuted, fontSize: 10, textAlign: 'center' },
-  searchBadge: {
+  
+  searchArea: { position: 'absolute', left: 20, right: 20 },
+  searchField: { height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', marginBottom: 12 },
+  clearBtn: { paddingLeft: 8 },
+  typeSelector: { flexDirection: 'row', gap: 8 },
+  typeBtn: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  typeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  typeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  
+  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+  headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+  
+  busquedaBox: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#020617', zIndex: 1500 },
+  movieGridItem: { width: '33.33%', padding: 4 },
+  actorGridItem: { width: '50%', padding: 6 },
+  resultCard: { width: '100%', aspectRatio: 2/3, borderRadius: 12, overflow: 'hidden', backgroundColor: CardSurface },
+  fullImg: { width: '100%', height: '100%' },
+  badge: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 6, borderRadius: 6 },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  actorName: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, textAlign: 'center', paddingVertical: 4 },
+  eyeBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: GLASS.border,
-  },
-  searchBadgeText: { color: COLORS.text, fontSize: 10, fontWeight: '800' },
-  actorCard: {
-    flex: 1 / 2,
-    margin: 6,
-    backgroundColor: GLASS.white,
-    borderRadius: 20,
-    padding: 12,
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 152, 219, 0.4)',
   },
-  actorImgWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  actorImg: { width: '100%', height: '100%' },
-  actorFallback: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  actorTitle: { color: COLORS.text, fontSize: 14, fontWeight: '800', textAlign: 'center' },
 });

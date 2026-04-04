@@ -4,6 +4,8 @@ import { posterUrl } from '../../services/tmdbClient';
 import type { TierList, PeliculaUsuario } from '../../types';
 import { todasLasPeliculasTierList } from '../../types';
 import { CardSurface } from '../../theme/colors';
+import { SHADOWS } from '../../theme/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Props = {
   tier: TierList;
@@ -26,7 +28,7 @@ export const TierListCard = React.memo(({ tier, peliculasMap, onPress, fontFamil
     if (primeras.length === 0) {
       return (
         <View style={[styles.cover, styles.posterFallback]}>
-          <Text style={styles.coverEmptyText}>Sin películas</Text>
+          <Text style={[styles.coverEmptyText, { fontFamily }]}>Vacía</Text>
         </View>
       );
     }
@@ -39,7 +41,7 @@ export const TierListCard = React.memo(({ tier, peliculasMap, onPress, fontFamil
           return (
             <View key={idx} style={styles.coverCell}>
               {p?.rutaPoster ? (
-                <Image source={{ uri: posterUrl(p.rutaPoster, 'w200')! }} style={styles.coverImg} />
+                <Image source={{ uri: posterUrl(p.rutaPoster, 'w185')! }} style={styles.coverImg} />
               ) : (
                 <View style={[styles.coverImg, styles.posterFallback]} />
               )}
@@ -51,39 +53,44 @@ export const TierListCard = React.memo(({ tier, peliculasMap, onPress, fontFamil
   };
 
   return (
-    <Pressable style={styles.container} onPress={onPress}>
-      {renderCover()}
-      <Text style={[styles.title, { fontFamily }]} numberOfLines={2}>
-        {tier.nombre}
-      </Text>
-    </Pressable>
+    <View style={styles.outer}>
+      <Pressable style={[styles.container, SHADOWS.macLight]} onPress={onPress}>
+        {renderCover()}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.85)']}
+          style={styles.gradient}
+        >
+          <Text style={[styles.title, { fontFamily }]} numberOfLines={2}>
+            {tier.nombre}
+          </Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  outer: {
+    width: '100%',
+    aspectRatio: 1,
+    padding: 2, // Extra breathing room inside the grid padding
+  },
   container: {
-    width: '47%',
-    borderRadius: 16,
+    flex: 1,
+    borderRadius: 20,
     backgroundColor: '#1E1E2D',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    paddingBottom: 12,
-    marginBottom: 8,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
   },
   cover: {
     width: '100%',
-    aspectRatio: 1,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
+    height: '100%',
     backgroundColor: CardSurface,
   },
   coverGrid: {
     width: '100%',
-    aspectRatio: 1,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
+    height: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     backgroundColor: CardSurface,
@@ -91,6 +98,24 @@ const styles = StyleSheet.create({
   coverCell: { width: '50%', height: '50%' },
   coverImg: { width: '100%', height: '100%' },
   posterFallback: { alignItems: 'center', justifyContent: 'center', backgroundColor: CardSurface },
-  coverEmptyText: { color: '#888', fontSize: 12 },
-  title: { marginTop: 10, color: '#fff', fontSize: 15, paddingHorizontal: 10, textAlign: 'center' },
+  coverEmptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 13 },
+  gradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    justifyContent: 'flex-end',
+    paddingBottom: 12,
+    paddingHorizontal: 8,
+  },
+  title: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
 });
