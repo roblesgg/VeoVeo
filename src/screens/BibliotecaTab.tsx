@@ -166,7 +166,7 @@ export function BibliotecaTab({
   return (
     <View style={styles.container}>
       <View style={[styles.headerContainer, { height: insets.top + (buscar ? 230 : 150) }]}>
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.glassOverlay} />
         <View style={styles.headerBorder} />
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   tabText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
   tabTextActive: { color: '#fff' },
   tabDivider: { width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.1)' },
-  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.8)' },
   headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
   searchFieldContainer: { position: 'absolute', top: 175, left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, zIndex: 100 },
   searchTextInput: { flex: 1, color: '#fff', fontSize: 16 },

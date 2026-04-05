@@ -14,6 +14,7 @@ export type UsuarioPerfil = {
   bloqueados?: string[];
   estado?: 'online' | 'offline' | 'ausente';
   ultimoAcceso?: number;
+  pushToken?: string;
 };
 
 // --- SOCIAL & FRIENDS ---
@@ -181,6 +182,40 @@ export interface MovieDetails {
   belongs_to_collection: any | null;
   videos?: {
     results: any[];
+  };
+}
+
+export interface ActorDetails {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+}
+
+export interface ActorMovieCredits {
+  id: number;
+  cast: Movie[];
+}
+
+export interface CollectionDetails {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: Movie[];
+}
+
+export interface WatchProvidersResponse {
+  results: {
+    [region: string]: {
+      link: string;
+      flatrate?: WatchProvider[];
+      rent?: WatchProvider[];
+      buy?: WatchProvider[];
+    };
   };
 }
 

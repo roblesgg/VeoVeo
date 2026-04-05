@@ -140,6 +140,13 @@ export const tmdbApi = {
     );
   },
 
+  async obtenerRecomendaciones(movieId: number, idioma = 'es-ES', pagina = 1) {
+    const incluirAdulto = await preferences.cargarPreferenciaAdulto();
+    return tmdbFetch<MovieResponse>(
+      `movie/${movieId}/recommendations?language=${idioma}&page=${pagina}&include_adult=${incluirAdulto}`,
+    );
+  },
+
   async obtenerProveedoresRegion(region = 'ES', idioma = 'es-ES') {
     return tmdbFetch<{ results: any[] }>(
       `watch/providers/movie?language=${idioma}&watch_region=${region}`,

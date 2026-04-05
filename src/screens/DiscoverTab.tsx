@@ -141,12 +141,10 @@ export function DiscoverTab({
 
   return (
     <View style={styles.flex}>
-      {/* 🛡️ Header Adaptativo (Estilo Biblioteca) */}
-      <View style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 100) }]}>
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={styles.glassOverlay} />
+      {/* 🛡️ Cabecera Unificada (Glaseada y Sólida) */}
+      <BlurView intensity={95} tint="dark" style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80) }]} />
+      <View style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80), backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
         <View style={styles.headerBorder} />
-
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Explorar</Text>
           <View style={styles.actionsTopRow}>
@@ -222,7 +220,7 @@ export function DiscoverTab({
                 />
               </ScaleDecorator>
             )}
-            contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 110), paddingBottom: 140 }}
+            contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
           />
         ) : (
           <FlatList
@@ -245,7 +243,7 @@ export function DiscoverTab({
               />
             )}
             refreshControl={<RefreshControl refreshing={cargando} onRefresh={recargarTodosLosCarruseles} tintColor="#fff" progressViewOffset={100} />}
-            contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 110), paddingBottom: 140 }}
+            contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
             keyboardDismissMode="on-drag"
           />
         )}
@@ -262,7 +260,7 @@ export function DiscoverTab({
         <Animated.View 
           entering={FadeIn} 
           exiting={FadeOut} 
-          style={[styles.busquedaBox, { top: insets.top + (buscarAtiva ? 210 : 100) }]}
+          style={[styles.busquedaBox, { top: insets.top + 95 }]}
         >
           {buscando ? (
             <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
@@ -321,7 +319,7 @@ export function DiscoverTab({
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
-  content: { flex: 1 },
+  content: { flex: 1, paddingTop: 80 },
   headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2000 },
   headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
   titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
@@ -339,7 +337,7 @@ const styles = StyleSheet.create({
   typeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   typeBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   
-  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.4)' },
+  glassOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.8)' },
   headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
   
   busquedaBox: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#020617', zIndex: 1500 },

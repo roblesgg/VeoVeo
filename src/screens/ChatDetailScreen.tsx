@@ -189,7 +189,7 @@ export function ChatDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
+      <BlurView intensity={95} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -253,7 +253,7 @@ export function ChatDetailScreen() {
           }}
         />
 
-        <BlurView intensity={90} tint="dark" style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, 22) }]}>
+        <BlurView intensity={95} tint="dark" style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, 22) }]}>
           <View style={styles.inputRow}>
             <Pressable style={styles.plusBtn}>
               <Ionicons name="add" size={26} color="rgba(255,255,255,0.4)" />
@@ -276,7 +276,7 @@ export function ChatDetailScreen() {
       {/* Modal para editar nombre del grupo */}
       <Modal visible={editGroupName} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
-           <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+           <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
            <View style={[styles.editModalContent, SHADOWS.mac]}>
               <Text style={styles.modalTitle}>Nombre del Grupo</Text>
               <TextInput 
@@ -300,7 +300,16 @@ export function ChatDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#020617' },
-  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 0.5, borderColor: 'rgba(255,255,255,0.1)' },
+  header: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    zIndex: 100, 
+    backgroundColor: 'rgba(15, 23, 42, 0.95)', // Fallback sólido anti-transparencia
+    borderBottomWidth: 0.5, 
+    borderColor: 'rgba(255,255,255,0.1)' 
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   backBtn: { padding: 8, marginRight: 4 },
   headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center' },

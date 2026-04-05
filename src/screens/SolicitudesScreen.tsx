@@ -106,7 +106,7 @@ export function SolicitudesScreen() {
             items.map((s) => (
               <Container
                 key={s.id}
-                intensity={20}
+                intensity={50}
                 tint="dark"
                 style={[styles.row, SHADOWS.macLight]}
               >
@@ -242,7 +242,8 @@ const styles = StyleSheet.create({
   },
   btn: {
     borderRadius: 14,
-    height: 38,
+    minHeight: 40,
+    paddingVertical: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -67,7 +67,7 @@ export function ActorScreen() {
 
   const generosOpciones = useMemo(() => {
     const set = new Set<number>();
-    peliculas.forEach((p) => p.genre_ids?.forEach((g) => set.add(g)));
+    peliculas.forEach((p) => p.genre_ids?.forEach((g: number) => set.add(g)));
     const options: FilterSortOption[] = [
       { label: 'Todos los géneros', value: 0, icon: 'apps-outline' },
     ];
@@ -229,10 +229,7 @@ const styles = StyleSheet.create({
   glassCard: {
     borderRadius: 24,
     padding: 20,
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   secTitle: { fontSize: 18, color: 'rgba(255,255,255,0.95)', fontWeight: '700', marginBottom: 10 },
   bioText: { fontSize: 14, color: '#cbd5e1', lineHeight: 20 },

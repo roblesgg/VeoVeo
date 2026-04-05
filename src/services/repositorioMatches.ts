@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { MovieMatch, MatchStatus } from '../types';
 import { getFirestoreDb } from './firebase';
+import { notificarAUsuario } from './notificationService';
 
 const obtenerDb = () => {
   const db = getFirestoreDb();
@@ -79,6 +80,16 @@ export async function votarPelicula(matchId: string, uid: string, movieId: numbe
       await updateDoc(matchDoc, {
         matchedMovies: arrayUnion(movieId)
       });
+      
+      // Notificar a todos los participantes del Match
+      for (const pid of data.participants) {
+        await notificarAUsuario(
+          pid, 
+          '🍿 ¡Tenemos un Match!', 
+          `Todos habéis coincidido en una película. ¡A verla!`,
+          { matchId, type: 'match' }
+        );
+      }
       
       // Comprobar si hemos llegado al objetivo
       const finalSnap = await getDoc(matchDoc);

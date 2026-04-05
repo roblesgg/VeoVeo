@@ -21,9 +21,9 @@ export const GRADIENTS = {
 };
 
 export const GLASS = {
-  surface: 'rgba(15, 23, 42, 0.7)',
-  border: 'rgba(255, 255, 255, 0.1)',
-  white: 'rgba(255, 255, 255, 0.08)',
+  surface: 'rgba(15, 23, 42, 0.95)',
+  border: 'rgba(255, 255, 255, 0.18)',
+  white: 'rgba(255, 255, 255, 0.25)',
 };
 
 // Legacy Exports for compatibility

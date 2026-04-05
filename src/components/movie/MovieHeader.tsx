@@ -44,14 +44,14 @@ export const MovieHeader = React.memo(
       <View style={styles.container}>
         <View style={styles.content}>
           <View style={[styles.macCardWrap, SHADOWS.mac]}>
-            <BlurView intensity={60} style={StyleSheet.absoluteFill} tint="dark" />
+            <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
             <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: GLASS.white,
+                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
                   borderBottomWidth: 1,
-                  borderColor: GLASS.border,
+                  borderColor: 'rgba(255, 255, 255, 0.12)',
                 },
               ]}
             />
