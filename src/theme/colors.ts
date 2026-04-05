@@ -32,4 +32,5 @@ export const GradientBottom = '#1E1B4B';
 export const CardSurface = COLORS.surface;
 export const GlassSurface = GLASS.surface;
 export const GlassBorder = GLASS.border;
+export const GlassWhite = GLASS.white;
 export const AccentColor = COLORS.primary;

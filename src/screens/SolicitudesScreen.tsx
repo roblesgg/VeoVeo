@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { useEffect, useState } from 'react';
 import {
@@ -20,11 +21,10 @@ import { GlassBorder, GlassSurface, GlassWhite } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import type { SolicitudAmistad } from '../types';
 
-type Props = { onVolverClick: () => void };
-
 const Container = Platform.OS === 'ios' ? BlurView : View;
 
-export function SolicitudesScreen({ onVolverClick }: Props) {
+export function SolicitudesScreen() {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [cargando, setCargando] = useState(true);
   const [items, setItems] = useState<SolicitudAmistad[]>([]);
@@ -75,7 +75,7 @@ export function SolicitudesScreen({ onVolverClick }: Props) {
   return (
     <View style={[styles.flex, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
-        <Pressable onPress={onVolverClick} style={styles.back} hitSlop={20}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.back} hitSlop={20}>
           <Ionicons name="chevron-back" size={28} color="#fff" />
         </Pressable>
         <Text style={styles.titulo}>Solicitudes</Text>

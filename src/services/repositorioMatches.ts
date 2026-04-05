@@ -5,12 +5,16 @@ import {
   getDoc,
   onSnapshot, 
   updateDoc, 
-  arrayUnion,
-  getFirestore
+  arrayUnion
 } from 'firebase/firestore';
 import { MovieMatch, MatchStatus } from '../types';
+import { getFirestoreDb } from './firebase';
 
-const obtenerDb = () => getFirestore();
+const obtenerDb = () => {
+  const db = getFirestoreDb();
+  if (!db) throw new Error('Firebase no configurado');
+  return db;
+};
 
 export async function iniciarMatch(
   chatId: string, 

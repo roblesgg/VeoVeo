@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -19,6 +19,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listarPeliculasPorEstadoDeUsuario } from '../services/repositorioPeliculasUsuario';
 import { obtenerPerfilUsuarioPorUid } from '../services/repositorioUsuarios';
 import { posterUrl } from '../services/tmdbClient';
+import {
+  eliminarAmigo,
+  bloquearUsuario as bloquearSocial,
+} from '../services/repositorioSocial';
 import { PeliculaUsuario, UsuarioPerfil } from '../types';
 import {
   COLORS,
@@ -33,18 +37,15 @@ import { useMontserrat } from '../theme/useMontserrat';
 import { GradientBackground } from '../components/GradientBackground';
 import { FilterSortMenu } from '../components/FilterSortMenu';
 import { RatingBadge } from '../components/RatingBadge';
-
-type Props = {
-  amigoUid: string;
-  onVolverClick: () => void;
-  onPeliculaClick: (movieId: number) => void;
-  onEliminarAmigo?: (uid: string) => void;
-  onBloquearAmigo?: (uid: string) => void;
-};
+import { RootStackParamList } from '../navigation/types';
 
 const Container = Platform.OS === 'ios' ? BlurView : View;
 
-export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick, onEliminarAmigo, onBloquearAmigo }: Props) {
+export function BibliotecaAmigoScreen() {
+  const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<RootStackParamList, 'BibliotecaAmigo'>>();
+  const { amigoUid } = route.params;
+  
   const insets = useSafeAreaInsets();
   const { fontFamily, loaded: fontLoaded } = useMontserrat();
   const ff = fontFamily || 'System';
@@ -130,7 +131,7 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
   return (
     <GradientBackground style={styles.flex}>
       <Pressable
-        onPress={onVolverClick}
+        onPress={() => navigation.goBack()}
         style={[styles.backBtn, { top: Math.max(insets.top, 12) + 8 }]}
         hitSlop={12}
       >
@@ -202,12 +203,17 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
          currentValue=""
          onSelect={() => {}}
       >
-         <View style={styles.menuSocialSection}>
+          <View style={styles.menuSocialSection}>
             <Pressable 
               style={styles.menuSocialBtn} 
-              onPress={() => {
-                setMostrarSocialMenu(false);
-                onEliminarAmigo?.(amigoUid);
+              onPress={async () => {
+                try {
+                  await eliminarAmigo(amigoUid);
+                  setMostrarSocialMenu(false);
+                  navigation.goBack();
+                } catch (e) {
+                  console.error(e);
+                }
               }}
             >
                <Ionicons name="person-remove-outline" size={20} color="rgba(255,255,255,0.6)" />
@@ -216,15 +222,20 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
             <View style={styles.menuDivider} />
             <Pressable 
               style={styles.menuSocialBtn} 
-              onPress={() => {
-                setMostrarSocialMenu(false);
-                onBloquearAmigo?.(amigoUid);
+              onPress={async () => {
+                try {
+                  await bloquearSocial(amigoUid);
+                  setMostrarSocialMenu(false);
+                  navigation.goBack();
+                } catch (e) {
+                  console.error(e);
+                }
               }}
             >
                <Ionicons name="ban-outline" size={20} color="#ff4444" />
                <Text style={[styles.menuSocialText, { fontFamily: ff, color: '#ff4444' }]}>Bloquear contacto</Text>
             </Pressable>
-         </View>
+          </View>
       </FilterSortMenu>
 
       <ScrollView
@@ -327,7 +338,7 @@ export function BibliotecaAmigoScreen({ amigoUid, onVolverClick, onPeliculaClick
               <View key={p.idPelicula} style={styles.card}>
                 <Pressable
                   style={[styles.cardInner, SHADOWS.macLight]}
-                  onPress={() => onPeliculaClick(p.idPelicula)}
+                  onPress={() => navigation.push('Pelicula', { movieId: p.idPelicula })}
                 >
                   {p.rutaPoster ? (
                     <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />

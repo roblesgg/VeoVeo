@@ -20,10 +20,7 @@ Aquí guardamos los fallos típicos que nos han pasado y cómo se arreglan.
     - Asegúrate de que `newArchEnabled` esté en `false` en `app.json`.
     - Limpia la caché con `npm start -- --clear`.
 
-### ☕ Error de JAVA_HOME o Compilación Android
-1.  **Error:** `JAVA_HOME is set to an invalid directory`.
-2.  **Solución:** Configura la variable de entorno para que apunte a un **JDK 17** válido. En PowerShell puedes usar: `$env:JAVA_HOME = "C:\Program Files\Java\jdk-17"`.
-documento `configuracion/app` en Firestore existe.
+26. Asegúrate de que el documento `config/app_meta` en Firestore exista.
 
 ## 3. Error PERMISSION_DENIED al ejecutar scripts
 

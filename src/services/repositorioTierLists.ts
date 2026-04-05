@@ -1,18 +1,6 @@
 import { collection, deleteDoc, doc, getDocs, orderBy, query, setDoc } from 'firebase/firestore';
 import type { TierList } from '../types';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
-
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
-}
-
-function dbOrThrow() {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
+import { dbOrThrow, uidOrThrow } from './firebase';
 
 function baseRef(uid: string) {
   return collection(dbOrThrow(), 'usuarios', uid, 'tierLists');
@@ -38,7 +26,7 @@ export async function obtenerTierLists(): Promise<TierList[]> {
   const uid = uidOrThrow();
   const q = query(baseRef(uid), orderBy('ultimaModificacion', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ ...(d.data() as TierList), id: d.id }));
+  return snap.docs.map((d: any) => ({ ...(d.data() as TierList), id: d.id }));
 }
 
 export async function actualizarTierList(t: TierList): Promise<void> {

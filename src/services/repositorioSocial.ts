@@ -10,21 +10,13 @@ import {
   setDoc,
   updateDoc,
   where,
+  addDoc,
 } from 'firebase/firestore';
-import type { SolicitudAmistad, UsuarioPerfil } from '../types';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
-
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
-}
-
-function dbOrThrow() {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
+import type { SolicitudAmistad, UsuarioPerfil, Amigo } from '../types';
+import {
+  dbOrThrow,
+  uidOrThrow,
+} from './firebase';
 
 async function getPerfil(uid: string): Promise<UsuarioPerfil | null> {
   const db = dbOrThrow();
@@ -126,32 +118,31 @@ export async function obtenerSolicitudesEnviadasPendientesUids(): Promise<Set<st
   return new Set(snap.docs.map((d) => (d.data() as SolicitudAmistad).paraUid).filter(Boolean));
 }
 
-export async function enviarSolicitudAmistad(paraUid: string): Promise<void> {
+export async function enviarSolicitudAmistad(usernameDestino: string): Promise<void> {
   const db = dbOrThrow();
-  const uidActual = uidOrThrow();
-  const perfil = await getPerfil(uidActual);
-  if (!perfil) throw new Error('No se encontró tu perfil');
-  if (perfil.amigos?.includes(paraUid)) throw new Error('Ya son amigos');
+  const uid = uidOrThrow();
 
-  const yaPendienteQ = query(
-    collection(db, 'solicitudes_amistad'),
-    where('deUid', '==', uidActual),
-    where('paraUid', '==', paraUid),
-    where('estado', '==', 'pendiente'),
-  );
-  const yaPendiente = await getDocs(yaPendienteQ);
-  if (!yaPendiente.empty) throw new Error('Ya enviaste una solicitud a este usuario');
+  const usersRef = collection(db, 'usuarios');
+  const q = query(usersRef, where('username_servido', '==', usernameDestino.toLowerCase()));
+  const snap = await getDocs(q);
 
-  const ref = doc(collection(db, 'solicitudes_amistad'));
-  const solicitud: SolicitudAmistad = {
-    id: ref.id,
-    deUid: uidActual,
-    paraUid,
-    deUsername: perfil.username || 'Usuario',
-    estado: 'pendiente',
-    fecha: Date.now(),
-  };
-  await setDoc(ref, solicitud);
+  if (snap.empty) throw new Error('Usuario no encontrado');
+  const dest = snap.docs[0]!;
+  const destUid = dest.id;
+
+  if (destUid === uid) throw new Error('No puedes enviarte una solicitud a ti mismo');
+
+  const miPerfil = await getPerfil(uid);
+  if (!miPerfil) throw new Error('No se pudo obtener tu perfil');
+
+  await addDoc(collection(db, 'solicitudes_amistad'), {
+    deUid: uid,
+    deUsername: miPerfil.username,
+    paraUid: destUid,
+    paraUsername: dest.data().username,
+    estado: 'pendiente' as const,
+    timestamp: Date.now(),
+  });
 }
 
 export async function aceptarSolicitud(solicitudId: string): Promise<void> {
@@ -172,6 +163,22 @@ export async function aceptarSolicitud(solicitudId: string): Promise<void> {
 export async function rechazarSolicitud(solicitudId: string): Promise<void> {
   const db = dbOrThrow();
   await updateDoc(doc(db, 'solicitudes_amistad', solicitudId), { estado: 'rechazada' });
+}
+
+export function listarMisAmigos(callback: (amigos: Amigo[]) => void) {
+  const db = dbOrThrow();
+  const uid = uidOrThrow();
+  const q = query(collection(db, 'usuarios', uid, 'amigos'));
+
+  return onSnapshot(q, (amigosSnap) => {
+    callback(
+      amigosSnap.docs.map((d) => ({
+        uid: d.id,
+        username: d.data().username,
+        fotoPerfil: d.data().fotoPerfil,
+      })),
+    );
+  });
 }
 
 export async function eliminarAmigo(amigoUid: string): Promise<void> {
@@ -196,8 +203,25 @@ export async function bloquearUsuario(amigoUid: string): Promise<void> {
   );
 }
 
+export interface PeliculaUsuario {
+  idPelicula: number;
+  titulo: string;
+  rutaPoster: string | null;
+  estado: 'por_ver' | 'vista';
+  valoracion?: number;
+  fechaAnadido: number;
+  fechaLanzamiento?: string;
+}
+
+export interface Amigo {
+  uid: string;
+  username: string;
+  fotoPerfil?: string;
+}
+
 export async function obtenerActividadAmigosPelicula(idPelicula: number) {
-  const { obtenerAmigos } = require('./repositorioSocial');
+  // Evitamos importar en el top-level si hay riesgo de circularidad fuerte, 
+  // pero aquí podemos usar los métodos ya importados/definidos.
   const amigos = await obtenerAmigos();
   const actividad = [];
   const { obtenerPeliculaDeUsuario } = require('./repositorioPeliculasUsuario');
@@ -208,7 +232,7 @@ export async function obtenerActividadAmigosPelicula(idPelicula: number) {
       actividad.push({
         uid: amigo.uid,
         username: amigo.username,
-        foto: amigo.foto,
+        foto: amigo.fotoPerfil, // Corregido: era .foto y el tipo es .fotoPerfil
         estado: p.estado,
         valoracion: p.valoracion,
       });

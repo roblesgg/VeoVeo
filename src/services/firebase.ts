@@ -69,3 +69,17 @@ export function getFirebaseStorage(): FirebaseStorage | null {
   if (!storageSingleton) storageSingleton = getStorage(app);
   return storageSingleton;
 }
+
+/** Helper que lanza error si Firestore no está inicializado. */
+export function dbOrThrow(): Firestore {
+  const db = getFirestoreDb();
+  if (!db) throw new Error('Firebase no configurado');
+  return db;
+}
+
+/** Helper que lanza error si el usuario no ha iniciado sesión. */
+export function uidOrThrow(): string {
+  const uid = getFirebaseAuth()?.currentUser?.uid;
+  if (!uid) throw new Error('Usuario no autenticado');
+  return uid;
+}

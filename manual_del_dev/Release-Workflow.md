@@ -43,8 +43,8 @@ Este es el paso que "obliga" a los usuarios a actualizar:
 
 1. Entra en **Firebase Console**.
 2. Ve a **Firestore Database**.
-3. En el documento `configuracion/app`, cambia `min_version` a la nueva versión (ej: `1.3.2`).
-4. ¡Listo! Todos los usuarios recibirán el aviso inmediatamente.
+3. En el documento `config/app_meta`, cambia `minVersionCode` al nuevo código de compilación (ej: `15`) y `minVersionName` a la nueva versión (ej: `1.3.2`).
+4. ¡Listo! Todos los usuarios recibirán el aviso inmediatamente gracias al listener en `App.tsx`.
 
 ---
 

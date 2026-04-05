@@ -10,19 +10,7 @@ import {
   where,
 } from 'firebase/firestore';
 import type { PeliculaUsuario } from '../types';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
-
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
-}
-
-function dbOrThrow() {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
+import { getFirebaseAuth, getFirestoreDb, dbOrThrow, uidOrThrow } from './firebase';
 
 function refPelicula(uid: string, idPelicula: number) {
   return doc(dbOrThrow(), 'usuarios', uid, 'peliculas', String(idPelicula));
@@ -60,18 +48,17 @@ export async function listarPeliculasPorEstado(
   const db = dbOrThrow();
   const q = query(collection(db, 'usuarios', uid, 'peliculas'), where('estado', '==', estado));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as PeliculaUsuario);
+  return snap.docs.map((d: any) => d.data() as PeliculaUsuario);
 }
 
 export async function listarPeliculasPorEstadoDeUsuario(
   uid: string,
   estado: 'por_ver' | 'vista',
 ): Promise<PeliculaUsuario[]> {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
+  const db = dbOrThrow();
   const q = query(collection(db, 'usuarios', uid, 'peliculas'), where('estado', '==', estado));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as PeliculaUsuario);
+  return snap.docs.map((d: any) => d.data() as PeliculaUsuario);
 }
 
 export async function agregarPelicula(p: PeliculaUsuario): Promise<void> {

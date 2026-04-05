@@ -54,7 +54,7 @@ export type Message = {
   senderName: string;
   text: string;
   type: MessageType;
-  timestamp: number | any;
+  timestamp: number;
   matchId?: string;
   movieData?: {
     id: number;
@@ -184,5 +184,25 @@ export interface MovieDetails {
   };
 }
 
-export interface CreditsResponse { id: number; cast: any[]; crew: any[]; }
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+  order: number;
+}
+
+export interface CrewMember {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  profile_path: string | null;
+}
+
+export interface CreditsResponse { 
+  id: number; 
+  cast: CastMember[]; 
+  crew: CrewMember[]; 
+}
 export interface WatchProvider { logo_path: string; provider_id: number; provider_name: string; display_priority: number; }
