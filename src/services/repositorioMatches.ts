@@ -80,8 +80,7 @@ export async function votarPelicula(matchId: string, uid: string, movieId: numbe
       await updateDoc(matchDoc, {
         matchedMovies: arrayUnion(movieId)
       });
-      
-      // Notificar a todos los participantes del Match
+
       for (const pid of data.participants) {
         await notificarAUsuario(
           pid, 
