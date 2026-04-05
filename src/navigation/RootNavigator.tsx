@@ -69,6 +69,8 @@ export function RootNavigator() {
               <Stack.Screen name="Main" component={MainScreen} />
               <Stack.Screen name="Perfil" component={PerfilScreen} />
               <Stack.Screen name="Bloqueados" component={BloqueadosScreen} />
+              <Stack.Screen name="Solicitudes" component={SolicitudesScreen} />
+              <Stack.Screen name="BibliotecaAmigo" component={BibliotecaAmigoScreen} />
               <Stack.Screen name="Ajustes" component={AjustesScreen} />
               <Stack.Screen name="Actor" component={ActorScreen} />
               <Stack.Screen name="Pelicula" component={PeliculaScreen} />

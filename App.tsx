@@ -1,9 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { registerRootComponent } from 'expo';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Linking, StyleSheet, Text, View } from 'react-native';
-import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import Constants from 'expo-constants';
 import { BlurView } from 'expo-blur';
 
@@ -11,27 +10,40 @@ import { AuthProvider } from './src/context/AuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { COLORS } from './src/theme/colors';
+import { getFirestoreDb } from './src/services/firebase';
 
 const queryClient = new QueryClient();
 
 // 🛡️ Escudo de Versión: Detecta si el usuario necesita actualizar
 function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
+  const currentBuild = Constants.expoConfig?.android?.versionCode ?? 0;
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
 
   React.useEffect(() => {
-    const db = getFirestore();
+    const db = getFirestoreDb();
+    if (!db) return;
+
     // Escuchamos el documento de configuración global en Firebase
-    return onSnapshot(doc(db, 'config', 'app_meta'), (snap) => {
+    return onSnapshot(doc(db, 'config', 'app_meta'), (snap: any) => {
       if (snap.exists()) {
-         const { minVersion } = snap.data();
-         // Si la versión mínima en Firebase es mayor que la actual, bloqueamos
-         if (minVersion && currentVersion < minVersion) {
+         const { minVersionCode, minVersionName } = snap.data();
+         
+         // Prioridad al código de compilación (numérico)
+         if (minVersionCode && currentBuild > 0) {
+            if (currentBuild < minVersionCode) {
+               setNeedsUpdate(true);
+               return;
+            }
+         }
+         
+         // Fallback a comparación de texto (menos fiable pero útil para iOS)
+         if (minVersionName && currentVersion < minVersionName) {
             setNeedsUpdate(true);
          }
       }
     });
-  }, []);
+  }, [currentBuild, currentVersion]);
 
   if (!needsUpdate) return null;
 
@@ -42,7 +54,7 @@ function VersionShield() {
           <Text style={styles.updateEmoji}>🚀</Text>
           <Text style={styles.updateTitle}>Nueva versión disponible</Text>
           <Text style={styles.updateText}>
-            Hemos lanzado mejoras críticas en esta versión (v1.5.0). Actualiza ahora para seguir disfrutando de VeoVeo.
+            Hemos lanzado mejoras críticas. Actualiza ahora para seguir disfrutando de VeoVeo en la versión más reciente.
           </Text>
           <View style={styles.updateBtnContainer}>
              <Text 

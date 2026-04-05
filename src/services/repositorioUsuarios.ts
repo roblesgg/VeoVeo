@@ -1,18 +1,6 @@
 import { doc, getDoc, setDoc, updateDoc, arrayRemove, type Firestore } from 'firebase/firestore';
-import { getFirebaseAuth, getFirestoreDb } from './firebase';
+import { getFirebaseAuth, getFirestoreDb, dbOrThrow, uidOrThrow } from './firebase';
 import type { UsuarioPerfil } from '../types';
-
-function dbOrThrow(): Firestore {
-  const db = getFirestoreDb();
-  if (!db) throw new Error('Firebase no configurado');
-  return db;
-}
-
-function uidOrThrow(): string {
-  const uid = getFirebaseAuth()?.currentUser?.uid;
-  if (!uid) throw new Error('Usuario no autenticado');
-  return uid;
-}
 
 export async function obtenerPerfilUsuario(): Promise<UsuarioPerfil | null> {
   const db = getFirestoreDb();

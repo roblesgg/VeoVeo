@@ -8,6 +8,7 @@ Usamos **Email y Contraseña**.
 
 - Configuración: `src/services/firebase.ts`.
 - Persistencia: Usamos `ReactNativeAsyncStorage` para que la sesión no se cierre al salir de la app.
+- **Helpers Críticos:** Se deben usar `dbOrThrow()` y `uidOrThrow()` (exportados de `firebase.ts`) en todos los servicios para garantizar que Firebase esté inicializado y el usuario autenticado antes de cualquier operación.
 
 ## 2. Base de Datos (Firestore)
 
@@ -15,8 +16,8 @@ La estructura principal es:
 
 - `usuarios/{uid}`: Perfil, nombre, imagen y lista de amigos.
 - `usuarios/{uid}/biblioteca/{idPeli}`: Películas guardadas por el usuario, con su nota, estado (Pendiente/Vista) y plataforma.
-- `solicitudes/{id}`: Peticiones de amistad pendientes.
-- `configuracion/app`: **Documento Crítico**. Contiene `min_version` y `download_url` para el sistema de actualizaciones obligatorias.
+- `solicitudes_amistad/{id}`: Peticiones de amistad pendientes.
+- `config/app_meta`: **Documento Crítico**. Contiene `minVersionCode` (numérico) y `minVersionName` (string) para el sistema de actualizaciones obligatorias.
 
 ## 3. Almacenamiento (Storage)
 

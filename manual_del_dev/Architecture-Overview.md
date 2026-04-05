@@ -8,7 +8,7 @@ VeoVeo es una aplicación de React Native construida sobre **Expo (SDK 54)**. Aq
   - `UpdateGuard.tsx`: El vigilante de las versiones (bloquea la app si hay que actualizar).
 - `screens/`: Pantallas principales (PeliculaScreen, BibliotecaTab, AjustesScreen, etc.).
 - `services/`: Conexiones externas (Firebase, APIs).
-- `navigation/`: Configuración del enrutamiento de la app (Stack y Tabs).
+- `navigation/`: Configura el enrutamiento. Las pestañas principales usan un Bottom Tab Navigator, mientras que pantallas como `SolicitudesScreen` y `BibliotecaAmigoScreen` se gestionan en el `RootStack` para una navegación nativa y manejo de back-stack.
 - `theme/`: Colores y estilos globales.
 
 ## 2. Tecnologías Clave

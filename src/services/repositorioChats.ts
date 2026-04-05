@@ -7,15 +7,13 @@ import {
   onSnapshot, 
   orderBy, 
   updateDoc,
-  getFirestore,
   deleteDoc
 } from 'firebase/firestore';
 import { Chat, Message, ChatType } from '../types';
-
-const obtenerDb = () => getFirestore();
+import { dbOrThrow } from './firebase';
 
 export function observarMisChats(uid: string, callback: (chats: Chat[]) => void) {
-  const db = obtenerDb();
+  const db = dbOrThrow();
   const chatsRef = collection(db, 'chats');
   const q = query(chatsRef, where('participants', 'array-contains', uid), orderBy('createdAt', 'desc'));
   return onSnapshot(q, (snap) => {
@@ -24,7 +22,7 @@ export function observarMisChats(uid: string, callback: (chats: Chat[]) => void)
 }
 
 export async function crearChat(uids: string[], type: ChatType = 'individual', name?: string): Promise<string> {
-  const db = obtenerDb();
+  const db = dbOrThrow();
   const chatsRef = collection(db, 'chats');
   const docRef = await addDoc(chatsRef, {
     type,
@@ -38,7 +36,7 @@ export async function crearChat(uids: string[], type: ChatType = 'individual', n
 }
 
 export function obtenerMensajesChat(chatId: string, callback: (msgs: Message[]) => void) {
-  const db = obtenerDb();
+  const db = dbOrThrow();
   const msgsRef = collection(db, 'chats', chatId, 'msj');
   const q = query(msgsRef, orderBy('timestamp', 'asc'));
   return onSnapshot(q, (snap) => {
@@ -47,7 +45,7 @@ export function obtenerMensajesChat(chatId: string, callback: (msgs: Message[]) 
 }
 
 export async function enviarMensaje(chatId: string, msg: Partial<Message>) {
-  const db = obtenerDb();
+  const db = dbOrThrow();
   const msgsRef = collection(db, 'chats', chatId, 'msj');
   const now = Date.now();
   await addDoc(msgsRef, {
@@ -63,6 +61,6 @@ export async function enviarMensaje(chatId: string, msg: Partial<Message>) {
 }
 
 export async function borrarChat(chatId: string) {
-  const db = obtenerDb();
+  const db = dbOrThrow();
   await deleteDoc(doc(db, 'chats', chatId));
 }

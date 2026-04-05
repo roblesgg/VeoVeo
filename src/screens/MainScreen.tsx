@@ -10,13 +10,10 @@ import type { RootStackParamList } from '../navigation/types';
 import { GradientBottom, GradientTop } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { obtenerPerfilUsuario } from '../services/repositorioUsuarios';
-import { eliminarAmigo, bloquearUsuario } from '../services/repositorioSocial';
 import { useMontserrat } from '../theme/useMontserrat';
 import { SplashView } from '../components/SplashView';
-import { BibliotecaAmigoScreen } from './BibliotecaAmigoScreen';
 import { BibliotecaTab } from './BibliotecaTab';
 import { DiscoverTab } from './DiscoverTab';
-import { SolicitudesScreen } from './SolicitudesScreen';
 import { SocialTab } from './SocialTab';
 import { TierListsTab } from './TierListsTab';
 
@@ -28,10 +25,6 @@ export function MainScreen() {
 
   const [paginaActual, setPaginaActual] = useState(0);
   const [pantallaTierList, setPantallaTierList] = useState(0);
-  const [mostrarBibliotecaAmigo, setMostrarBibliotecaAmigo] = useState(false);
-  const [amigoUidSeleccionado, setAmigoUidSeleccionado] = useState('');
-  const [mostrarSolicitudes, setMostrarSolicitudes] = useState(false);
-  const [bibRefresh, setBibRefresh] = useState(0);
   const [appReady, setAppReady] = useState(false);
 
   const isFocused = useIsFocused();
@@ -68,14 +61,6 @@ export function MainScreen() {
   useEffect(() => {
     if (!isFocused) return;
     const onBackPress = () => {
-      if (mostrarBibliotecaAmigo) {
-        setMostrarBibliotecaAmigo(false);
-        return true;
-      }
-      if (mostrarSolicitudes) {
-        setMostrarSolicitudes(false);
-        return true;
-      }
       if (paginaActual === 2 && pantallaTierList !== 0) {
         setPantallaTierList(pantallaTierList === 1 || pantallaTierList === 2 ? 0 : 1);
         return true;
@@ -88,14 +73,11 @@ export function MainScreen() {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => sub.remove();
-  }, [isFocused, mostrarBibliotecaAmigo, mostrarSolicitudes, paginaActual, pantallaTierList]);
+  }, [isFocused, paginaActual, pantallaTierList]);
 
   if (!appReady) return <SplashView fontFamily={ff} />;
 
-  const showBottomBar =
-    !mostrarBibliotecaAmigo &&
-    !mostrarSolicitudes &&
-    !(paginaActual === 2 && pantallaTierList !== 0);
+  const showBottomBar = !(paginaActual === 2 && pantallaTierList !== 0);
 
   const navigatePelicula = (id: number) => {
     navigation.navigate('Pelicula', { movieId: id });
@@ -103,24 +85,6 @@ export function MainScreen() {
 
   const navigateActor = (id: number, name: string) => {
     navigation.navigate('Actor', { actorId: id, actorName: name });
-  };
-
-  const handleEliminarAmigoDesdeBib = async (uid: string) => {
-    try {
-      await eliminarAmigo(uid);
-      setMostrarBibliotecaAmigo(false);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleBloquearAmigoDesdeBib = async (uid: string) => {
-    try {
-      await bloquearUsuario(uid);
-      setMostrarBibliotecaAmigo(false);
-    } catch (e) {
-      console.error(e);
-    }
   };
 
   return (
@@ -160,29 +124,16 @@ export function MainScreen() {
         ) : null}
 
         {paginaActual === 3 ? (
-          mostrarSolicitudes ? (
-            <SolicitudesScreen onVolverClick={() => setMostrarSolicitudes(false)} />
-          ) : mostrarBibliotecaAmigo ? (
-            <BibliotecaAmigoScreen
-              amigoUid={amigoUidSeleccionado}
-              onVolverClick={() => setMostrarBibliotecaAmigo(false)}
-              onPeliculaClick={navigatePelicula}
-              onEliminarAmigo={handleEliminarAmigoDesdeBib}
-              onBloquearAmigo={handleBloquearAmigoDesdeBib}
-            />
-          ) : (
-            <SocialTab
-              fontFamily={ff}
-              onUsuarioClick={(uid) => {
-                setAmigoUidSeleccionado(uid);
-                setMostrarBibliotecaAmigo(true);
-              }}
-              onSolicitudesClick={() => setMostrarSolicitudes(true)}
-              onChatClick={(chatId, participants, chatName) => navigation.navigate('ChatDetail', { chatId, participants, chatName })}
-              onPerfilClick={() => navigation.navigate('Perfil')}
-              userFoto={userProfile?.fotoPerfil || user?.photoURL}
-            />
-          )
+          <SocialTab
+            fontFamily={ff}
+            onUsuarioClick={(uid) => {
+              navigation.navigate('BibliotecaAmigo', { amigoUid: uid });
+            }}
+            onSolicitudesClick={() => navigation.navigate('Solicitudes')}
+            onChatClick={(chatId, participants, chatName) => navigation.navigate('ChatDetail', { chatId, participants, chatName })}
+            onPerfilClick={() => navigation.navigate('Perfil')}
+            userFoto={userProfile?.fotoPerfil || user?.photoURL}
+          />
         ) : null}
       </View>
 
