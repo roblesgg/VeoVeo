@@ -16,6 +16,8 @@ import ChatListScreen from '../screens/ChatListScreen';
 import { ChatDetailScreen } from '../screens/ChatDetailScreen';
 import { MovieMatchScreen } from '../screens/MovieMatchScreen';
 import { MatchConfigScreen } from '../screens/MatchConfigScreen';
+import { SolicitudesScreen } from '../screens/SolicitudesScreen';
+import { BibliotecaAmigoScreen } from '../screens/BibliotecaAmigoScreen';
 import { COLORS } from '../theme/colors';
 import type { RootStackParamList } from './types';
 

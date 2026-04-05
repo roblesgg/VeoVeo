@@ -484,7 +484,7 @@ export function TierListsTab({
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  flex: { flex: 1, backgroundColor: '#020617' },
   screenPad: { paddingHorizontal: 24, paddingBottom: 130 },
   titulo: { color: '#fff', fontSize: 34, fontWeight: '800' },
   headerRow: {

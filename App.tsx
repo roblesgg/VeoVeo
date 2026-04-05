@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View, TextInput } from 'react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
 import Constants from 'expo-constants';
 import { BlurView } from 'expo-blur';
@@ -12,6 +12,21 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { COLORS } from './src/theme/colors';
 import { getFirestoreDb } from './src/services/firebase';
 
+// 🛑 Cap global de escalado de fuentes para evitar layouts rotos
+if ((Text as any).defaultProps) {
+  (Text as any).defaultProps.maxFontSizeMultiplier = 1.3;
+} else {
+  (Text as any).defaultProps = { maxFontSizeMultiplier: 1.3 };
+}
+if ((TextInput as any).defaultProps) {
+  (TextInput as any).defaultProps.maxFontSizeMultiplier = 1.3;
+} else {
+  (TextInput as any).defaultProps = { maxFontSizeMultiplier: 1.3 };
+}
+
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
 const queryClient = new QueryClient();
 
 // 🛡️ Escudo de Versión: Detecta si el usuario necesita actualizar
@@ -19,31 +34,25 @@ function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
   const currentBuild = Constants.expoConfig?.android?.versionCode ?? 0;
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
+  const isTest = Constants.expoConfig?.name?.includes('Test') ?? false;
 
   React.useEffect(() => {
     const db = getFirestoreDb();
     if (!db) return;
 
     // Escuchamos el documento de configuración global en Firebase
-    return onSnapshot(doc(db, 'config', 'app_meta'), (snap: any) => {
+    // Nota: Sincronizado con el script push-version.mjs
+    return onSnapshot(doc(db, 'configuracion', 'app'), (snap: any) => {
       if (snap.exists()) {
-         const { minVersionCode, minVersionName } = snap.data();
+         const data = snap.data();
+         const minVersionName = isTest ? data.min_version_test : data.min_version;
          
-         // Prioridad al código de compilación (numérico)
-         if (minVersionCode && currentBuild > 0) {
-            if (currentBuild < minVersionCode) {
-               setNeedsUpdate(true);
-               return;
-            }
-         }
-         
-         // Fallback a comparación de texto (menos fiable pero útil para iOS)
          if (minVersionName && currentVersion < minVersionName) {
             setNeedsUpdate(true);
          }
       }
     });
-  }, [currentBuild, currentVersion]);
+  }, [currentVersion, isTest]);
 
   if (!needsUpdate) return null;
 
@@ -70,14 +79,25 @@ function VersionShield() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    // Listener para notificaciones en primer plano
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('🔔 Notificación recibida:', notification);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <LanguageProvider>
           <AuthProvider>
-            <View style={{ flex: 1 }}>
-              <RootNavigator />
-              <VersionShield />
+            <View style={styles.appWrapper}>
+               <View style={styles.mainContainer}>
+                  <RootNavigator />
+                  <VersionShield />
+               </View>
             </View>
           </AuthProvider>
         </LanguageProvider>
@@ -114,4 +134,20 @@ const styles = StyleSheet.create({
   updateText: { color: 'rgba(255,255,255,0.6)', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 40 },
   updateBtnContainer: { width: '100%', borderRadius: 20, overflow: 'hidden' },
   updateBtn: { backgroundColor: COLORS.primary, color: '#fff', paddingVertical: 18, textAlign: 'center', fontSize: 18, fontWeight: '800', borderRadius: 20 },
+  appWrapper: {
+    flex: 1,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 500 : '100%',
+    backgroundColor: '#020617',
+    // Sombra sutil en web para el efecto "móvil"
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+    } : {}),
+  },
 });

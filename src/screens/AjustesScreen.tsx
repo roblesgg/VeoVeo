@@ -84,7 +84,7 @@ export function AjustesScreen() {
 
   return (
     <GradientBackground style={styles.flex}>
-      <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <BlurView intensity={95} tint="dark" style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={28} color="#fff" />
@@ -181,7 +181,16 @@ function agruparPlataformas(lista: any[]) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
-  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  header: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    zIndex: 100, 
+    backgroundColor: 'rgba(2, 6, 23, 0.92)', // Fallback sólido
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255,255,255,0.1)' 
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 16 },
   backBtn: { padding: 4 },
   titulo: { color: '#fff', fontSize: 22, fontWeight: '900', marginLeft: 8 },

@@ -125,18 +125,23 @@ export function SocialTab({
 
   return (
     <View style={styles.flex}>
-      <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
-        <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Social</Text>
-        <View style={styles.actionsTopRow}>
-          <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini}>
-            <View style={styles.perfilInnerMini}>
-              {userFoto ? (
-                <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
-              ) : (
-                <Ionicons name="person" size={20} color="#fff" />
-              )}
-            </View>
-          </Pressable>
+      {/* 🛡️ Cabecera Unificada (Glaseada y Sólida) */}
+      <BlurView intensity={95} tint="dark" style={[styles.headerContainer, { height: insets.top + 80 }]} />
+      <View style={[styles.headerContainer, { height: insets.top + 80, backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
+        <View style={styles.headerBorder} />
+        <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
+          <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Social</Text>
+          <View style={styles.actionsTopRow}>
+            <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini}>
+              <View style={styles.perfilInnerMini}>
+                {userFoto ? (
+                  <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
+                ) : (
+                  <Ionicons name="person" size={20} color="#fff" />
+                )}
+              </View>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -157,7 +162,10 @@ export function SocialTab({
            </View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.scroll} 
+          showsVerticalScrollIndicator={false}
+        >
           {tab === 0 && (
             <View style={styles.chatList}>
               <Pressable 
@@ -306,7 +314,9 @@ const styles = StyleSheet.create({
   perfilBtnMini: { marginLeft: 4 },
   perfilInnerMini: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   perfilFotoMini: { width: '100%', height: '100%' },
-  content: { flex: 1, paddingTop: 130 },
+  content: { flex: 1, paddingTop: 110 },
+  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 },
+  headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
   tabContainer: { paddingHorizontal: 20, marginTop: 10, marginBottom: 20 },
   tabWrapper: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 4, justifyContent: 'space-between' },
   tabBtn: { flex: 1, paddingVertical: 10, borderRadius: 16, alignItems: 'center' },

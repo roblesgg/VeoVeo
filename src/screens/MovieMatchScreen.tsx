@@ -48,6 +48,7 @@ export function MovieMatchScreen() {
   const [loading, setLoading] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [currentDetails, setCurrentDetails] = useState<MovieDetails | null>(null);
+  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]); // 🆕 Detalles de ganadoras
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -159,6 +160,21 @@ export function MovieMatchScreen() {
     }
   }, [currentIndex, queue]);
 
+  // 4. Cargar detalles de las películas ganadoras (cuando el match termina)
+  useEffect(() => {
+    if (match?.status === 'finished' && match.matchedMovies.length > 0) {
+      void (async () => {
+        try {
+          const promises = match.matchedMovies.map(id => tmdbApi.obtenerDetallesPelicula(id));
+          const results = await Promise.all(promises);
+          setMatchedDetails(results);
+        } catch (e) {
+          console.error('Error cargando resultados del match:', e);
+        }
+      })();
+    }
+  }, [match?.status, match?.matchedMovies]);
+
   const onSwipeComplete = useCallback((direction: 'right' | 'left') => {
     if (!user || !match || !queue[currentIndex]) return;
     const movieId = queue[currentIndex].id;
@@ -229,14 +245,41 @@ export function MovieMatchScreen() {
 
       <View style={styles.deck}>
         {match.status === 'finished' ? (
-          <View style={styles.emptyDeck}>
-             <Ionicons name="trophy" size={80} color="#f1c40f" />
-             <Text style={styles.matchFinishedTitle}>¡Objetivo conseguido!</Text>
-             <Text style={styles.matchFinishedSub}>Habéis encontrado {match.matchedMovies.length} pelis que os gustan a todos.</Text>
-             <Pressable style={styles.btnCerrar} onPress={() => navigation.goBack()}>
-                <Text style={styles.btnCerrarText}>Volver al chat</Text>
-             </Pressable>
-          </View>
+          <ScrollView contentContainerStyle={styles.resultsScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.resultsHeader}>
+              <Ionicons name="trophy" size={80} color="#f1c40f" />
+              <Text style={styles.matchFinishedTitle}>¡Objetivo conseguido!</Text>
+              <Text style={styles.matchFinishedSub}>
+                Habéis encontrado {match.matchedMovies.length} {match.matchedMovies.length === 1 ? 'película' : 'películas'} que os han gustado a todos:
+              </Text>
+            </View>
+
+            <View style={styles.resultsGrid}>
+              {matchedDetails.length > 0 ? (
+                matchedDetails.map(movie => (
+                  <Pressable 
+                    key={movie.id} 
+                    style={styles.resultCard} 
+                    onPress={() => {
+                      setCurrentDetails(movie);
+                      setShowInfo(true);
+                    }}
+                  >
+                    <Image source={{ uri: posterUrl(movie.poster_path, 'w342')! }} style={styles.resultPoster} />
+                    <View style={styles.resultInfo}>
+                      <Text style={styles.resultTitle} numberOfLines={2}>{movie.title}</Text>
+                    </View>
+                  </Pressable>
+                ))
+              ) : (
+                <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+              )}
+            </View>
+
+            <Pressable style={styles.btnCerrarFinal} onPress={() => navigation.goBack()}>
+              <Text style={styles.btnCerrarText}>Volver al chat</Text>
+            </Pressable>
+          </ScrollView>
         ) : currentIndex < queue.length ? (
           <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
             <Animated.View style={[styles.card, cardStyle, SHADOWS.macLight]}>
@@ -315,4 +358,14 @@ const styles = StyleSheet.create({
   modalOverview: { color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 22 },
   modalDetails: { flexDirection: 'row', gap: 20, marginTop: 20 },
   modalMeta: { color: COLORS.primary, fontWeight: '800' },
+  
+  // Estilos de resultados finalizados
+  resultsScroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 100 },
+  resultsHeader: { alignItems: 'center', marginBottom: 30 },
+  resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
+  resultCard: { width: (SCREEN_WIDTH - 72) / 2, borderRadius: 20, backgroundColor: '#1e293b', overflow: 'hidden', ...SHADOWS.macLight, marginBottom: 12 },
+  resultPoster: { width: '100%', aspectRatio: 2/3 },
+  resultInfo: { padding: 10 },
+  resultTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  btnCerrarFinal: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 20, alignItems: 'center', marginTop: 30 },
 });

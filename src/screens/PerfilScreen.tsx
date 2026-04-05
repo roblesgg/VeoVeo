@@ -78,7 +78,7 @@ export function PerfilScreen() {
         onPress={() => navigation.goBack()}
         style={[styles.backBtn, { top: Math.max(insets.top, 12) + 8 }]}
       >
-        <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
+        <BlurView intensity={80} tint="dark" style={styles.backBtnInner}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </BlurView>
       </Pressable>
@@ -206,7 +206,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     width: '100%',
-    height: 56,
+    minHeight: 56,
+    paddingVertical: 12,
     borderRadius: 22,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.12)',

@@ -45,7 +45,7 @@ export function LiquidBottomBar({ onTabChange, paginaActual }: Props) {
   return (
     <View style={[styles.container, { bottom: Math.max(insets.bottom, 20) }]}>
       {/* 🔮 Real Refraction Layer (Native Blur) */}
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
+      <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
         <View style={styles.glassOverlay} />
       </BlurView>
 
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   glassOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
   },
   content: {
     flex: 1,

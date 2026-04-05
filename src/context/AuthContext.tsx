@@ -16,10 +16,12 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from 'firebase/auth';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { signInWithPopup } from 'firebase/auth';
 import { getFirebaseAuth } from '../services/firebase';
 import { actualizarEstadoConexion } from '../services/repositorioUsuarios';
+import { registrarTokenEnFirestore } from '../services/notificationService';
 
 // WebBrowser.maybeCompleteAuthSession(); No longer needed with native Google Sign-In
 
@@ -68,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (u) {
         void actualizarEstadoConexion('online');
         void require('../services/userPreferences').sincronizarPreferenciasConFirestore(u.uid);
+        void registrarTokenEnFirestore(u.uid);
       }
     });
 
@@ -134,6 +137,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     try {
+      if (Platform.OS === 'web') {
+        if (!auth) return;
+        const provider = new GoogleAuthProvider();
+        await signInWithPopup(auth, provider);
+        return;
+      }
+      
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
