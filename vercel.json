@@ -1,10 +1,8 @@
 {
     "cleanUrls": true,
     "rewrites": [
-        { "source": "/descargar", "destination": "/public/descargar.html" },
-        { "source": "/veoveo-latest.apk", "destination": "/public/veoveo-latest.apk" },
-        { "source": "/.well-known/(.*)", "destination": "/public/.well-known/$1" },
-        { "source": "/((?!_expo|assets|static|favicon.ico|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|public|.*\\.apk).*)", "destination": "/index.html" }
+        { "source": "/descargar", "destination": "/descargar.html" },
+        { "source": "/((?!favicon.ico|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.apk|\\.well-known).*)", "destination": "/index.html" }
     ],
     "redirects": [
         {
@@ -15,7 +13,7 @@
     ],
     "headers": [
         {
-            "source": "/public/(.+\\.apk)",
+            "source": "/(.+\\.apk)",
             "headers": [
                 {
                     "key": "Cache-Control",
@@ -24,7 +22,7 @@
             ]
         },
         {
-            "source": "/public/.well-known/(.*)",
+            "source": "/.well-known/(.*)",
             "headers": [
                 {
                     "key": "Content-Type",
