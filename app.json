@@ -27,7 +27,8 @@
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "baseUrl": "/app"
     },
     "updates": {
       "url": "https://u.expo.dev/db438c91-21eb-4020-a3ad-efec69cef405"

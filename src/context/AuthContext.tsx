@@ -51,10 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const firebaseReady = auth != null;
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      offlineAccess: true,
-    });
+    if (Platform.OS !== 'web') {
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -160,6 +162,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const linkGoogleAccount = useCallback(async () => {
     if (!auth?.currentUser) return;
     try {
+      if (Platform.OS === 'web') {
+        const provider = new GoogleAuthProvider();
+        await linkWithCredential(auth.currentUser, provider as any); // Firebase linkWithPopup/Redirect is different but common for web
+        return;
+      }
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
@@ -178,7 +185,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth?.currentUser) return;
     try {
       await unlink(auth.currentUser, 'google.com');
-      await GoogleSignin.signOut();
+      if (Platform.OS !== 'web') {
+        await GoogleSignin.signOut();
+      }
       setUser({ ...auth.currentUser });
     } catch (error) {
       console.error('Google Unlink Error:', error);
