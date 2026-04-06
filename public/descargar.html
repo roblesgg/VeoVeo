@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeoVeo | Cine sin dramas</title>
+    <meta
+      name="description"
+      content="La app definitiva para descubrir películas y series. Haz match con tus amigos y decide qué ver esta noche."
+    />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --primary: #0ea5e9;
+        --secondary: #6366f1;
+        --bg: #020617;
+        --surface: rgba(255, 255, 255, 0.04);
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f8fafc;
+        --accent-gradient: linear-gradient(135deg, #0ea5e9, #6366f1);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Outfit', sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      /* Animated Background Blobs */
+      .blob-container {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        overflow: hidden;
+        filter: blur(80px);
+      }
+
+      .blob {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        opacity: 0.15;
+        animation: float 20s infinite alternate;
+      }
+
+      .blob-1 {
+        background: var(--primary);
+        top: -10%;
+        left: -10%;
+      }
+
+      .blob-2 {
+        background: var(--secondary);
+        bottom: -10%;
+        right: -10%;
+        animation-delay: -5s;
+      }
+
+      @keyframes float {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(100px, 50px) scale(1.2); }
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* Navbar */
+      .header-container {
+        position: relative;
+        z-index: 1000;
+        width: 100%;
+        height: 120px;
+        transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 40px 0;
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+        transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      .logo {
+        font-size: 2rem;
+        font-weight: 900;
+        letter-spacing: -1px;
+        background: var(--accent-gradient);
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      /* Sticky State */
+      .header-container.sticky {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 70px;
+        width: 100%;
+        background: rgba(2, 6, 23, 0.7);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      }
+
+      .header-container.sticky nav {
+        padding: 15px 24px;
+        justify-content: center;
+      }
+
+      .header-container.sticky .logo {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        transform: translateY(0);
+      }
+
+      /* Hero Section */
+      .hero {
+        padding: 100px 0;
+        text-align: center;
+        min-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      h1 {
+        font-size: clamp(3.5rem, 10vw, 6rem);
+        font-weight: 900;
+        line-height: 0.9;
+        margin-bottom: 24px;
+        letter-spacing: -3px;
+        background: linear-gradient(to bottom, #fff, rgba(255,255,255,0.6));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .hero p {
+        font-size: 1.25rem;
+        color: rgba(255, 255, 255, 0.5);
+        max-width: 600px;
+        margin-bottom: 48px;
+        animation: fadeIn 1s ease-out;
+      }
+
+      .download-btn {
+        position: relative;
+        display: inline-flex;
+        padding: 20px 48px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+        background: var(--accent-gradient);
+        border-radius: 100px;
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 20px 40px -10px rgba(14, 165, 233, 0.4);
+        overflow: hidden;
+      }
+
+      .download-btn:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 30px 60px -10px rgba(14, 165, 233, 0.6);
+      }
+
+      .download-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: rgba(255,255,255,0.1);
+        transform: rotate(45deg);
+        transition: 0.5s;
+        opacity: 0;
+      }
+
+      .download-btn:hover::after {
+        opacity: 1;
+        left: 100%;
+      }
+
+      .nav-btn {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: none;
+      }
+
+      .buttons-container {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      /* Features Grid */
+      .features {
+        padding: 100px 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 32px;
+      }
+
+      .card {
+        position: relative;
+        padding: 48px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 40px;
+        backdrop-filter: blur(12px);
+        transition: all 0.5s cubic-bezier(0.2, 0, 0, 1);
+        overflow: hidden;
+      }
+
+      .card:hover {
+        transform: translateY(-10px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .card-icon {
+        font-size: 3rem;
+        margin-bottom: 24px;
+        display: block;
+      }
+
+      .card h3 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        color: #fff;
+      }
+
+      .card p {
+        color: rgba(255,255,255,0.5);
+        font-weight: 500;
+      }
+
+      /* Floating Mockup */
+      .mockup {
+        margin-top: -10vh;
+        margin-bottom: 15vh;
+        position: relative;
+        z-index: 2;
+      }
+
+      .mockup img {
+        width: 100%;
+        max-width: 400px;
+        filter: drop-shadow(0 50px 100px rgba(0,0,0,0.8));
+        animation: floatImg 6s infinite ease-in-out;
+      }
+
+      @keyframes floatImg {
+        0%, 100% { transform: translateY(0) rotate(-2deg); }
+        50% { transform: translateY(-20px) rotate(2deg); }
+      }
+
+      /* Suggestions Section */
+      .suggestions {
+        padding: 100px 0;
+        text-align: center;
+      }
+
+      .glass-panel {
+        background: rgba(14, 165, 233, 0.03);
+        border: 1px solid rgba(14, 165, 233, 0.1);
+        padding: 80px 40px;
+        border-radius: 50px;
+        backdrop-filter: blur(20px);
+      }
+
+      .suggestions h2 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+      }
+
+      /* Animations */
+      .reveal {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: all 1s cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      footer {
+        padding: 60px 0;
+        text-align: center;
+        border-top: 1px solid var(--border);
+        color: rgba(255, 255, 255, 0.2);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 768px) {
+        h1 { font-size: 3.5rem; }
+        .grid { gap: 16px; }
+        .card { padding: 32px; }
+        .header-container.sticky nav { justify-content: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Background Blobs -->
+    <div class="blob-container">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+    </div>
+
+    <div class="container">
+      <div class="header-container" id="header">
+        <nav>
+          <div class="logo">VEOVEO</div>
+        </nav>
+      </div>
+
+      <section class="hero">
+        <h1 class="reveal">Cine sin dramas.</h1>
+        <p class="reveal">Encuentra qué ver con tus amigos en segundos. La app definitiva para el Match cinematográfico.</p>
+        <div class="reveal buttons-container">
+          <a href="./veoveo-latest.apk" class="download-btn" download>Descargar APK (v1.6.0)</a>
+          <a href="/" class="download-btn nav-btn">Usar en el Navegador</a>
+          <p style="margin-top: 15px; font-size: 0.9rem; color: rgba(255,255,255,0.4);">
+            <b>Tip:</b> Los usuarios de iPhone pueden usar la versión web sin descargar nada.
+          </p>
+        </div>
+      </section>
+
+      <div class="mockup reveal" style="text-align: center;">
+        <img src="./assets/mockup_v15.png" alt="App Preview" onerror="this.src='https://via.placeholder.com/400x800?text=VeoVeo+App'" />
+      </div>
+
+      <section class="features">
+        <div class="grid">
+          <div class="card reveal">
+            <span class="card-icon">📁</span>
+            <h3>Watchlist Pro</h3>
+            <p>Guarda todas las pelis que quieres ver y organízalas por plataformas.</p>
+          </div>
+          <div class="card reveal">
+            <span class="card-icon">⭐</span>
+            <h3>Tu crítica real</h3>
+            <p>Puntúa lo que has visto y lleva un registro impecable de tu cine.</p>
+          </div>
+          <div class="card reveal">
+            <span class="card-icon">👀</span>
+            <h3>Ratings Amigos</h3>
+            <p>Descubre qué opinan tus amigos de esa peli antes de darle al play.</p>
+          </div>
+          <div class="card reveal">
+            <span class="card-icon">⚡</span>
+            <h3>Match Social</h3>
+            <p>¿No sabéis que ver? Encuentra coincidencias con tus amigos al instante.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="suggestions reveal">
+        <div class="glass-panel">
+          <h2>¿Algo no va bien?</h2>
+          <p>Ayúdanos a mejorar. Envía un error o una sugerencia en segundos.</p>
+          <a href="mailto:hola@dripdev.dev" style="color: var(--primary); font-weight: 700; text-decoration: none; font-size: 1.2rem; display: block; margin-top: 20px;">Sugerencias y Errores →</a>
+        </div>
+      </section>
+
+      <footer>
+        <p>&copy; 2026 Drip Dev. Crafted with ❤️ for cinema lovers.</p>
+      </footer>
+    </div>
+
+    <script>
+      // Sticky Header Logic
+      const header = document.getElementById('header');
+      window.onscroll = () => {
+        if (window.scrollY > 50) {
+          header.classList.add('sticky');
+        } else {
+          header.classList.remove('sticky');
+        }
+      };
+
+      // Scroll Reveal Logic
+      const observerOptions = {
+        threshold: 0.1
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    </script>
+  </body>
+</html>
