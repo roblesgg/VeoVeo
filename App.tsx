@@ -32,6 +32,9 @@ const queryClient = new QueryClient();
 // 🛡️ Escudo de Versión: Detecta si el usuario necesita actualizar
 function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
+  
+  if (Platform.OS === 'web') return null;
+
   const currentBuild = Constants.expoConfig?.android?.versionCode ?? 0;
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const isTest = Constants.expoConfig?.name?.includes('Test') ?? false;
