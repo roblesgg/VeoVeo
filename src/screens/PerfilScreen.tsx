@@ -8,6 +8,8 @@ import {
   Text,
   View,
   Share,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -128,6 +130,16 @@ export function PerfilScreen() {
           <Ionicons name="share-social-outline" size={22} color="#fff" />
           <Text style={[styles.shareText, { fontFamily }]}>Compartir aplicación</Text>
         </Pressable>
+
+        {Platform.OS === 'web' && (
+          <Pressable
+            style={[styles.shareBtn, { marginTop: 12, backgroundColor: 'rgba(14, 165, 233, 0.1)' }]}
+            onPress={() => Linking.openURL('/descargar')}
+          >
+            <Ionicons name="download-outline" size={22} color={COLORS.primary} />
+            <Text style={[styles.shareText, { fontFamily, color: '#fff' }]}>Descargar App</Text>
+          </Pressable>
+        )}
 
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
         {mensaje && <Text style={styles.feedbackOk}>{mensaje}</Text>}
