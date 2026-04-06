@@ -106,12 +106,17 @@ export default function App() {
 
   React.useEffect(() => {
     if (Platform.OS === 'web') {
-       const style = document.createElement('style');
-       style.innerHTML = `
-         @font-face { font-family: 'Ionicons'; src: url('https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/fonts/ionicons.ttf') format('truetype'); }
-         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
-       `;
-       document.head.appendChild(style);
+       // Inyectar Google Fonts (Montserrat)
+       const fontLink = document.createElement('link');
+       fontLink.rel = 'stylesheet';
+       fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap';
+       document.head.appendChild(fontLink);
+
+       // Inyectar Ionicons (v4+ para nombres modernos)
+       const iconLink = document.createElement('link');
+       iconLink.rel = 'stylesheet';
+       iconLink.href = 'https://code.ionicframework.com/ionicons/4.5.10-0/css/ionicons.min.css';
+       document.head.appendChild(iconLink);
     }
   }, []);
 
