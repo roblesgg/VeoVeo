@@ -1,7 +1,8 @@
 {
     "cleanUrls": true,
     "rewrites": [
-        { "source": "/descargar", "destination": "/descargar.html" }
+        { "source": "/descargar", "destination": "/descargar.html" },
+        { "source": "/(.*)", "destination": "/index.html" }
     ],
     "redirects": [
         {
