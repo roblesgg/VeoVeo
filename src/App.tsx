@@ -83,21 +83,6 @@ function VersionShield() {
   );
 }
 
-// 📱 Botón flotante para descargar la App (Solo Web)
-function FloatingDownloadButton() {
-  if (Platform.OS !== 'web') return null;
-
-  return (
-    <View style={styles.fabContainer}>
-      <Text 
-        onPress={() => Linking.openURL('/descargar')} 
-        style={styles.fab}
-      >
-        📲 Descargar App
-      </Text>
-    </View>
-  );
-}
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -139,7 +124,6 @@ export default function App() {
                   <RootNavigator />
                   <VersionShield />
                </View>
-               <FloatingDownloadButton />
             </View>
           </AuthProvider>
         </LanguageProvider>
@@ -176,30 +160,6 @@ const styles = StyleSheet.create({
   updateText: { color: 'rgba(255,255,255,0.6)', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 40 },
   updateBtnContainer: { width: '100%', borderRadius: 20, overflow: 'hidden' },
   updateBtn: { backgroundColor: COLORS.primary, color: '#fff', paddingVertical: 18, textAlign: 'center', fontSize: 18, fontWeight: '800', borderRadius: 20 },
-  // Estilos del FAB (Botón flotante)
-  fabContainer: {
-    position: 'absolute',
-    top: 20,
-    right: 30,
-    zIndex: 9999,
-  },
-  fab: {
-    backgroundColor: 'rgba(14, 165, 233, 0.15)',
-    color: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    fontSize: 14,
-    fontWeight: '800',
-    borderWidth: 1,
-    borderColor: 'rgba(14, 165, 233, 0.3)',
-    // Glassmorphism effect for web
-    ...(Platform.OS === 'web' ? {
-      backdropFilter: 'blur(10px)',
-      cursor: 'pointer',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    } : {}),
-  },
   appWrapper: {
     flex: 1,
     backgroundColor: '#020617',
