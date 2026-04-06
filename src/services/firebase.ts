@@ -47,20 +47,15 @@ export function getFirebaseAuth(): Auth | null {
   if (!app) return null;
 
   if (!authSingleton) {
-    if (getApps().length > 0 && !authSingleton) {
-      // Intentamos inicializar con persistencia si es la primera vez
+    if (Platform.OS === 'web') {
+      authSingleton = getAuth(app);
+    } else {
       try {
-        const persistence = Platform.OS === 'web' 
-          ? browserLocalPersistence 
-          : (getReactNativePersistence as any)(ReactNativeAsyncStorage);
-          
+        const persistence = (getReactNativePersistence as any)(ReactNativeAsyncStorage);
         authSingleton = initializeAuth(app, { persistence });
       } catch {
-        // Fallback si ya estaba inicializado o falla
         authSingleton = getAuth(app);
       }
-    } else {
-      authSingleton = getAuth(app);
     }
   }
   return authSingleton;
