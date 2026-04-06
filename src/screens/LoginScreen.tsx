@@ -147,8 +147,16 @@ export function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center' },
-  pad: { paddingHorizontal: 32 },
+  center: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  pad: { 
+    paddingHorizontal: 32,
+    width: '100%',
+    maxWidth: 420, // Perfección visual en escritorio
+  },
   logo: { fontSize: 48, color: '#fff', textAlign: 'center', marginBottom: 40 },
   warn: { color: '#ffcc80', marginBottom: 16, textAlign: 'center', fontSize: 13 },
   input: {

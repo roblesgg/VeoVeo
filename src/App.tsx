@@ -194,26 +194,14 @@ const styles = StyleSheet.create({
   },
   appWrapper: {
     flex: 1,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#020617',
     ...(Platform.OS === 'web' ? {
-      backgroundImage: 'radial-gradient(circle at center, #1e1b4b 0%, #000 100%)',
+      backgroundImage: 'radial-gradient(circle at center, #1e1b4b 0%, #020617 100%)',
     } : {}),
   },
   mainContainer: {
     flex: 1,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 480 : '100%',
-    backgroundColor: '#020617',
-    // Web premium feel: mobile frame
-    ...(Platform.OS === 'web' ? {
-      maxHeight: '94vh',
-      borderRadius: 44,
-      overflow: 'hidden',
-      borderWidth: 10,
-      borderColor: '#1e293b',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.05)',
-    } as any : {}),
+    backgroundColor: 'transparent',
   },
 });
