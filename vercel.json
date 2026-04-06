@@ -2,7 +2,7 @@
     "cleanUrls": true,
     "rewrites": [
         { "source": "/descargar", "destination": "/descargar.html" },
-        { "source": "/(.*)", "destination": "/index.html" }
+        { "source": "/((?!_expo|assets|static|favicon.ico|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg).*)", "destination": "/index.html" }
     ],
     "redirects": [
         {
