@@ -114,11 +114,6 @@ export default function App() {
           <AuthProvider>
             <View style={styles.appWrapper}>
                <View style={styles.mainContainer}>
-                  {Platform.OS === 'web' && (
-                    <Text style={{ color: 'red', position: 'absolute', top: 10, alignSelf: 'center', zIndex: 10000 }}>
-                      [Web Mirror Active]
-                    </Text>
-                  )}
                   <RootNavigator />
                   <VersionShield />
                   <FloatingDownloadButton />
