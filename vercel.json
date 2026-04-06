@@ -2,7 +2,7 @@
     "cleanUrls": true,
     "rewrites": [
         { "source": "/descargar", "destination": "/descargar.html" },
-        { "source": "/((?!favicon.ico|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.apk|\\.well-known).*)", "destination": "/index.html" }
+        { "source": "/((?!favicon.ico|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.apk|.*\\.ttf|.*\\.woff|.*\\.woff2|.*\\.json|.*\\.svg|\\.well-known).*)", "destination": "/index.html" }
     ],
     "redirects": [
         {
