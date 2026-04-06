@@ -5,9 +5,7 @@
         { "source": "/assets/(.*)", "destination": "/app/assets/$1" },
         { "source": "/static/(.*)", "destination": "/app/static/$1" },
         { "source": "/descargar", "destination": "/descargar.html" },
-        { "source": "/(index\\.js|App\\.tsx|package\\.json)", "destination": "/404" },
-        { "source": "/", "destination": "/app/index.html" },
-        { "source": "/((?!descargar).*)$", "destination": "/app/index.html" }
+        { "source": "/(.*)", "destination": "/app/index.html" }
     ],
     "redirects": [
         {
