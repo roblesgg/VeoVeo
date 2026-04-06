@@ -15,10 +15,10 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { signInWithPopup } from 'firebase/auth';
 import { getFirebaseAuth } from '../services/firebase';
 import { actualizarEstadoConexion } from '../services/repositorioUsuarios';
 import { registrarTokenEnFirestore } from '../services/notificationService';

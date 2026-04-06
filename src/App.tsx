@@ -26,6 +26,8 @@ if ((TextInput as any).defaultProps) {
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
 const queryClient = new QueryClient();
 
@@ -98,6 +100,10 @@ function FloatingDownloadButton() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+  });
+
   React.useEffect(() => {
     // Listener para notificaciones en primer plano
     const subscription = Notifications.addNotificationReceivedListener(notification => {
@@ -116,8 +122,8 @@ export default function App() {
                <View style={styles.mainContainer}>
                   <RootNavigator />
                   <VersionShield />
-                  <FloatingDownloadButton />
                </View>
+               <FloatingDownloadButton />
             </View>
           </AuthProvider>
         </LanguageProvider>
@@ -157,8 +163,8 @@ const styles = StyleSheet.create({
   // Estilos del FAB (Botón flotante)
   fabContainer: {
     position: 'absolute',
-    bottom: 30,
-    right: 20,
+    top: 20,
+    right: 30,
     zIndex: 9999,
   },
   fab: {
