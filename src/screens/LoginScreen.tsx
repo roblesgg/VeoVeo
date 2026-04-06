@@ -95,7 +95,12 @@ export function LoginScreen() {
             try {
               await signInWithGoogle();
             } catch (e) {
-              setErrorMessage(e instanceof Error ? e.message : 'Error con Google');
+              const err = e as any;
+              let msg = err?.message || 'Error con Google';
+              if (msg.includes('unauthorized-domain')) {
+                msg = '⚠️ Dominio no autorizado. Añade "veoveo.dripdev.dev" a los Authorized Domains en Firebase Console.';
+              }
+              setErrorMessage(msg);
             } finally {
               setLoading(false);
             }
