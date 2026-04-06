@@ -1,6 +1,5 @@
 import fs from 'fs';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -8,50 +7,46 @@ dotenv.config();
 // Leer app.json para sacar la versión actual
 const appJson = JSON.parse(fs.readFileSync('./app.json', 'utf8'));
 const version = appJson.expo.version;
-const isTest = appJson.expo.name === 'VeoVeoTest';
+const isTest = appJson.expo.name.includes('Test');
 
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Validar config básica
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error('❌ Error: Faltan variables de entorno EXPO_PUBLIC_FIREBASE_* en el .env');
+// Leer la clave de administrador
+let serviceAccount;
+try {
+  serviceAccount = JSON.parse(fs.readFileSync('./firebase-admin.json', 'utf8'));
+} catch (error) {
+  console.error('❌ Error: No se encontró firebase-admin.json en la raíz.');
+  console.error('👉 Genera la clave en Firebase Console > Project Settings > Service Accounts');
   process.exit(1);
 }
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Inicializar Admin SDK
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const db = admin.firestore();
 
 async function pushVersion() {
   console.log(
     `🚀 Sincronizando versión v${version} con Firestore (${isTest ? 'MODO TEST' : 'MODO PRODUCCIÓN'})...`,
   );
 
-  const docRef = doc(db, 'configuracion', 'app');
+  const docRef = db.collection('configuracion').doc('app');
 
   const updateData = {};
   const field = isTest ? 'min_version_test' : 'min_version';
   updateData[field] = version;
 
-  // También actualizamos la URL de descarga por si acaso
+  // También actualizamos la URL de descarga oficial
   const downloadUrlField = isTest ? 'download_url_test' : 'download_url';
-  updateData[downloadUrlField] = 'https://dripdev.dev';
+  updateData[downloadUrlField] = 'https://veoveo.dripdev.dev';
 
   try {
-    await updateDoc(docRef, updateData);
+    await docRef.update(updateData);
     console.log(`✅ ¡Éxito! Campo '${field}' actualizado a '${version}' en Firestore.`);
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error al actualizar Firestore:', error.message);
-    if (error.code === 'permission-denied') {
-      console.error('👉 Asegúrate de tener permisos de escritura en la colección "configuracion".');
-    }
+    console.error('❌ Error al actualizar Firestore (Admin SDK):', error.message);
     process.exit(1);
   }
 }
