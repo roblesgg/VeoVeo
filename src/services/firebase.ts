@@ -1,5 +1,13 @@
 import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth, initializeAuth, getReactNativePersistence, type Auth } from 'firebase/auth';
+import { 
+  getAuth, 
+  initializeAuth, 
+  // @ts-ignore
+  getReactNativePersistence, 
+  browserLocalPersistence, 
+  type Auth 
+} from 'firebase/auth';
+import { Platform } from 'react-native';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
@@ -42,9 +50,11 @@ export function getFirebaseAuth(): Auth | null {
     if (getApps().length > 0 && !authSingleton) {
       // Intentamos inicializar con persistencia si es la primera vez
       try {
-        authSingleton = initializeAuth(app, {
-          persistence: getReactNativePersistence(ReactNativeAsyncStorage),
-        });
+        const persistence = Platform.OS === 'web' 
+          ? browserLocalPersistence 
+          : (getReactNativePersistence as any)(ReactNativeAsyncStorage);
+          
+        authSingleton = initializeAuth(app, { persistence });
       } catch {
         // Fallback si ya estaba inicializado o falla
         authSingleton = getAuth(app);

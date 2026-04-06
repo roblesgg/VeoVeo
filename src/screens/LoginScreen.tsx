@@ -30,11 +30,7 @@ export function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ff = fontFamily ?? 'System';
-
-  if (!loaded) {
-    return <GradientBackground style={{ paddingTop: insets.top }} />;
-  }
+  const ff = loaded ? 'Montserrat_600SemiBold' : 'System';
 
   return (
     <GradientBackground style={[styles.center, { paddingTop: insets.top }]}>

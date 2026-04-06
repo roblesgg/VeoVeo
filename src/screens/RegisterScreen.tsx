@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { GradientBackground } from '../components/GradientBackground';
 import type { RootStackParamList } from '../navigation/types';
-import { AccentBorder, ErrorRed } from '../theme/colors';
+import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { useMontserrat } from '../theme/useMontserrat';
 
@@ -22,11 +22,7 @@ export function RegisterScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const ff = fontFamily ?? 'System';
-
-  if (!loaded) {
-    return <GradientBackground style={{ paddingTop: insets.top }} />;
-  }
+  const ff = loaded ? 'Montserrat_600SemiBold' : 'System';
 
   return (
     <GradientBackground style={[styles.center, { paddingTop: insets.top }]}>
@@ -118,7 +114,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
-  err: { color: ErrorRed, marginBottom: 16, textAlign: 'center', fontSize: 14 },
+  err: { color: COLORS.error, marginBottom: 16, textAlign: 'center', fontSize: 14 },
   btn: {
     height: 50,
     borderRadius: 30,
