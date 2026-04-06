@@ -54,3 +54,8 @@ doctor_*.txt
 !tsconfig.json
 !app.config.js
 !.expo/*.json
+
+# Web Distribution
+!web_out/
+!web_out/**
+!web_out/**.json
