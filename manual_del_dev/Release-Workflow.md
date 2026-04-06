@@ -1,52 +1,45 @@
 # Guía de Lanzamiento de Versión (Release Workflow)
 
-Esta guía explica los pasos exactos para sacar una nueva versión de VeoVeo, desde el código hasta que llega a los usuarios.
+Esta guía explica los pasos exactos para sacar una nueva versión de VeoVeo, diferenciando entre el desarrollo (Test) y el lanzamiento estable (Producción).
 
-## 1. Preparar el Código
+## 1. Regla de Oro: Desarrollo vs Producción
 
-1. Sube la versión en `app.json` (ej: de `1.3.1` a `1.3.2`).
-2. Sube el `versionCode` (debe ser siempre mayor al anterior).
+*   **Debugging/Desarrollo:** SIEMPRE se debe usar `npm run android:test`. Esto genera la app con el ID `com.roblesgg.veoveo.test`, permitiendo que conviva con la app real en el móvil sin pisar datos.
+*   **Producción:** Solo se genera la versión estable (`npm run android`) cuando los cambios han sido validados en la versión de Test.
 
-## 2. Generar la APK (Local Build)
+## 2. Preparar el Lanzamiento
 
-En lugar de esperar colas en Expo, compilamos localmente en unos 12-15 minutos:
+1.  Incrementa la versión en `app.json` (ej: de `1.5.0` a `1.6.0`).
+2.  Sube el `versionCode` (debe ser siempre mayor al anterior, ej: de `25` a `26`).
+3.  Actualiza el texto de la versión en `index.html` para que los usuarios sepan qué están descargando.
 
-1. Asegúrate de tener Java 17 instalado.
-2. Ejecuta: `npx eas build --platform android --local --profile production`
-3. Cuando termine, el archivo APK estará en la raíz del proyecto.
+## 3. Generar la APK Estable
 
-## 3. Actualizar la Web (Landing Page)
+Compilamos localmente para evitar colas:
 
-1. Mueve la APK generada a la carpeta `/landing`.
-2. Cámbiale el nombre a algo descript- **Fichero final:** `veoveo-latest.apk`.
-- **EAS Build:** Si usas EAS, asegúrate de descargar el artefacto y renombrarlo.
-- **Testeo:** Antes de subir nada a la raíz, sube el archivo como `veoveo-test.apk` para que el desarrollador pueda validarlo en su terminal de Metro.
-   - Busca la línea del botón de descarga (`href="./..."`).
-   - Pon el nombre del nuevo APK.
-   - Actualiza el texto visual: `Descargar Android (v1.3.2)`.
+1.  Asegúrate de estar en la rama `main` y tener los cambios limpios.
+2.  Ejecuta: `npx eas build --platform android --local --profile production`
+3.  Al finalizar, el archivo APK generado debe renombrarse a `veoveo-latest.apk` y colocarse en la raíz del proyecto para que la web lo sirva correctamente.
 
-## 4. Despliegue Automático
+## 4. Control de Versiones y Despliegue Web
 
-Como vinculamos GitHub con Netlify:
+1.  Haz **Push** a GitHub:
+    ```bash
+    git add .
+    git commit -m "Release v1.6.0: Stable production build"
+    git push origin main
+    ```
+2.  Vercel detectará el cambio y actualizará la landing page automáticamente.
 
-1. Haz **Push** a la rama `main`:
-   ```bash
-   git add .
-   git commit -m "Release v1.3.2"
-   git push origin main
-   ```
-2. Netlify detectará el cambio y actualizará la web en ~1 minuto.
+## 5. Activar el Aviso de Actualización (Firestore)
 
-## 5. Activar el Aviso en la App (Firestore)
+Para obligar a los usuarios a actualizar (Mandatory Update):
 
-Este es el paso que "obliga" a los usuarios a actualizar:
-
-1. Entra en **Firebase Console**.
-2. Ve a **Firestore Database**.
-3. En el documento `config/app_meta`, cambia `minVersionCode` al nuevo código de compilación (ej: `15`) y `minVersionName` a la nueva versión (ej: `1.3.2`).
-4. ¡Listo! Todos los usuarios recibirán el aviso inmediatamente gracias al listener en `App.tsx`.
+1.  Ejecuta el script de sincronización: `npm run release`
+2.  Este script leerá el `app.json` y actualizará el campo `min_version` en la colección `configuracion/app` de Firestore.
+3.  Los usuarios con versiones inferiores verán inmediatamente el bloqueo de "Nueva versión disponible".
 
 ---
 
-> [!TIP]
-> **Script de Automatización**: Tienes un comando `npm run release` que intenta subir la versión a Firestore automáticamente, pero requiere que configures una clave de administrador en el `.env`.
+> [!IMPORTANT]
+> Nunca lances a producción sin haber probado antes en `android:test`. La estabilidad de los usuarios reales es la prioridad número uno.
