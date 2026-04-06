@@ -50,6 +50,7 @@ doctor_*.txt
 !package-lock.json
 !eas.json
 !google-services.json
+!vercel.json
 !tsconfig.json
 !app.config.js
 !.expo/*.json
