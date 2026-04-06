@@ -107,7 +107,10 @@ export default function App() {
   React.useEffect(() => {
     if (Platform.OS === 'web') {
        const style = document.createElement('style');
-       style.innerHTML = `@font-face { font-family: 'Ionicons'; src: url('https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/fonts/ionicons.ttf') format('truetype'); }`;
+       style.innerHTML = `
+         @font-face { font-family: 'Ionicons'; src: url('https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/fonts/ionicons.ttf') format('truetype'); }
+         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
+       `;
        document.head.appendChild(style);
     }
   }, []);
