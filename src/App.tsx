@@ -105,6 +105,14 @@ export default function App() {
   });
 
   React.useEffect(() => {
+    if (Platform.OS === 'web') {
+       const style = document.createElement('style');
+       style.innerHTML = `@font-face { font-family: 'Ionicons'; src: url('https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/fonts/ionicons.ttf') format('truetype'); }`;
+       document.head.appendChild(style);
+    }
+  }, []);
+
+  React.useEffect(() => {
     // Listener para notificaciones en primer plano
     const subscription = Notifications.addNotificationReceivedListener(notification => {
       console.log('🔔 Notificación recibida:', notification);
