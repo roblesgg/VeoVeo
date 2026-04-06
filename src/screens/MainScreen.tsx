@@ -3,7 +3,7 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LiquidBottomBar } from '../components/LiquidBottomBar';
 import type { RootStackParamList } from '../navigation/types';
@@ -39,10 +39,18 @@ export function MainScreen() {
     }
   }, [isFocused, user]);
 
+  // Bypass for Splash: Force ready after 3.5s even if fonts fail
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const emergencyTimer = setTimeout(() => setAppReady(true), 3500);
+      return () => clearTimeout(emergencyTimer);
+    }
+  }, []);
+
   // Simulate minimal loading time for Splash
   useEffect(() => {
     if (loaded) {
-      const timer = setTimeout(() => setAppReady(true), 2500);
+      const timer = setTimeout(() => setAppReady(true), 1500);
       return () => clearTimeout(timer);
     }
   }, [loaded]);
