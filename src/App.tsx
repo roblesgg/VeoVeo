@@ -6,11 +6,11 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import Constants from 'expo-constants';
 import { BlurView } from 'expo-blur';
 
-import { AuthProvider } from './src/context/AuthContext';
-import { LanguageProvider } from './src/context/LanguageContext';
-import { RootNavigator } from './src/navigation/RootNavigator';
-import { COLORS } from './src/theme/colors';
-import { getFirestoreDb } from './src/services/firebase';
+import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { RootNavigator } from './navigation/RootNavigator';
+import { COLORS } from './theme/colors';
+import { getFirestoreDb } from './services/firebase';
 
 // 🛑 Cap global de escalado de fuentes para evitar layouts rotos
 if ((Text as any).defaultProps) {
