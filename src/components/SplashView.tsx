@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS } from '../theme/colors';
 
-export function SplashView({ fontFamily }: { fontFamily?: string }) {
+export function SplashView({ fontFamily = 'System' }: { fontFamily?: string }) {
   const opacity = useSharedValue(0);
   const scale = useSharedValue(0.95);
   const letterSpacing = useSharedValue(2);
