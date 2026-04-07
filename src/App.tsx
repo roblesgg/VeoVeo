@@ -147,10 +147,9 @@ export default function App() {
          /* 🚀 Scrollbars Invisibles (Like Apple) */
          ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
          input, textarea { user-select: auto !important; }
-         /* 💎 Radial Gradient Background de Alto Rendimiento */
          #root {
            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
-           min-height: 100vh;
+           height: 100dvh; /* 🚀 Altura Dinámica Real */
            /* Evita el scroll elástico que esconde la barra en iOS */
            position: fixed;
            top: 0; left: 0; right: 0; bottom: 0;

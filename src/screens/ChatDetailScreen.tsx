@@ -358,7 +358,7 @@ export function ChatDetailScreen() {
           experimentalBlurMethod="dimezisBlurView" 
           style={[
             styles.inputWrapper, 
-            { paddingBottom: isKeyboardVisible ? 8 : Math.max(insets.bottom, 22) }
+            { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, Platform.OS === 'web' ? 44 : 22) }
           ]}
         >
           <View style={styles.webCenteringWrapper}>
