@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef, memo, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
@@ -14,8 +14,8 @@ import {
   View,
   Keyboard,
   BackHandler,
-  ScrollView,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Animated, { FadeInDown, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,48 @@ import { SHADOWS } from '../theme/theme';
 import { CarruselPeliculas } from '../components/discover/CarruselPeliculas';
 import { CategoryModal } from '../components/discover/CategoryModal';
 import { useLanguage } from '../context/LanguageContext';
+
+// 🚀 [MEMO] Item de Película en Grilla
+const MovieResultItem = memo(({ item, onPeliculaClick, libraryMap }: { item: any, onPeliculaClick: any, libraryMap: any }) => (
+  <View style={styles.movieGridItem}>
+    <Pressable
+      onPress={() => onPeliculaClick(item.id)}
+      style={[styles.resultCard, SHADOWS.macLight]}
+    >
+      <ExpoImage
+        source={{ uri: posterUrl(item.poster_path, 'w342')! }}
+        style={styles.fullImg}
+        contentFit="cover"
+        transition={200}
+      />
+      {libraryMap[item.id]?.estado === 'vista' ? (
+        <RatingBadge rating={libraryMap[item.id].valoracion} hideText />
+      ) : libraryMap[item.id]?.estado === 'por_ver' ? (
+        <View style={styles.eyeBadge}><Ionicons name="eye" size={14} color="#3498db" /></View>
+      ) : null}
+    </Pressable>
+  </View>
+));
+MovieResultItem.displayName = 'MovieResultItem';
+
+// 🚀 [MEMO] Item de Actor en Grilla
+const ActorResultItem = memo(({ item, onActorClick }: { item: any, onActorClick: any }) => (
+  <View style={styles.actorGridItem}>
+    <Pressable
+      onPress={() => onActorClick(item.id, item.name)}
+      style={[styles.resultCard, SHADOWS.macLight]}
+    >
+      <ExpoImage
+        source={{ uri: profileUrl(item.profile_path)! }}
+        style={styles.fullImg}
+        contentFit="cover"
+        transition={200}
+      />
+      <Text style={styles.actorName} numberOfLines={1}>{item.name}</Text>
+    </Pressable>
+  </View>
+));
+ActorResultItem.displayName = 'ActorResultItem';
 
 export function DiscoverTab({
   fontFamily,
@@ -141,9 +183,14 @@ export function DiscoverTab({
 
   return (
     <View style={styles.flex}>
-      {/* 🛡️ Cabecera Unificada (Glaseada y Sólida) */}
-      <BlurView intensity={95} tint="dark" style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80) }]} />
-      <View style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80), backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
+      {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
+      <BlurView 
+        intensity={85} 
+        tint="dark" 
+        experimentalBlurMethod="dimezisBlurView"
+        style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80) }]} 
+      />
+      <View style={[styles.headerContainer, { height: insets.top + (buscarAtiva ? 220 : 80), backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
         <View style={styles.headerBorder} />
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Explorar</Text>
@@ -198,7 +245,8 @@ export function DiscoverTab({
 
       {/* 📦 Contenido Principal */}
       <View style={styles.content}>
-        {modoEdicion ? (
+        <View style={styles.webCenteringWrapper}>
+          {modoEdicion ? (
           <DraggableFlatList
             data={carruselesActivos}
             keyExtractor={(item) => item}
@@ -220,13 +268,15 @@ export function DiscoverTab({
                 />
               </ScaleDecorator>
             )}
-            contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
+            contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 90), paddingBottom: 140 }}
           />
         ) : (
           <FlatList
             ref={mainListRef}
             data={carruselesActivos}
             keyExtractor={(item) => item}
+            initialNumToRender={4}
+            windowSize={3}
             renderItem={({ item }) => (
               <CarruselPeliculas
                 titulo={item}
@@ -243,10 +293,11 @@ export function DiscoverTab({
               />
             )}
             refreshControl={<RefreshControl refreshing={cargando} onRefresh={recargarTodosLosCarruseles} tintColor="#fff" progressViewOffset={100} />}
-            contentContainerStyle={{ paddingTop: 20, paddingBottom: 140 }}
+             contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 90), paddingBottom: 140 }}
             keyboardDismissMode="on-drag"
           />
         )}
+        </View>
       </View>
 
       {/* 🔍 Resultados de Búsqueda (Cae justo después de la cabecera) */}
@@ -260,16 +311,20 @@ export function DiscoverTab({
         <Animated.View 
           entering={FadeIn} 
           exiting={FadeOut} 
-          style={[styles.busquedaBox, { top: insets.top + 95 }]}
+          style={[styles.busquedaBox, { top: 0 }]}
         >
           {buscando ? (
-            <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+            <ActivityIndicator color="#fff" style={{ marginTop: insets.top + 140 }} />
           ) : (
             <FlatList
               data={resultadosBusqueda}
               keyExtractor={(item) => String(item.id)}
               numColumns={tipoBusqueda === 'movie' ? 3 : 2}
-              contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 140 }}
+              contentContainerStyle={{ 
+                paddingHorizontal: 12, 
+                paddingTop: insets.top + (buscarAtiva ? 230 : 95), 
+                paddingBottom: 140 
+              }}
               onScroll={(e) => {
                 if (e.nativeEvent.contentOffset.y < -60) {
                   setBuscarAtiva(false);
@@ -319,7 +374,13 @@ export function DiscoverTab({
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
-  content: { flex: 1, paddingTop: 80 },
+  webCenteringWrapper: {
+    width: '100%',
+    maxWidth: 1000, 
+    alignSelf: 'center',
+    flex: 1,
+  },
+  content: { flex: 1, paddingTop: 0 },
   headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2000 },
   headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
   titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },

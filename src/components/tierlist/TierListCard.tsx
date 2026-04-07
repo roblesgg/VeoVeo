@@ -72,8 +72,8 @@ export const TierListCard = React.memo(({ tier, peliculasMap, onPress, fontFamil
 const styles = StyleSheet.create({
   outer: {
     width: '100%',
-    aspectRatio: 1,
-    padding: 2, // Extra breathing room inside the grid padding
+    aspectRatio: 0.85, // 🚀 Más alta para mayor impacto visual
+    padding: 2, 
   },
   container: {
     flex: 1,
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 17, // 🚀 Más grande
     fontWeight: '800',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.5)',

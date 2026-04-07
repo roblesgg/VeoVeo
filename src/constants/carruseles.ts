@@ -2,12 +2,15 @@
  * Misma lista y lógica que MainScreen.kt (carruselesDisponibles + obtenerIdGenero).
  */
 export const CARRUSELES_DISPONIBLES: string[] = [
-  'Tendencias Semanales',
-  'Populares Ahora',
-  'Estrenos en Cartelera',
-  'Mejor Valoradas',
-  'Joyas de los 80/90',
-  'Clásicos de Oro',
+   'Tendencias Semanales',
+   'Populares Ahora',
+   'Estrenos en Cartelera',
+   'Mejor Valoradas',
+   'Cine de los 80/90',
+   'Cine de los 70',
+   'Cine de los 60',
+   'Cine de los 50',
+   'Clásicos de Oro',
   'Acción',
   'Animación',
   'Anime',
@@ -57,16 +60,30 @@ export function obtenerConfiguracionCarrusel(titulo: string): {
   if (titulo === 'Populares Ahora') return { tipo: 'POPULAR', payload: '' };
   if (titulo === 'Estrenos en Cartelera') return { tipo: 'NOW_PLAYING', payload: '' };
   if (titulo === 'Mejor Valoradas') return { tipo: 'TOP_RATED', payload: '' };
-  if (titulo === 'Joyas de los 80/90')
+  if (titulo.includes('80/90'))
     return {
       tipo: 'DISCOVER',
-      payload:
-        'primary_release_date.gte=1980-01-01&primary_release_date.lte=1999-12-31&vote_count.gte=1000&sort_by=popularity.desc',
+      payload: 'primary_release_date.gte=1980-01-01&primary_release_date.lte=1999-12-31&vote_count.gte=1000&sort_by=popularity.desc',
+    };
+  if (titulo.includes('70'))
+    return {
+      tipo: 'DISCOVER',
+      payload: 'primary_release_date.gte=1970-01-01&primary_release_date.lte=1979-12-31&vote_count.gte=500&sort_by=popularity.desc',
+    };
+  if (titulo.includes('60'))
+    return {
+      tipo: 'DISCOVER',
+      payload: 'primary_release_date.gte=1960-01-01&primary_release_date.lte=1969-12-31&vote_count.gte=300&sort_by=popularity.desc',
+    };
+  if (titulo.includes('50'))
+    return {
+      tipo: 'DISCOVER',
+      payload: 'primary_release_date.gte=1950-01-01&primary_release_date.lte=1959-12-31&vote_count.gte=200&sort_by=popularity.desc',
     };
   if (titulo === 'Clásicos de Oro')
     return {
       tipo: 'DISCOVER',
-      payload: 'primary_release_date.lte=1979-12-31&vote_count.gte=500&sort_by=vote_average.desc',
+      payload: 'primary_release_date.lte=1949-12-31&vote_count.gte=500&sort_by=vote_average.desc',
     };
 
   return { tipo: 'GENERO', payload: obtenerIdGenero(titulo) };
@@ -74,7 +91,7 @@ export function obtenerConfiguracionCarrusel(titulo: string): {
 
 export function obtenerIdGenero(titulo: string): string {
   const t = titulo;
-  if (t.includes('Acción') && !t.includes('Comedia')) return '28';
+  if (t.includes('Cine de los')) return '28'; // Fallback a acción si es una década no mapeada arriba
   if (t.includes('Aventura')) return '12';
   if (t.includes('Anime')) return '16';
   if (t.includes('Animación')) return '16';

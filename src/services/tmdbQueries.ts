@@ -5,7 +5,11 @@ import type { Movie } from '../types';
 export const fetchCarouselData = async (titulo: string) => {
   const config = obtenerConfiguracionCarrusel(titulo);
   let res;
-  const randomPage = Math.floor(Math.random() * 8) + 1;
+  let randomPage = Math.floor(Math.random() * 8) + 1;
+  // 🍿 Para contenido retro muy específico, limitamos la página para asegurar resultados
+  if (config.tipo === 'DISCOVER' && config.payload.includes('primary_release_date')) {
+    randomPage = Math.floor(Math.random() * 3) + 1;
+  }
 
   switch (config.tipo) {
     case 'TRENDING':

@@ -84,7 +84,7 @@ export function AjustesScreen() {
 
   return (
     <GradientBackground style={styles.flex}>
-      <BlurView intensity={95} tint="dark" style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <BlurView intensity={80} tint="dark" experimentalBlurMethod="dimezisBlurView" style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={28} color="#fff" />
@@ -153,6 +153,17 @@ export function AjustesScreen() {
             }
           </View>
         </View>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { fontFamily }]}>Información Legal</Text>
+          <View style={[styles.card, SHADOWS.macLight, { flexDirection: 'column', alignItems: 'center', paddingVertical: 24 }]}>
+             <Text style={[styles.legalText, { fontFamily, textAlign: 'center' }]}>
+               This product uses the TMDB API but is not endorsed or certified by TMDB.
+             </Text>
+          </View>
+
+
+          <Text style={[styles.versionText, { fontFamily }]}>VeoVeo v1.6.0 | Developed by Drip Dev</Text>
+        </View>
       </ScrollView>
     </GradientBackground>
   );
@@ -180,24 +191,24 @@ function agruparPlataformas(lista: any[]) {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#020617' },
+  flex: { flex: 1 },
   header: { 
     position: 'absolute', 
     top: 0, 
     left: 0, 
     right: 0, 
     zIndex: 100, 
-    backgroundColor: 'rgba(2, 6, 23, 0.92)', // Fallback sólido
+    backgroundColor: 'rgba(15, 23, 42, 0.2)', // Más transparente para Glassmorphism
     borderBottomWidth: 1, 
-    borderBottomColor: 'rgba(255,255,255,0.1)' 
+    borderBottomColor: 'rgba(255,255,255,0.08)' 
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 16 },
   backBtn: { padding: 4 },
   titulo: { color: '#fff', fontSize: 22, fontWeight: '900', marginLeft: 8 },
   scroll: { paddingHorizontal: 20 },
   section: { marginBottom: 32 },
-  sectionTitle: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase' },
-  card: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '800', marginBottom: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card: { backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
   cardTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 4 },
   cardDesc: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' },
   infoBox: { flexDirection: 'row', gap: 10, backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: 14, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.2)' },
@@ -212,4 +223,7 @@ const styles = StyleSheet.create({
   platName: { color: '#fff', fontSize: 10, fontWeight: '700', textAlign: 'center' },
   check: { position: 'absolute', top: 4, right: 4 },
   platSearch: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, color: '#fff', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  legalText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, lineHeight: 18, marginTop: 12 },
+  versionText: { color: 'rgba(255,255,255,0.2)', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 24, textTransform: 'uppercase', letterSpacing: 1 },
 });
+

@@ -12,7 +12,7 @@ import {
   where,
   addDoc,
 } from 'firebase/firestore';
-import type { SolicitudAmistad, UsuarioPerfil, Amigo } from '../types';
+import type { SolicitudAmistad, UsuarioPerfil } from '../types';
 import {
   dbOrThrow,
   uidOrThrow,
@@ -118,28 +118,22 @@ export async function obtenerSolicitudesEnviadasPendientesUids(): Promise<Set<st
   return new Set(snap.docs.map((d) => (d.data() as SolicitudAmistad).paraUid).filter(Boolean));
 }
 
-export async function enviarSolicitudAmistad(usernameDestino: string): Promise<void> {
+export async function enviarSolicitudAmistad(destUid: string): Promise<void> {
   const db = dbOrThrow();
   const uid = uidOrThrow();
-
-  const usersRef = collection(db, 'usuarios');
-  const q = query(usersRef, where('username_servido', '==', usernameDestino.toLowerCase()));
-  const snap = await getDocs(q);
-
-  if (snap.empty) throw new Error('Usuario no encontrado');
-  const dest = snap.docs[0]!;
-  const destUid = dest.id;
 
   if (destUid === uid) throw new Error('No puedes enviarte una solicitud a ti mismo');
 
   const miPerfil = await getPerfil(uid);
-  if (!miPerfil) throw new Error('No se pudo obtener tu perfil');
+  const destPerfil = await getPerfil(destUid);
+  
+  if (!miPerfil || !destPerfil) throw new Error('No se pudo obtener la información de los perfiles');
 
   await addDoc(collection(db, 'solicitudes_amistad'), {
     deUid: uid,
     deUsername: miPerfil.username,
     paraUid: destUid,
-    paraUsername: dest.data().username,
+    paraUsername: destPerfil.username,
     estado: 'pendiente' as const,
     timestamp: Date.now(),
   });

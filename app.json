@@ -20,7 +20,7 @@
       "package": "com.roblesgg.veoveo",
       "adaptiveIcon": {
         "backgroundColor": "#020617",
-        "foregroundImage": "./assets/icon.png"
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "versionCode": 27,

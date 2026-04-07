@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Pressable, Dimensions } from 'react-native';
+import { StyleSheet, View, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -9,10 +9,7 @@ import Animated, {
   useAnimatedStyle 
 } from 'react-native-reanimated';
 
-const { width: windowWidth } = Dimensions.get('window');
-const BAR_WIDTH = windowWidth - 48;
 const BAR_HEIGHT = 64;
-const TAB_WIDTH = BAR_WIDTH / 4;
 
 type Props = {
   onTabChange: (index: number) => void;
@@ -21,13 +18,19 @@ type Props = {
 
 export function LiquidBottomBar({ onTabChange, paginaActual }: Props) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // 🚀 Cálculo dinámico con límite para escritorio
+  const BAR_WIDTH = Math.min(windowWidth - 48, 600);
+  const TAB_WIDTH = BAR_WIDTH / 4;
+
   const translateX = useSharedValue(paginaActual * TAB_WIDTH);
 
   useEffect(() => {
     translateX.value = withSpring(paginaActual * TAB_WIDTH, {
-      damping: 25,     // More damping = less oscillation
-      stiffness: 200,  // Higher stiffness = moves faster to destination
-      mass: 0.5,       // Lower mass = lighter feel, stops quicker
+      damping: 25,
+      stiffness: 200,
+      mass: 0.5,
     });
   }, [paginaActual]);
 
@@ -43,15 +46,31 @@ export function LiquidBottomBar({ onTabChange, paginaActual }: Props) {
   ] as const;
 
   return (
-    <View style={[styles.container, { bottom: Math.max(insets.bottom, 20) }]}>
-      {/* 🔮 Real Refraction Layer (Native Blur) */}
-      <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
+    <View style={[
+      styles.container, 
+      { 
+        bottom: Math.max(insets.bottom, 20),
+        width: BAR_WIDTH,
+        left: (windowWidth - BAR_WIDTH) / 2, // Centrado perfecto
+      }
+    ]}>
+      {/* 🔮 Real Android Blur Strategy: experimentalBlurMethod="dimezisBlurView" */}
+      <BlurView 
+        intensity={80} 
+        tint="dark" 
+        style={StyleSheet.absoluteFill}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : undefined}
+      >
         <View style={styles.glassOverlay} />
       </BlurView>
 
       <View style={styles.content}>
         {/* 💊 Premium Pill Indicator */}
-        <Animated.View style={[styles.indicator, indicatorStyle]} />
+        <Animated.View style={[
+          styles.indicator, 
+          { width: (BAR_WIDTH / 4) * 0.8, left: (BAR_WIDTH / 4 - (BAR_WIDTH / 4) * 0.8) / 2 },
+          indicatorStyle
+        ]} />
 
         {items.map((item) => {
           const isActive = paginaActual === item.index;
@@ -83,13 +102,14 @@ const styles = StyleSheet.create({
     height: BAR_HEIGHT,
     borderRadius: 32,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)', // Casi invisible, solo blur
     zIndex: 1000,
   },
   glassOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   content: {
     flex: 1,
@@ -99,11 +119,9 @@ const styles = StyleSheet.create({
   },
   indicator: {
     position: 'absolute',
-    width: 64, // Tablet width
     height: 44,
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderRadius: 22,
-    left: (TAB_WIDTH - 64) / 2, // Centered in the tab
   },
   tabBtn: {
     flex: 1,

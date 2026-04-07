@@ -1,4 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, arrayRemove, type Firestore } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
 import { getFirebaseAuth, getFirestoreDb, dbOrThrow, uidOrThrow } from './firebase';
 import type { UsuarioPerfil } from '../types';
 
@@ -83,4 +84,47 @@ export async function actualizarEstadoConexion(
     estado,
     ultimoAcceso: Date.now(),
   });
+}
+
+/**
+ * 🔄 Sincroniza el perfil de Auth con Firestore si es necesario.
+ * Útil para capturar la foto de Google la primera vez.
+ */
+export async function asegurarPerfilFirestore(user: User): Promise<void> {
+  const db = getFirestoreDb();
+  if (!db || !user) return;
+
+  const docRef = doc(db, 'usuarios', user.uid);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) {
+    // Si no existe, creamos el perfil inicial con la foto de Auth si la hay
+    const nuevoPerfil: UsuarioPerfil = {
+      uid: user.uid,
+      username: user.displayName || `Usuario_${user.uid.slice(0, 6)}`,
+      email: user.email || 'sin_email',
+      fotoPerfil: user.photoURL || null,
+      amigos: [],
+      fechaCreacion: Date.now(),
+    };
+    await setDoc(docRef, nuevoPerfil);
+  } else {
+    // 🔄 Sincronización Inteligente: 
+    // Si NO tiene foto en Firestore pero SÍ tiene en Google, la vinculamos automáticamente.
+    const data = snap.data() as UsuarioPerfil;
+    const updates: any = {};
+
+    if (!data.fotoPerfil && user.photoURL) {
+      updates.fotoPerfil = user.photoURL;
+    }
+
+    // Sincronizar también el username_servido si no existe (para búsquedas)
+    if (!data.username_servido && (data.username || user.displayName)) {
+      updates.username_servido = (data.username || user.displayName || '').toLowerCase();
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(docRef, updates);
+    }
+  }
 }

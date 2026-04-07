@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import type { UsuarioPerfil } from '../../types';
 
@@ -17,8 +18,13 @@ export const FriendRow = React.memo(({ amigo, onPress, fontFamily }: Props) => {
     <View style={styles.container}>
       <Pressable style={styles.main} onPress={onPress}>
         <View style={styles.avatar}>
-          {amigo.fotoPerfil ? (
-            <Image source={{ uri: amigo.fotoPerfil }} style={styles.avatarImg} />
+          {amigo.fotoPerfil && amigo.fotoPerfil.trim() !== '' ? (
+            <ExpoImage 
+              source={{ uri: amigo.fotoPerfil }} 
+              style={styles.avatarImg} 
+              contentFit="cover"
+              transition={200}
+            />
           ) : (
             <Text style={styles.avatarText}>
               {(amigo.username || 'U').charAt(0).toUpperCase()}
@@ -64,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  avatarImg: { width: '100%', height: '100%', borderRadius: 26 },
+  avatarImg: { width: 52, height: 52, borderRadius: 26 },
   avatarText: { color: '#fff', fontSize: 20, fontWeight: '800' },
   name: { color: '#fff', fontSize: 17, fontWeight: '700', marginBottom: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -14,7 +14,7 @@ export const UserSearchRow = React.memo(({ usuario, enviada, onAdd, fontFamily }
     <View style={styles.container}>
       <View style={styles.main}>
         <View style={styles.avatar}>
-          {usuario.fotoPerfil ? (
+          {usuario.fotoPerfil && usuario.fotoPerfil.trim() !== '' ? (
             <Image source={{ uri: usuario.fotoPerfil }} style={styles.avatarImg} />
           ) : (
             <Text style={styles.avatarText}>

@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  FlatList, // 🚀 Añadido para virtualización
   Image,
   Pressable,
   ScrollView,
@@ -11,6 +11,8 @@ import {
   View,
   Keyboard,
   BackHandler,
+  useWindowDimensions,
+  DimensionValue, // 🚀 Tipo correcto para estilos
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
@@ -24,6 +26,7 @@ import { nuevaTierListVacia, todasLasPeliculasTierList } from '../types';
 import { COLORS, CardSurface, GradientTop } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { FilterSortMenu } from '../components/FilterSortMenu';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 // Modular Components
 import { TierListCard } from '../components/tierlist/TierListCard';
@@ -31,6 +34,7 @@ import { TierRow } from '../components/tierlist/TierRow';
 import { TierListSelector } from '../components/tierlist/TierListSelector';
 import { MoviePool } from '../components/tierlist/MoviePool';
 import { MoveMovieModal } from '../components/tierlist/MoveMovieModal';
+import { AlertModal } from '../components/common/AlertModal';
 
 type Props = {
   fontFamily: string;
@@ -49,6 +53,31 @@ const TIER_DEFS = [
   { key: 'tierNefasta', label: 'Nefasta' },
 ] as const;
 
+// 🚀 [MEMO] Item de la Grilla de TierLists para máxima performance
+const TierListGridItem = memo(({ 
+  tier, 
+  peliculasMap, 
+  fontFamily, 
+  onPress,
+  width 
+}: { 
+  tier: any, 
+  peliculasMap: any, 
+  fontFamily: string, 
+  onPress: () => void,
+  width: DimensionValue 
+}) => (
+  <View style={{ width }}>
+    <TierListCard
+      tier={tier}
+      peliculasMap={peliculasMap}
+      fontFamily={fontFamily}
+      onPress={onPress}
+    />
+  </View>
+));
+TierListGridItem.displayName = 'TierListGridItem';
+
 export function TierListsTab({
   fontFamily,
   pantalla,
@@ -58,18 +87,28 @@ export function TierListsTab({
   userFoto,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  
+  // 🚀 Cálculo dinámico de columnas (min 2, max según ancho)
+  const numColumns = Math.max(2, Math.floor(windowWidth / 160));
+  const itemWidth: DimensionValue = `${100 / numColumns}%`;
   const [moviendoMovieId, setMoviendoMovieId] = useState<number | null>(null);
   const [textoBuscarPool, setTextoBuscarPool] = useState('');
   const [ordenPool, setOrdenPool] = useState<'recientes' | 'alpha' | 'valoracion'>('recientes');
   const [mostrarMenuPool, setMostrarMenuPool] = useState(false);
   const [pickedMovieId, setPickedMovieId] = useState<number | null>(null);
+  const [tierListAEliminar, setTierListAEliminar] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<{ title: string; message: string } | null>(null);
+  const [buscarAtivaTier, setBuscarAtivaTier] = useState(false); // 🚀 Lógica limpia de búsqueda
 
   const toggleSearch = () => {
-    if (textoBuscarPool !== '') {
-      setTextoBuscarPool(''); // En el botón de la lupa sí borramos por ser acción explícita
+    if (buscarAtivaTier) {
+      setBuscarAtivaTier(false);
+      setTextoBuscarPool('');
       Keyboard.dismiss();
     } else {
-      setTextoBuscarPool(' ');
+      setBuscarAtivaTier(true);
+      setTextoBuscarPool(''); // Limpio para que se vea el placeholder
     }
   };
 
@@ -82,8 +121,10 @@ export function TierListsTab({
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
-        if (textoBuscarPool !== '') {
-          toggleSearch();
+        if (buscarAtivaTier) {
+          setBuscarAtivaTier(false);
+          setTextoBuscarPool('');
+          Keyboard.dismiss();
           return true;
         }
         return false;
@@ -91,7 +132,7 @@ export function TierListsTab({
 
       const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => sub.remove();
-    }, [textoBuscarPool])
+    }, [buscarAtivaTier])
   );
 
   const {
@@ -153,7 +194,10 @@ export function TierListsTab({
       console.log('--- RESULTADO: GUARDADO EXITOSO ---');
     } catch (e) {
       console.error('--- ERROR CRÍTICO AL GUARDAR:', e);
-      Alert.alert('Error', e instanceof Error ? e.message : 'No se pudo guardar');
+      setErrorInfo({
+        title: 'Error al guardar',
+        message: e instanceof Error ? e.message : 'No se pudo guardar la TierList.'
+      });
     }
   };
 
@@ -181,40 +225,51 @@ export function TierListsTab({
       {/* Screen 0: Grid List */}
       {pantalla === 0 && (
         <View style={styles.flex}>
-          <LinearGradient
-            colors={[GradientTop, 'transparent']}
-            style={styles.topFade}
-            pointerEvents="none"
-          />
-          <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
-            <Text style={[styles.titulo, { fontFamily, flex: 1 }]} numberOfLines={1}>
-              TierLists
-            </Text>
-            <View style={styles.actionsTopRow}>
-              <Pressable
-                onPress={toggleSearch}
-                style={styles.iconBtn}
-                hitSlop={8}
-              >
-                <Ionicons name="search-outline" size={28} color="#fff" />
-              </Pressable>
-
-              <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini} hitSlop={8}>
-                <BlurView intensity={30} tint="dark" style={styles.perfilInnerMini}>
-                  {userFoto ? (
-                    <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
-                  ) : (
-                    <Ionicons name="person" size={20} color="#fff" />
-                  )}
-                </BlurView>
-              </Pressable>
+          {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
+          <View style={[styles.headerContainer, { height: insets.top + (buscarAtivaTier ? 160 : 80), backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
+            <View style={styles.headerBorder} />
+            <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
+              <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>TierLists</Text>
+              <View style={styles.actionsTopRow}>
+                <Pressable onPress={toggleSearch} style={styles.iconBtn} hitSlop={8}>
+                  <Ionicons name={buscarAtivaTier ? "close" : "search-outline"} size={28} color="#fff" />
+                </Pressable>
+                <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini} hitSlop={8}>
+                  <View style={styles.perfilInnerMini}>
+                    {userFoto ? (
+                      <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
+                    ) : (
+                      <Ionicons name="person" size={22} color="#fff" />
+                    )}
+                  </View>
+                </Pressable>
+              </View>
             </View>
+
+            {buscarAtivaTier && (
+              <View style={[styles.searchField, SHADOWS.macLight, { top: Math.max(insets.top, 12) + 80 }]}>
+                <TextInput
+                  value={textoBuscarPool}
+                  onChangeText={setTextoBuscarPool}
+                  placeholder="Buscar tierlists..."
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  style={{ flex: 1, color: '#fff', fontFamily }}
+                  autoFocus
+                />
+                {textoBuscarPool.trim().length > 0 && (
+                  <Pressable onPress={() => setTextoBuscarPool('')} style={{ paddingLeft: 8 }}>
+                    <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+                  </Pressable>
+                )}
+              </View>
+            )}
           </View>
 
-          {textoBuscarPool !== '' && (
+          {buscarAtivaTier && (
             <Pressable 
               style={[StyleSheet.absoluteFillObject, { zIndex: 1200 }]} 
               onPress={() => {
+                setBuscarAtivaTier(false);
                 setTextoBuscarPool('');
                 Keyboard.dismiss();
               }}
@@ -223,59 +278,56 @@ export function TierListsTab({
             </Pressable>
           )}
 
-          {textoBuscarPool !== '' && (
-            <View style={[styles.searchField, SHADOWS.macLight, { marginTop: Math.max(insets.top, 12) + 90, zIndex: 1000 }]}>
-              <TextInput
-                value={textoBuscarPool}
-                onChangeText={setTextoBuscarPool}
-                placeholder="Buscar"
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                style={{ flex: 1, color: '#fff', fontFamily }}
-              />
-              {textoBuscarPool.trim().length > 0 && (
-                <Pressable onPress={() => setTextoBuscarPool('')} style={{ paddingLeft: 8 }}>
-                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
-                </Pressable>
-              )}
-            </View>
-          )}
-
-          <ScrollView
+          <FlatList
+            key={numColumns} // 🛡️ Requerido para cambiar numColumns al vuelo sin crashear
+            data={[{ id: 'new-button' } as any, ...tierLists.filter(t => t.nombre.toLowerCase().includes(textoBuscarPool.toLowerCase()))]}
+            keyExtractor={(item) => item.id || 'new'}
+            numColumns={numColumns}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
             contentContainerStyle={[
               styles.gridWrap,
-              { paddingTop: textoBuscarPool !== '' ? 150 : 160 },
+              { paddingTop: insets.top + (buscarAtivaTier ? 170 : 100) },
             ]}
-            keyboardDismissMode="on-drag"
-            style={[textoBuscarPool !== '' && { zIndex: 1001 }]} // 🛡️ [CAMBIO] Solo bloqueamos si estamos buscando
-          >
-            <View style={styles.newCard}>
-              <Pressable
-                style={[styles.newCardInner, SHADOWS.macLight]}
-                onPress={() => {
-                  setTierListActual(nuevaTierListVacia());
-                  setSeleccionadas([]);
-                  onPantallaChange(2);
-                }}
-              >
-                <Ionicons name="add-circle-outline" size={34} color="#fff" />
-                <Text style={[styles.newCardText, { fontFamily }]}>Nueva TierList</Text>
-              </Pressable>
-            </View>
+            style={[buscarAtivaTier && { zIndex: 1001 }]}
+            renderItem={({ item }) => {
+              if (item.id === 'new-button') {
+                return (
+                  <View style={[styles.newCard, { width: itemWidth }]}>
+                    <Pressable
+                      style={[styles.newCardInner, SHADOWS.macLight]}
+                      onPress={() => {
+                        setTierListActual(nuevaTierListVacia());
+                        setSeleccionadas([]);
+                        onPantallaChange(2);
+                      }}
+                    >
+                      <View style={styles.newCardCenterIcon}>
+                        <Ionicons name="add-circle-outline" size={42} color="rgba(255,255,255,0.2)" />
+                      </View>
+                      <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.newCardGradient}>
+                        <Text style={[styles.newCardText, { fontFamily }]}>Nueva TierList</Text>
+                      </LinearGradient>
+                    </Pressable>
+                  </View>
+                );
+              }
 
-            {tierLists.map((tier) => (
-              <View key={tier.id} style={{ width: '50%' }}>
-                <TierListCard
-                  tier={tier}
+              return (
+                <TierListGridItem 
+                  tier={item}
                   peliculasMap={peliculasMap}
                   fontFamily={fontFamily}
+                  width={itemWidth}
                   onPress={() => {
-                    setTierListActual(tier);
+                    setTierListActual(item);
                     onPantallaChange(1);
                   }}
                 />
-              </View>
-            ))}
-          </ScrollView>
+              );
+            }}
+            ListHeaderComponent={() => null}
+          />
           {cargando && <ActivityIndicator color="#fff" style={styles.loader} />}
         </View>
       )}
@@ -312,12 +364,7 @@ export function TierListsTab({
             </Pressable>
             <Pressable
               style={[styles.actionBtn, { backgroundColor: COLORS.error }]}
-              onPress={() =>
-                Alert.alert('Eliminar', '¿Seguro?', [
-                  { text: 'No' },
-                  { text: 'Sí', onPress: () => handleEliminar(tierListActual.id!) },
-                ])
-              }
+              onPress={() => setTierListAEliminar(tierListActual.id!)}
             >
               <Ionicons name="trash-outline" size={18} color="#fff" />
               <Text style={[styles.actionText, { fontFamily }]}>Eliminar</Text>
@@ -479,6 +526,30 @@ export function TierListsTab({
         currentValue={ordenPool}
         onSelect={(v: any) => setOrdenPool(v)}
       />
+
+      <ConfirmModal
+        visible={!!tierListAEliminar}
+        onClose={() => setTierListAEliminar(null)}
+        onConfirm={() => tierListAEliminar && handleEliminar(tierListAEliminar)}
+        title="Eliminar TierList"
+        message="¿Estás seguro de que quieres borrar esta lista? No podrás recuperarla."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        iconName="trash"
+        fontFamily={fontFamily}
+      />
+
+      {errorInfo && (
+        <AlertModal
+          visible={!!errorInfo}
+          onClose={() => setErrorInfo(null)}
+          title={errorInfo.title}
+          message={errorInfo.message}
+          iconName="alert-circle"
+          iconColor="#ff8a80"
+          fontFamily={fontFamily}
+        />
+      )}
     </View>
   );
 }
@@ -487,15 +558,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
   screenPad: { paddingHorizontal: 24, paddingBottom: 130 },
   titulo: { color: '#fff', fontSize: 34, fontWeight: '800' },
-  headerRow: {
-    position: 'absolute',
-    left: 24,
-    right: 24,
-    zIndex: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2000 },
+  headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
+  headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
   actionsTopRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   perfilBtnMini: { marginLeft: 4 },
@@ -510,36 +575,45 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   perfilFotoMini: { width: '100%', height: '100%' },
-  searchField: {
-    marginHorizontal: 20,
-    borderRadius: 24,
-    backgroundColor: CardSurface,
-    paddingHorizontal: 20,
-    height: 50,
-    color: '#fff',
-  },
-  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 5 },
+  searchField: { position: 'absolute', left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   gridWrap: {
-    paddingHorizontal: 8, // Reduced from 16 to maximize card size
+    paddingHorizontal: 4, // 🚀 Espacio extra para ganar tamaño de tarjetas
     paddingBottom: 140,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   newCard: {
-    width: '50%',
-    aspectRatio: 1,
-    padding: 6, // Reduced from 8
+    // width: '50%', // 🚀 Ahora es dinámico via inline
+    aspectRatio: 0.85, 
+    padding: 2, 
   },
   newCardInner: {
     flex: 1,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 20, 
+    backgroundColor: '#1E1E2D', 
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  newCardCenterIcon: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  newCardText: { color: '#fff', marginTop: 8, fontSize: 14 },
+  newCardGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    justifyContent: 'flex-end',
+    paddingBottom: 12,
+  },
+  newCardText: { 
+    color: '#fff', 
+    fontSize: 15, 
+    fontWeight: '800', 
+    textAlign: 'center',
+    width: '100%',
+  },
   detailTitle: { color: '#fff', fontSize: 28, fontWeight: '800', textAlign: 'center' },
   detailDesc: { color: '#aaa', textAlign: 'center', marginTop: 8 },
   detailCount: { color: '#888', textAlign: 'center', marginTop: 4, fontSize: 13 },

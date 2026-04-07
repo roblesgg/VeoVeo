@@ -44,12 +44,17 @@ export const MovieHeader = React.memo(
       <View style={styles.container}>
         <View style={styles.content}>
           <View style={[styles.macCardWrap, SHADOWS.mac]}>
-            <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
+            <BlurView 
+              intensity={80} 
+              style={StyleSheet.absoluteFill} 
+              tint="dark" 
+              experimentalBlurMethod="dimezisBlurView"
+            />
             <View
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                  backgroundColor: 'rgba(15, 23, 42, 0.08)', // Opacidad mínima para efecto cristal puro
                   borderBottomWidth: 1,
                   borderColor: 'rgba(255, 255, 255, 0.12)',
                 },
@@ -78,7 +83,7 @@ export const MovieHeader = React.memo(
               </View>
 
               <View style={styles.infoCol}>
-                <Text style={[styles.title, { fontFamily }]} adjustsFontSizeToFit numberOfLines={2}>
+                <Text style={[styles.title, { fontFamily }]} numberOfLines={3}>
                   {detalles.title}
                 </Text>
                 <View style={styles.metaRow}>
@@ -151,7 +156,7 @@ const styles = StyleSheet.create({
   posterClip: { width: '100%', height: '100%', borderRadius: 16, overflow: 'hidden' },
   mainPoster: { width: '100%', height: '100%' },
   infoCol: { flex: 1 },
-  title: { fontSize: 24, color: '#fff', fontWeight: '800', lineHeight: 28, marginBottom: 6 },
+  title: { fontSize: 28, color: '#fff', fontWeight: '800', lineHeight: 32, marginBottom: 6 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   metaText: { color: COLORS.textMuted, fontSize: 13, fontWeight: '600' },
   badge: {

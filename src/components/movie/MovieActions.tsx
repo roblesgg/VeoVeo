@@ -19,8 +19,13 @@ export const MovieActions = React.memo(
   ({ user, estadoPelicula, accionBib, bibCargando, onPorVer, onVista, fontFamily }: Props) => {
     return (
       <View style={[styles.actionsGlass, SHADOWS.mac]}>
-        <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark" />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.15)' }]} />
+        <BlurView 
+          intensity={80} 
+          style={StyleSheet.absoluteFill} 
+          tint="dark" 
+          experimentalBlurMethod="dimezisBlurView"
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.05)' }]} />
 
         <View style={styles.actionsInner}>
           {!user ? (

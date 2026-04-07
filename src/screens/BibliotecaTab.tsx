@@ -166,8 +166,13 @@ export function BibliotecaTab({
   return (
     <View style={styles.container}>
       <View style={[styles.headerContainer, { height: insets.top + (buscar ? 230 : 150) }]}>
-        <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={styles.glassOverlay} />
+        <BlurView 
+          intensity={85} 
+          tint="dark" 
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill} 
+        />
+        <View style={[styles.glassOverlay, { backgroundColor: 'rgba(15, 23, 42, 0.12)' }]} />
         <View style={styles.headerBorder} />
 
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
@@ -198,18 +203,20 @@ export function BibliotecaTab({
         )}
       </View>
 
-      <ScrollView ref={scrollerRef} contentContainerStyle={{ paddingTop: insets.top + (buscar ? 240 : 160), paddingBottom: 140, paddingHorizontal: 8 }} refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => setRefreshToken(p => p + 1)} tintColor="#fff" progressViewOffset={100} />}>
-        {platsSeleccionadas.length > 0 && (
-          <View style={styles.activeFilterBar}>
-            <Ionicons name="funnel" size={14} color={COLORS.primary} style={{ marginRight: 8 }} />
-            <Text style={[styles.activeFilterText, { fontFamily }]} numberOfLines={1}>
-               {platsSeleccionadas.join(', ')}
-            </Text>
-            <Pressable onPress={() => setPlatsSeleccionadas([])} style={styles.clearFilterBtn} hitSlop={8}><Text style={styles.clearFilterText}>BORRAR</Text></Pressable>
-          </View>
-        )}
-        {renderContent}
-      </ScrollView>
+        <View style={styles.webCenteringWrapper}>
+          <ScrollView ref={scrollerRef} contentContainerStyle={{ paddingTop: insets.top + (buscar ? 240 : 160), paddingBottom: 140, paddingHorizontal: 8 }} refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => setRefreshToken(p => p + 1)} tintColor="#fff" progressViewOffset={100} />}>
+            {platsSeleccionadas.length > 0 && (
+              <View style={styles.activeFilterBar}>
+                <Ionicons name="funnel" size={14} color={COLORS.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.activeFilterText, { fontFamily }]} numberOfLines={1}>
+                   {platsSeleccionadas.join(', ')}
+                </Text>
+                <Pressable onPress={() => setPlatsSeleccionadas([])} style={styles.clearFilterBtn} hitSlop={8}><Text style={styles.clearFilterText}>BORRAR</Text></Pressable>
+              </View>
+            )}
+            {renderContent}
+          </ScrollView>
+        </View>
 
       {/* 🛡️ Modal de Plataformas MULTI-SELECCIÓN (Solo Nombres) */}
       <Modal visible={showPlatModal} transparent animationType="fade">
@@ -253,6 +260,12 @@ export function BibliotecaTab({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#020617' },
+  webCenteringWrapper: {
+    width: '100%',
+    maxWidth: 1000,
+    alignSelf: 'center',
+    flex: 1,
+  },
   headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 },
   headerRow: { marginHorizontal: 24, flexDirection: 'row', alignItems: 'center' },
   titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
