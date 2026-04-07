@@ -24,7 +24,7 @@ import type { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const linking = {
-  prefixes: ['veoveo://', 'https://veoveo-app.netlify.app', 'https://dripdev.dev'],
+  prefixes: ['veoveo://', 'https://veoveo.dripdev.dev', 'https://veoveo-app.netlify.app', 'https://dripdev.dev'],
   config: {
     screens: {
       Main: 'main',
