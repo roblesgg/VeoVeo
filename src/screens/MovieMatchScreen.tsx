@@ -3,13 +3,13 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { useState, useEffect, useCallback } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   Pressable,
   StyleSheet,
   Text,
   View,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -32,15 +32,20 @@ import { MovieMatch, MovieDetails } from '../types';
 import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
+// 🚀 Los valores se calculan ahora dentro del componente para ser responsivos
 
 export function MovieMatchScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
   
+  // 📐 Layout Adaptativo
+  const SCREEN_WIDTH = windowWidth;
+  const BAR_WIDTH = Math.min(windowWidth * 0.85, 420); // Capped for desktop
+  const SWIPE_THRESHOLD = BAR_WIDTH * 0.25;
+
   const { matchId } = route.params;
   const [match, setMatch] = useState<MovieMatch | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -282,7 +287,12 @@ export function MovieMatchScreen() {
           </ScrollView>
         ) : currentIndex < queue.length ? (
           <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
-            <Animated.View style={[styles.card, cardStyle, SHADOWS.macLight]}>
+            <Animated.View style={[
+              styles.card, 
+              { width: BAR_WIDTH, height: Math.min(windowHeight * 0.6, 600) },
+              cardStyle, 
+              SHADOWS.macLight
+            ]}>
               <Image source={{ uri: posterUrl(currentMovie.poster_path, 'w500')! }} style={styles.poster} />
               <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.cardGradient}>
                 <View style={styles.movieInfo}>
@@ -333,7 +343,7 @@ const styles = StyleSheet.create({
   matchCounter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,107,0,0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 6 },
   countText: { color: '#ff6b00', fontSize: 12, fontWeight: '900' },
   deck: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  card: { width: SCREEN_WIDTH * 0.85, height: SCREEN_HEIGHT * 0.6, borderRadius: 24, overflow: 'hidden', backgroundColor: '#1e293b' },
+  card: { borderRadius: 24, overflow: 'hidden', backgroundColor: '#1e293b' },
   poster: { width: '100%', height: '100%' },
   cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, padding: 20, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   movieInfo: { flex: 1 },
@@ -363,7 +373,7 @@ const styles = StyleSheet.create({
   resultsScroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 100 },
   resultsHeader: { alignItems: 'center', marginBottom: 30 },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  resultCard: { width: (SCREEN_WIDTH - 72) / 2, borderRadius: 20, backgroundColor: '#1e293b', overflow: 'hidden', ...SHADOWS.macLight, marginBottom: 12 },
+  resultCard: { width: 160, borderRadius: 20, backgroundColor: '#1e293b', overflow: 'hidden', ...SHADOWS.macLight, marginBottom: 12 },
   resultPoster: { width: '100%', aspectRatio: 2/3 },
   resultInfo: { padding: 10 },
   resultTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },

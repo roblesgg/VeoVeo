@@ -10,10 +10,14 @@ type Props = {
 
 export const ProfileStats = React.memo(({ vistas, porVer, resenas, fontFamily }: Props) => {
   return (
-    <View style={styles.statsRow}>
-      <StatItem num={String(vistas)} label={'Películas\nVistas'} ff={fontFamily} />
-      <StatItem num={String(porVer)} label={'Por\nVer'} ff={fontFamily} />
-      <StatItem num={String(resenas)} label="Reseñas" ff={fontFamily} />
+    <View style={styles.statsCardContainer}>
+      <View style={styles.statsRow}>
+        <StatItem num={String(vistas)} label={'Vistas'} ff={fontFamily} />
+        <View style={styles.divider} />
+        <StatItem num={String(porVer)} label={'Por Ver'} ff={fontFamily} />
+        <View style={styles.divider} />
+        <StatItem num={String(resenas)} label="Reseñas" ff={fontFamily} />
+      </View>
     </View>
   );
 });
@@ -26,13 +30,22 @@ const StatItem = ({ num, label, ff }: { num: string; label: string; ff: string }
 );
 
 const styles = StyleSheet.create({
+  statsCardContainer: {
+    width: '100%',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 24,
+    overflow: 'hidden',
+  },
   statsRow: {
     flexDirection: 'row',
     width: '100%',
-    justifyContent: 'space-evenly',
-    marginBottom: 40,
+    paddingVertical: 20,
   },
-  statItem: { alignItems: 'center' },
-  statNum: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  statLabel: { color: '#d3d3d3', fontSize: 12, textAlign: 'center', marginTop: 4, lineHeight: 16 },
+  statItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  statNum: { color: '#ffffff', fontSize: 24, fontWeight: '900' },
+  statLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '700', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  divider: { width: 1, height: '50%', backgroundColor: 'rgba(255,255,255,0.08)', alignSelf: 'center' },
 });

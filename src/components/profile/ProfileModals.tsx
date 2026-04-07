@@ -8,7 +8,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { AccentBorder } from '../../theme/colors';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../theme/colors';
 
 type UsernameModalProps = {
   visible: boolean;
@@ -42,24 +44,33 @@ export const UsernameModal = ({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
-          <Text style={[styles.modalTitle, { fontFamily }]}>Cambiar nombre</Text>
+        <BlurView intensity={60} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.abs} />
+        <View style={styles.modernModalCard}>
+          <View style={[styles.iconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.1)' }]}>
+            <Ionicons name="person-outline" size={32} color={COLORS.primary} />
+          </View>
+          <Text style={[styles.modernModalTitle, { fontFamily }]}>Nombre de Usuario</Text>
+          <Text style={[styles.modernModalSub, { fontFamily }]}>Elige cómo te verán los demás en VeoVeo.</Text>
+          
           <TextInput
             value={val}
             onChangeText={setVal}
-            style={[styles.modalInput, { fontFamily }]}
-            placeholder="Usuario..."
-            placeholderTextColor="#888"
+            style={[styles.modernInput, { fontFamily }]}
+            placeholder="Nuevo nombre..."
+            placeholderTextColor="rgba(255,255,255,0.3)"
           />
-          <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.btnSec}>
-              <Text style={{ color: '#fff', fontFamily }}>Cancelar</Text>
+
+          <View style={styles.modernActions}>
+            <Pressable onPress={onClose} style={styles.btnCancel}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontFamily, fontWeight: '600' }}>Cancelar</Text>
             </Pressable>
             {loading ? (
-              <ActivityIndicator color={AccentBorder} />
+              <View style={styles.btnConfirm}>
+                <ActivityIndicator color="#fff" />
+              </View>
             ) : (
-              <Pressable onPress={handleSave} style={styles.btnPri}>
-                <Text style={{ color: '#fff', fontFamily, fontWeight: '700' }}>Guardar</Text>
+              <Pressable onPress={handleSave} style={styles.btnConfirm}>
+                <Text style={{ color: '#fff', fontFamily, fontWeight: '800' }}>Guardar</Text>
               </Pressable>
             )}
           </View>
@@ -72,6 +83,7 @@ export const UsernameModal = ({
 type AvatarModalProps = {
   visible: boolean;
   initialValue: string;
+  googlePhotoUrl?: string | null;
   onClose: () => void;
   onSave: (val: string) => Promise<boolean>;
   fontFamily: string;
@@ -80,6 +92,7 @@ type AvatarModalProps = {
 export const AvatarModal = ({
   visible,
   initialValue,
+  googlePhotoUrl,
   onClose,
   onSave,
   fontFamily,
@@ -91,9 +104,10 @@ export const AvatarModal = ({
     setVal(initialValue);
   }, [initialValue]);
 
-  const handleSave = async () => {
+  const handleSave = async (customVal?: string) => {
     setLoading(true);
-    const ok = await onSave(val);
+    const finalVal = customVal || val;
+    const ok = await onSave(finalVal);
     setLoading(false);
     if (ok) onClose();
   };
@@ -101,24 +115,46 @@ export const AvatarModal = ({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.modalBackdrop}>
-        <View style={styles.modalCard}>
-          <Text style={[styles.modalTitle, { fontFamily }]}>Enlace de tu foto</Text>
+        <BlurView intensity={60} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.abs} />
+        <View style={styles.modernModalCard}>
+          <View style={[styles.iconCircle, { backgroundColor: 'rgba(168, 85, 247, 0.1)' }]}>
+            <Ionicons name="image-outline" size={32} color="#a855f7" />
+          </View>
+          <Text style={[styles.modernModalTitle, { fontFamily }]}>Foto de Perfil</Text>
+          <Text style={[styles.modernModalSub, { fontFamily }]}>Pega un enlace o usa tu cuenta de Google.</Text>
+          
           <TextInput
             value={val}
             onChangeText={setVal}
-            style={[styles.modalInput, { fontFamily }]}
-            placeholder="https://..."
-            placeholderTextColor="#888"
+            style={[styles.modernInput, { fontFamily }]}
+            placeholder="https://imgur.com/..."
+            placeholderTextColor="rgba(255,255,255,0.3)"
           />
-          <View style={styles.modalActions}>
-            <Pressable onPress={onClose} style={styles.btnSec}>
-              <Text style={{ color: '#fff', fontFamily }}>Cancelar</Text>
+
+          {googlePhotoUrl && (
+            <Pressable 
+              style={styles.googleBtn} 
+              onPress={() => {
+                setVal(googlePhotoUrl);
+                handleSave(googlePhotoUrl);
+              }}
+            >
+              <Ionicons name="logo-google" size={18} color="#fff" />
+              <Text style={[styles.googleBtnText, { fontFamily }]}>Usar mi foto de Google</Text>
+            </Pressable>
+          )}
+
+          <View style={styles.modernActions}>
+            <Pressable onPress={onClose} style={styles.btnCancel}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontFamily, fontWeight: '600' }}>Cancelar</Text>
             </Pressable>
             {loading ? (
-              <ActivityIndicator color={AccentBorder} />
+              <View style={styles.btnConfirm}>
+                <ActivityIndicator color="#fff" />
+              </View>
             ) : (
-              <Pressable onPress={handleSave} style={styles.btnPri}>
-                <Text style={{ color: '#fff', fontFamily, fontWeight: '700' }}>Guardar</Text>
+              <Pressable onPress={() => handleSave()} style={styles.btnConfirm}>
+                <Text style={{ color: '#fff', fontFamily, fontWeight: '800' }}>Actualizar</Text>
               </Pressable>
             )}
           </View>
@@ -129,35 +165,51 @@ export const AvatarModal = ({
 };
 
 const styles = StyleSheet.create({
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    padding: 24,
+  modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  abs: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  modernModalCard: { 
+    width: '100%', 
+    backgroundColor: 'rgba(23, 23, 40, 0.95)', 
+    borderRadius: 32, 
+    padding: 32, 
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
+    elevation: 30,
   },
-  modalCard: { backgroundColor: '#1A1A2E', borderRadius: 24, padding: 24 },
-  modalTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  modernModalTitle: { color: '#fff', fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8, letterSpacing: -0.5 },
+  modernModalSub: { color: 'rgba(255,255,255,0.4)', fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  modernInput: {
+    width: '100%',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 18,
+    padding: 18,
     color: '#fff',
     fontSize: 16,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 20,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 16, marginTop: 24 },
-  btnSec: { padding: 12 },
-  btnPri: {
-    backgroundColor: AccentBorder,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
+  googleBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
+  googleBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  modernActions: { flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' },
+  btnCancel: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
+  btnConfirm: { flex: 1.5, height: 56, backgroundColor: COLORS.primary, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

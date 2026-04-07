@@ -91,17 +91,46 @@ export default function App() {
 
   React.useEffect(() => {
     if (Platform.OS === 'web') {
-       // Inyectar Google Fonts (Montserrat)
+       // 🎨 Inyectar ADN Visual Web (Scrollbars, Selección, Fuentes)
+       const head = document.head;
+       
+       // Google Fonts (Montserrat)
        const fontLink = document.createElement('link');
        fontLink.rel = 'stylesheet';
-       fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap';
-       document.head.appendChild(fontLink);
+       fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap';
+       head.appendChild(fontLink);
 
-       // Inyectar Ionicons (v4+ para nombres modernos)
+       // Ionicons
        const iconLink = document.createElement('link');
        iconLink.rel = 'stylesheet';
        iconLink.href = 'https://code.ionicframework.com/ionicons/4.5.10-0/css/ionicons.min.css';
-       document.head.appendChild(iconLink);
+       head.appendChild(iconLink);
+
+       // 🔮 Estilos Globales Premium para Web
+       const style = document.createElement('style');
+       style.innerHTML = `
+         * {
+           outline: none;
+           -webkit-tap-highlight-color: transparent;
+           user-select: none;
+         }
+         body {
+           background-color: #020617;
+           margin: 0;
+           padding: 0;
+           overflow-x: hidden;
+           font-family: 'Montserrat', sans-serif;
+         }
+         /* 🚀 Scrollbars Invisibles (Like Apple) */
+         ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
+         input, textarea { user-select: auto !important; }
+         /* 💎 Radial Gradient Background de Alto Rendimiento */
+         #root {
+           background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+           min-height: 100vh;
+         }
+       `;
+       head.appendChild(style);
     }
   }, []);
 

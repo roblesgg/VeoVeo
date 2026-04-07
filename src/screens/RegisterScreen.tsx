@@ -100,8 +100,12 @@ export function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center' },
-  pad: { paddingHorizontal: 32 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  pad: { 
+    paddingHorizontal: 32,
+    width: '100%',
+    maxWidth: 420, // 🚀 Consistencia visual en escritorio
+  },
   title: { fontSize: 40, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 28 },
   warn: { color: '#ffcc80', marginBottom: 12, textAlign: 'center', fontSize: 13 },
   input: {

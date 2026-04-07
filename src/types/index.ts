@@ -7,6 +7,7 @@
 export type UsuarioPerfil = {
   uid: string;
   username: string;
+  username_servido?: string; // Nombre en minúsculas para búsquedas
   email: string;
   fotoPerfil: string | null;
   amigos: string[];

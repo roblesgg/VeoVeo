@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -28,12 +29,15 @@ import {
 } from 'firebase/firestore';
 import { enviarMensaje, obtenerMensajesChat } from '../services/repositorioChats';
 import { observarMatch } from '../services/repositorioMatches';
-import { Message, MovieMatch } from '../types';
+import { Message, MovieMatch, UsuarioPerfil } from '../types';
 import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
+import { ChatPlusMenu } from '../components/chat/ChatPlusMenu';
+import { ChatMoviePicker } from '../components/chat/ChatMoviePicker';
 
 // 🕵️ Componente interno para manejar cada invitación de Match de forma individual
-function MatchInvitation({ matchId, onEnter }: { matchId: string, onEnter: (id: string, finished: boolean) => void }) {
+// 🕵️ Componente interno para manejar cada invitación de Match de forma individual - MEMOIZADO
+const MatchInvitation = memo(({ matchId, onEnter }: { matchId: string, onEnter: (id: string, finished: boolean) => void }) => {
   const [matchData, setMatchData] = useState<MovieMatch | null>(null);
 
   useEffect(() => {
@@ -72,7 +76,69 @@ function MatchInvitation({ matchId, onEnter }: { matchId: string, onEnter: (id: 
       </Pressable>
     </View>
   );
-}
+});
+MatchInvitation.displayName = 'MatchInvitation';
+
+// 🚀 [MEMO] Burbuja de Mensaje Optimizada
+const MessageBubble = memo(({ 
+  item, 
+  userId, 
+  navigation, 
+  onEnterMatch 
+}: { 
+  item: Message, 
+  userId?: string, 
+  navigation: any, 
+  onEnterMatch: (id: string) => void 
+}) => {
+  const isMe = item.senderId === userId;
+
+  if (item.type === 'match_invite' && item.matchId) {
+    return (
+      <View style={[styles.msgWrapper, styles.msgMatch]}>
+        <MatchInvitation 
+          matchId={item.matchId} 
+          onEnter={onEnterMatch} 
+        />
+      </View>
+    );
+  }
+
+  if (item.type === 'movie' && item.movieData) {
+    const { movieData } = item;
+    return (
+      <View style={[styles.msgWrapper, isMe ? styles.msgMe : styles.msgOther]}>
+        <Pressable 
+          style={[styles.movieShareCard, SHADOWS.macLight]}
+          onPress={() => navigation.navigate('Pelicula', { movieId: movieData.id })}
+        >
+          <ExpoImage 
+            source={{ uri: `https://image.tmdb.org/t/p/w300${movieData.posterPath}` }} 
+            style={styles.movieSharePoster} 
+            contentFit="cover"
+            transition={300}
+          />
+          <BlurView intensity={60} tint="dark" style={styles.movieShareInfo}>
+            <Text style={styles.movieShareTitle} numberOfLines={1}>{movieData.title}</Text>
+            <View style={styles.movieShareFooter}>
+              <Ionicons name="play-circle" size={12} color={COLORS.primary} />
+              <Text style={styles.movieShareAction}>Ver detalles</Text>
+            </View>
+          </BlurView>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.msgWrapper, isMe ? styles.msgMe : styles.msgOther]}>
+      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
+        <Text style={styles.msgText}>{item.text}</Text>
+      </View>
+    </View>
+  );
+});
+MessageBubble.displayName = 'MessageBubble';
 
 export function ChatDetailScreen() {
   const route = useRoute<any>();
@@ -89,6 +155,12 @@ export function ChatDetailScreen() {
   const [newGroupName, setNewGroupName] = useState('');
   const [texto, setTexto] = useState('');
   const [matchActivo, setMatchActivo] = useState<MovieMatch | null>(null);
+  
+  // 🆕 Estados para el menú + y el selector de películas
+  const [menuPlusVisible, setMenuPlusVisible] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'vista' | 'por_ver' | 'explorar' | null>(null);
+  const [amigoPerfil, setAmigoPerfil] = useState<UsuarioPerfil | null>(null); // Para ver su foto real
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   const listRef = useRef<FlatList>(null);
   const keyboardHeight = useRef(new Animated.Value(0)).current; // 🆕 Altura animada
@@ -125,15 +197,17 @@ export function ChatDetailScreen() {
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard.addListener(showEvent, (e) => {
+      setIsKeyboardVisible(true);
       Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height + 10, // 🆕 Subimos un poquito más (+10px)
+        toValue: e.endCoordinates.height, // 🆕 Sincronizado exacto (sin el +10)
         duration: Platform.OS === 'ios' ? e.duration : 200,
-        useNativeDriver: false, // height no soporta native driver
+        useNativeDriver: false,
       }).start();
       setTimeout(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
     });
 
     const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      setIsKeyboardVisible(false);
       Animated.timing(keyboardHeight, {
         toValue: 0,
         duration: Platform.OS === 'ios' ? e.duration : 200,
@@ -147,7 +221,7 @@ export function ChatDetailScreen() {
     };
   }, []);
 
-  const handleEnviar = async () => {
+  const handleEnviar = useCallback(async () => {
     if (!texto.trim() || !user) return;
     const txt = texto.trim();
     setTexto('');
@@ -158,15 +232,27 @@ export function ChatDetailScreen() {
       text: txt,
       type: 'text'
     });
-  };
+  }, [texto, user, chatId]);
 
-  const irAMatch = () => {
+  const irAMatch = useCallback(() => {
     if (matchActivo) {
       navigation.navigate('MovieMatch', { matchId: matchActivo.id });
     } else {
       navigation.navigate('MatchConfig', { chatId, participants });
     }
-  };
+  }, [matchActivo, navigation, chatId, participants]);
+
+  // Observar el perfil del amigo para tener su foto actualizada
+  const isGroup = participants.length > 2;
+  const otherUid = participants.find(id => id !== user?.uid);
+
+  useEffect(() => {
+    if (!otherUid || isGroup) return;
+    const db = getFirestore();
+    return onSnapshot(doc(db, 'usuarios', otherUid), (snap) => {
+      if (snap.exists()) setAmigoPerfil(snap.data() as UsuarioPerfil);
+    });
+  }, [otherUid, isGroup]);
 
   const handleSaveGroupName = async () => {
     if (!newGroupName.trim()) return;
@@ -179,17 +265,35 @@ export function ChatDetailScreen() {
     }
   };
 
+  const handleMovieSelect = useCallback(async (movie: { id: number; title: string; posterPath: string }) => {
+    setPickerMode(null);
+    if (!user) return;
+    
+    await enviarMensaje(chatId, {
+      chatId,
+      senderId: user.uid,
+      senderName: user.displayName || 'Usuario',
+      text: `He compartido: ${movie.title}`,
+      type: 'movie',
+      movieData: movie
+    });
+  }, [user, chatId]);
+
   // Determinar título del chat
-  const isGroup = participants.length > 2;
-  const otherUid = participants.find(id => id !== user?.uid);
   const otherDetails = chatInfo?.participantDetails?.[otherUid || ''];
   const displayTitle = isGroup 
     ? (chatInfo?.name || `Grupo de ${participants.length} personas`) 
-    : (otherDetails?.username || chatName || 'Chat');
+    : (amigoPerfil?.username || otherDetails?.username || chatName || 'Chat');
+
+  const displayAvatar = isGroup 
+    ? chatInfo?.groupIcon 
+    : (amigoPerfil?.fotoPerfil || otherDetails?.fotoPerfil);
 
   return (
     <View style={styles.container}>
-      <BlurView intensity={95} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15, backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
+        <BlurView intensity={80} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -201,7 +305,11 @@ export function ChatDetailScreen() {
             disabled={!isGroup}
           >
             <View style={styles.avatarMini}>
-               {isGroup ? <Ionicons name="people" size={18} color="rgba(255,255,255,0.4)" /> : <Ionicons name="person" size={18} color="rgba(255,255,255,0.4)" />}
+               {isGroup ? (
+                 displayAvatar ? <ExpoImage source={{ uri: displayAvatar }} style={styles.avatarImgMini} contentFit="cover" transition={200} /> : <Ionicons name="people" size={18} color="rgba(255,255,255,0.4)" />
+               ) : (
+                 displayAvatar ? <ExpoImage source={{ uri: displayAvatar }} style={styles.avatarImgMini} contentFit="cover" transition={200} /> : <Ionicons name="person" size={18} color="rgba(255,255,255,0.4)" />
+               )}
             </View>
             <View>
               <Text style={styles.chatTitle} numberOfLines={1}>{displayTitle}</Text>
@@ -214,76 +322,100 @@ export function ChatDetailScreen() {
             {matchActivo && <Text style={styles.matchCounter}>{matchActivo.matchedMovies.length}</Text>}
           </Pressable>
         </View>
-      </BlurView>
+      </View>
 
       <Animated.View style={[styles.flex, { paddingBottom: keyboardHeight }]}>
-        <FlatList
-          ref={listRef}
-          data={[...mensajes].reverse()}
-          inverted
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ 
-            padding: 20, 
-            paddingTop: 20, 
-            paddingBottom: insets.top + 80
-          }}
-          renderItem={({ item }) => {
-            const isMe = item.senderId === user?.uid;
+        <View style={styles.webCenteringWrapper}>
+          <FlatList
+            ref={listRef}
+            data={useMemo(() => [...mensajes].reverse(), [mensajes])}
+            inverted
+            keyExtractor={(item) => item.id}
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+            contentContainerStyle={{ 
+              paddingHorizontal: 20, 
+              paddingTop: 0,
+              paddingBottom: insets.top + 100
+            }}
+            renderItem={({ item }) => (
+              <MessageBubble 
+                item={item} 
+                userId={user?.uid} 
+                navigation={navigation} 
+                onEnterMatch={(id) => navigation.navigate('MovieMatch', { matchId: id })} 
+              />
+            )}
+            style={styles.chatList}
+          />
+        </View>
 
-            if (item.type === 'match_invite' && item.matchId) {
-              return (
-                <View style={[styles.msgWrapper, styles.msgMatch]}>
-                   <MatchInvitation 
-                      matchId={item.matchId} 
-                      onEnter={(id, finished) => {
-                        navigation.navigate('MovieMatch', { matchId: id });
-                      }} 
-                   />
-                </View>
-              );
-            }
-
-            return (
-              <View style={[styles.msgWrapper, isMe ? styles.msgMe : styles.msgOther]}>
-                <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-                  <Text style={styles.msgText}>{item.text}</Text>
-                </View>
-              </View>
-            );
-          }}
-        />
-
-        <BlurView intensity={95} tint="dark" style={[styles.inputWrapper, { paddingBottom: Math.max(insets.bottom, 22) }]}>
-          <View style={styles.inputRow}>
-            <Pressable style={styles.plusBtn}>
-              <Ionicons name="add" size={26} color="rgba(255,255,255,0.4)" />
-            </Pressable>
-            <TextInput
-              value={texto}
-              onChangeText={setTexto}
-              placeholder="Escribe algo..."
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              style={styles.input}
-              multiline
-            />
-            <Pressable onPress={handleEnviar} style={styles.sendBtn} disabled={!texto.trim()}>
-              <Ionicons name="arrow-up" size={22} color="#000" />
-            </Pressable>
+        <BlurView 
+          intensity={80} 
+          tint="dark" 
+          experimentalBlurMethod="dimezisBlurView" 
+          style={[
+            styles.inputWrapper, 
+            { paddingBottom: isKeyboardVisible ? 8 : Math.max(insets.bottom, 22) }
+          ]}
+        >
+          <View style={styles.webCenteringWrapper}>
+            <View style={styles.inputRow}>
+              <Pressable 
+                style={styles.plusBtn} 
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setMenuPlusVisible(!menuPlusVisible);
+                }}
+              >
+                <Ionicons name={menuPlusVisible ? "close" : "add"} size={26} color={menuPlusVisible ? COLORS.primary : "rgba(255,255,255,0.4)"} />
+              </Pressable>
+              <TextInput
+                value={texto}
+                onChangeText={setTexto}
+                placeholder="Escribe algo..."
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                style={styles.input}
+                multiline
+              />
+              <Pressable onPress={handleEnviar} style={styles.sendBtn} disabled={!texto.trim()}>
+                <Ionicons name="arrow-up" size={22} color="#000" />
+              </Pressable>
+            </View>
           </View>
         </BlurView>
+
+        {/* --- COMPONENTES DE COMPARTICIÓN --- */}
+        <ChatPlusMenu 
+          visible={menuPlusVisible} 
+          onSelect={(mode) => {
+            setMenuPlusVisible(false);
+            setPickerMode(mode);
+          }}
+          fontFamily={'System'}
+        />
+        <ChatMoviePicker
+          visible={!!pickerMode}
+          mode={pickerMode}
+          onClose={() => setPickerMode(null)}
+          onSelect={handleMovieSelect}
+          fontFamily={'System'}
+        />
       </Animated.View>
 
       {/* Modal para editar nombre del grupo */}
       <Modal visible={editGroupName} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
-           <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
-           <View style={[styles.editModalContent, SHADOWS.mac]}>
+           <BlurView intensity={60} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
+           <View style={[styles.modalCardFlotante, SHADOWS.mac]}>
               <Text style={styles.modalTitle}>Nombre del Grupo</Text>
               <TextInput 
-                style={styles.modalInput} 
+                style={styles.modalInputGlass} 
                 value={newGroupName} 
                 onChangeText={setNewGroupName}
-                placeholder="Escribe un nombre para el grupo..."
+                placeholder="Escribe un nombre..."
                 placeholderTextColor="rgba(255,255,255,0.3)"
                 autoFocus
               />
@@ -294,26 +426,36 @@ export function ChatDetailScreen() {
            </View>
         </View>
       </Modal>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#020617' },
+  webCenteringWrapper: {
+    width: '100%',
+    maxWidth: 800, // 🚀 Centrado óptimo para chats en desktop
+    alignSelf: 'center',
+    flex: 1,
+  },
+  chatList: { flex: 1 },
   header: { 
     position: 'absolute', 
     top: 0, 
     left: 0, 
     right: 0, 
     zIndex: 100, 
-    backgroundColor: 'rgba(15, 23, 42, 0.95)', // Fallback sólido anti-transparencia
+    overflow: 'hidden',
     borderBottomWidth: 0.5, 
     borderColor: 'rgba(255,255,255,0.1)' 
   },
+
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   backBtn: { padding: 8, marginRight: 4 },
   headerInfo: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  avatarMini: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', marginRight: 10, alignItems: 'center', justifyContent: 'center' },
+  avatarMini: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.1)', marginRight: 10, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImgMini: { width: 34, height: 34, borderRadius: 17 },
   chatTitle: { color: '#fff', fontSize: 17, fontWeight: '700' },
   groupEditHint: { color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: 2 },
   matchActionBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,107,0,0.1)', alignItems: 'center', justifyContent: 'center' },
@@ -328,9 +470,9 @@ const styles = StyleSheet.create({
   msgText: { color: '#fff', fontSize: 16 },
   flex: { flex: 1 },
   inputWrapper: { 
-    backgroundColor: '#020617', // Color sólido de fondo de la app para que no transparente nada
+    backgroundColor: 'transparent', 
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   inputRow: { 
     flexDirection: 'row', 
@@ -356,12 +498,67 @@ const styles = StyleSheet.create({
   matchBtnFinished: { backgroundColor: '#f1c40f' },
   matchBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   
+  // 🆕 Estilos para compartir películas
+  movieShareCard: {
+    width: 200,
+    height: 300,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  movieSharePoster: {
+    flex: 1,
+    width: '100%',
+  },
+  movieShareInfo: {
+    padding: 12,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  movieShareTitle: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  movieShareFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  movieShareAction: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
   // Estilos del Modal de edición
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  editModalContent: { width: '85%', backgroundColor: '#1e293b', borderRadius: 32, padding: 24 },
-  modalInput: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 16, color: '#fff', fontSize: 16, marginVertical: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalCardFlotante: { 
+    width: '100%',
+    backgroundColor: 'rgba(23, 23, 40, 0.9)', 
+    borderRadius: 32, 
+    padding: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  modalInputGlass: { 
+    backgroundColor: 'rgba(255,255,255,0.05)', 
+    borderRadius: 16, 
+    padding: 16, 
+    color: '#fff', 
+    fontSize: 16, 
+    marginVertical: 20, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.1)' 
+  },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
   modalBtnCancel: { paddingHorizontal: 16, paddingVertical: 10 },
-  modalBtnSave: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  modalBtnText: { color: '#fff', fontWeight: '700' },
+  modalBtnSave: { backgroundColor: COLORS.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 16 },
+  modalBtnText: { color: '#fff', fontWeight: '800' },
+
 });

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import DraggableFlatList, {
   ScaleDecorator,
   RenderItemParams,
@@ -20,33 +21,59 @@ type Props = {
   onReorder?: (newOrder: number[]) => void;
 };
 
+// 🚀 [MEMO] Item de Película en Tier para evitar re-renders masivos
+const TierMovieItem = React.memo(({ 
+  id, 
+  rutaPoster, 
+  onPeliculaClick, 
+  onLongPress, 
+  isActive 
+}: { 
+  id: number, 
+  rutaPoster?: string | null, 
+  onPeliculaClick: (id: number) => void, 
+  onLongPress?: () => void, 
+  isActive?: boolean 
+}) => (
+  <Pressable
+    style={[
+      styles.tierMovieCard,
+      isActive && { opacity: 0.7, transform: [{ scale: 1.1 }] },
+    ]}
+    onPress={() => onPeliculaClick(id)}
+    onLongPress={onLongPress}
+    disabled={isActive}
+  >
+    {rutaPoster ? (
+      <ExpoImage
+        source={{ uri: posterUrl(rutaPoster, 'w185')! }}
+        style={styles.tierMoviePoster}
+        contentFit="cover"
+        transition={150}
+      />
+    ) : (
+      <View style={[styles.tierMoviePoster, styles.posterFallback]} />
+    )}
+  </Pressable>
+));
+TierMovieItem.displayName = 'TierMovieItem';
+
 export const TierRow = React.memo(
   ({ titulo, ids, peliculasMap, fontFamily, onPeliculaClick, onReorder }: Props) => {
-    const renderItem = ({ item: id, drag, isActive }: RenderItemParams<number>) => {
+    const renderItem = React.useCallback(({ item: id, drag, isActive }: RenderItemParams<number>) => {
       const p = peliculasMap[id];
       return (
         <ScaleDecorator>
-          <Pressable
-            style={[
-              styles.tierMovieCard,
-              isActive && { opacity: 0.7, transform: [{ scale: 1.1 }] },
-            ]}
-            onPress={() => onPeliculaClick(id)}
-            onLongPress={onReorder ? drag : undefined}
-            disabled={isActive}
-          >
-            {p?.rutaPoster ? (
-              <Image
-                source={{ uri: posterUrl(p.rutaPoster, 'w185')! }}
-                style={styles.tierMoviePoster}
-              />
-            ) : (
-              <View style={[styles.tierMoviePoster, styles.posterFallback]} />
-            )}
-          </Pressable>
+          <TierMovieItem 
+            id={id}
+            rutaPoster={p?.rutaPoster}
+            onPeliculaClick={onPeliculaClick}
+            onLongPress={drag}
+            isActive={isActive}
+          />
         </ScaleDecorator>
       );
-    };
+    }, [peliculasMap, onPeliculaClick]);
 
     return (
       <Pressable style={styles.tierRow} onPress={() => onPeliculaClick(0)}>
@@ -68,25 +95,14 @@ export const TierRow = React.memo(
             />
           ) : (
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              {ids.map((id) => {
-                const p = peliculasMap[id];
-                return (
-                  <Pressable
-                    key={id}
-                    style={styles.tierMovieCard}
-                    onPress={() => onPeliculaClick(id)}
-                  >
-                    {p?.rutaPoster ? (
-                      <Image
-                        source={{ uri: posterUrl(p.rutaPoster, 'w185')! }}
-                        style={styles.tierMoviePoster}
-                      />
-                    ) : (
-                      <View style={[styles.tierMoviePoster, styles.posterFallback]} />
-                    )}
-                  </Pressable>
-                );
-              })}
+              {ids.map((id) => (
+                <TierMovieItem 
+                  key={id}
+                  id={id}
+                  rutaPoster={peliculasMap[id]?.rutaPoster}
+                  onPeliculaClick={onPeliculaClick}
+                />
+              ))}
             </View>
           )}
         </View>

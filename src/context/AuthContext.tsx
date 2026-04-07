@@ -20,7 +20,7 @@ import {
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { getFirebaseAuth } from '../services/firebase';
-import { actualizarEstadoConexion } from '../services/repositorioUsuarios';
+import { actualizarEstadoConexion, asegurarPerfilFirestore } from '../services/repositorioUsuarios';
 import { registrarTokenEnFirestore } from '../services/notificationService';
 
 // WebBrowser.maybeCompleteAuthSession(); No longer needed with native Google Sign-In
@@ -70,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
       setLoading(false);
       if (u) {
+        void asegurarPerfilFirestore(u);
         void actualizarEstadoConexion('online');
         void require('../services/userPreferences').sincronizarPreferenciasConFirestore(u.uid);
         void registrarTokenEnFirestore(u.uid);

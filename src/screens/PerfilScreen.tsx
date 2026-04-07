@@ -10,7 +10,9 @@ import {
   Share,
   Linking,
   Platform,
+  Modal,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
@@ -22,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { GradientBackground } from '../components/GradientBackground';
 import { SHADOWS } from '../theme/theme';
 import { COLORS } from '../theme/colors';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 // Hooks
 import { useUserProfile } from '../hooks/profile/useUserProfile';
@@ -52,6 +55,8 @@ export function PerfilScreen() {
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
 
   if (cargando && !usuario) {
     return (
@@ -78,36 +83,40 @@ export function PerfilScreen() {
     <GradientBackground style={styles.flex}>
       <Pressable
         onPress={() => navigation.goBack()}
-        style={[styles.backBtn, { top: Math.max(insets.top, 12) + 8 }]}
+        style={[styles.backBtn, { top: Math.max(insets.top, 12) }]}
       >
-        <BlurView intensity={80} tint="dark" style={styles.backBtnInner}>
-          <Ionicons name="chevron-back" size={26} color="#fff" />
-        </BlurView>
+        <View style={styles.backBtnInner}>
+          <Ionicons name="chevron-back" size={24} color="#fff" />
+        </View>
       </Pressable>
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 60, paddingBottom: 40 }]}
       >
-        <Pressable
-          style={[styles.avatarWrap, SHADOWS.mac]}
-          onPress={() => setShowAvatarModal(true)}
-        >
-          {fotoUri ? (
-            <Image source={{ uri: fotoUri }} style={styles.avatarImg} />
-          ) : (
-            <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={48} color="rgba(255,255,255,0.85)" />
+        <View style={styles.avatarSection}>
+          <Pressable
+            style={[styles.avatarWrap, SHADOWS.mac]}
+            onPress={() => setShowAvatarModal(true)}
+          >
+            {fotoUri ? (
+              <ExpoImage source={{ uri: fotoUri }} style={styles.avatarImg} contentFit="cover" transition={200} />
+            ) : (
+              <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+                <Ionicons name="person" size={48} color="rgba(255,255,255,0.85)" />
+              </View>
+            )}
+            <View style={styles.cameraBtn}>
+              <Ionicons name="camera" size={14} color="#fff" />
             </View>
-          )}
-          <View style={styles.cameraBtn}>
-            <Ionicons name="camera" size={14} color="#fff" />
-          </View>
-        </Pressable>
+          </Pressable>
 
-        <Pressable style={styles.nameRow} onPress={() => setShowUserModal(true)}>
-          <Text style={[styles.nameText, { fontFamily }]}>{usuario.username}</Text>
-          <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.7)" />
-        </Pressable>
+          <Pressable style={styles.nameRow} onPress={() => setShowUserModal(true)}>
+            <Text style={[styles.nameText, { fontFamily }]}>{usuario.username}</Text>
+            <View style={styles.editIconCircle}>
+               <Ionicons name="pencil" size={12} color="#fff" />
+            </View>
+          </Pressable>
+        </View>
 
         <ProfileStats
           vistas={stats.vistas}
@@ -119,9 +128,10 @@ export function PerfilScreen() {
         <ProfileOptions
           onAjustes={() => navigation.navigate('Ajustes')}
           onBloqueados={() => navigation.navigate('Bloqueados')}
-          onLogout={logout}
+          onLogout={() => setShowLogoutModal(true)}
           fontFamily={fontFamily}
         />
+
 
         <Pressable
           style={styles.shareBtn}
@@ -131,15 +141,7 @@ export function PerfilScreen() {
           <Text style={[styles.shareText, { fontFamily }]}>Compartir aplicación</Text>
         </Pressable>
 
-        {Platform.OS === 'web' && (
-          <Pressable
-            style={[styles.shareBtn, { marginTop: 12, backgroundColor: 'rgba(14, 165, 233, 0.1)' }]}
-            onPress={() => Linking.openURL('/descargar')}
-          >
-            <Ionicons name="download-outline" size={22} color={COLORS.primary} />
-            <Text style={[styles.shareText, { fontFamily, color: '#fff' }]}>Descargar App</Text>
-          </Pressable>
-        )}
+
 
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
         {mensaje && <Text style={styles.feedbackOk}>{mensaje}</Text>}
@@ -156,11 +158,25 @@ export function PerfilScreen() {
       <AvatarModal
         visible={showAvatarModal}
         initialValue={fotoUri || ''}
+        googlePhotoUrl={user?.photoURL}
         onClose={() => setShowAvatarModal(false)}
         onSave={handleUpdateAvatar}
         fontFamily={fontFamily}
       />
+
+      <ConfirmModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={logout}
+        title="Cerrar Sesión"
+        message="¿Seguro que quieres salir de VeoVeo?"
+        confirmText="Salir"
+        cancelText="Cancelar"
+        iconName="log-out"
+        fontFamily={fontFamily}
+      />
     </GradientBackground>
+
   );
 }
 
@@ -175,31 +191,40 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     overflow: 'hidden',
   },
-  avatarWrap: { marginBottom: 16 },
-  avatarImg: { width: 110, height: 110, borderRadius: 55, borderWidth: 3, borderColor: '#fff' },
+  avatarSection: { alignItems: 'center', marginBottom: 32 },
+  avatarWrap: { 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 20
+  },
+  avatarImg: { width: 120, height: 120, borderRadius: 60, borderWidth: 4, borderColor: 'rgba(255,255,255,0.15)' },
   avatarPlaceholder: {
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cameraBtn: {
     position: 'absolute',
-    bottom: -4,
-    right: -4,
+    bottom: 2,
+    right: 2,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.primary,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#1A1A2E',
+    borderColor: '#0f172a',
+    overflow: 'hidden'
   },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 },
-  nameText: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 20 },
+  nameText: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.5 },
+  editIconCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
   feedbackErr: { color: '#ff8a80', marginTop: 16 },
   feedbackOk: { color: '#4CAF50', marginTop: 16 },
   errText: { color: '#ff8a80', textAlign: 'center', fontSize: 16 },
@@ -231,10 +256,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoutText: {
-    color: '#ff4444',
-    fontSize: 16,
-    fontWeight: '700',
-    marginLeft: 8,
+  modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalTitle: { color: '#fff', fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
+  logoutCard: { 
+    width: '100%', 
+    backgroundColor: 'rgba(23, 23, 40, 0.9)', 
+    borderRadius: 32, 
+    padding: 32, 
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.12)'
   },
+  logoutIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,68,68,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  logoutTextSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 32 },
+  logoutActions: { flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' },
+  logoutBtnCancel: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
+  logoutBtnConfirm: { flex: 1.2, height: 56, backgroundColor: '#ff4444', borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

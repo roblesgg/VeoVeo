@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import {
   ActivityIndicator,
+  FlatList, // 🚀 Añadido para virtualización
   Image,
   Pressable,
   ScrollView,
@@ -13,15 +14,15 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { getFirestore, doc, getDoc, deleteDoc } from 'firebase/firestore';
-import { borrarChat } from '../services/repositorioChats';
-import { Alert, Modal } from 'react-native';
+import { Modal, Platform } from 'react-native';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 // Hooks & Services
 import { useSocialData } from '../hooks/social/useSocialData';
-import { observarMisChats, crearChat } from '../services/repositorioChats';
+import { observarMisChats, crearChat, borrarChat } from '../services/repositorioChats';
 import { Chat, UsuarioPerfil } from '../types';
 import { useAuth } from '../context/AuthContext';
 
@@ -41,6 +42,62 @@ type Props = {
   userFoto?: string | null;
 };
 
+// 🚀 [MEMO] Componente de Fila Memoizado para Máxima Performance
+const SocialChatRow = memo(({ 
+  chat, 
+  user, 
+  amigos, 
+  onChatClick, 
+  onBorrarRef 
+}: { 
+  chat: Chat, 
+  user: any, 
+  amigos: UsuarioPerfil[], 
+  onChatClick: any, 
+  onBorrarRef: (id: string) => void 
+}) => {
+  const otherUid = chat.participants.find(id => id !== user?.uid);
+  const amigoDetalle = amigos.find(a => a.uid === otherUid);
+  const chatTitle = chat.name || amigoDetalle?.username || chat.participantDetails?.[otherUid || '']?.username || 'Chat...';
+  const avatarUri = amigoDetalle?.fotoPerfil || chat.participantDetails?.[otherUid || '']?.fotoPerfil || null;
+
+  return (
+    <Pressable 
+      style={[styles.chatRow, SHADOWS.macLight]} 
+      onPress={() => onChatClick(chat.id, chat.participants, chatTitle)}
+    >
+      <View style={styles.chatAvatar}>
+        {avatarUri && avatarUri.trim() !== '' ? (
+          <ExpoImage source={{ uri: avatarUri }} style={styles.fullImg} contentFit="cover" transition={150} />
+        ) : (
+          <Ionicons name={chat.type === 'group' ? 'people' : 'person'} size={24} color="rgba(255,255,255,0.4)" />
+        )}
+        {chat.activeMatchId && <View style={styles.matchDot} />}
+      </View>
+      <View style={styles.chatInfo}>
+        <Text style={styles.chatName}>{chatTitle}</Text>
+        <Text style={styles.chatLastMsg} numberOfLines={1}>
+          {chat.lastMessage?.text || 'Sin mensajes aún'}
+        </Text>
+      </View>
+      {chat.activeMatchId && (
+        <View style={styles.matchBadgeMini}>
+          <Ionicons name="flame" size={12} color="#ff6b00" />
+          <Text style={styles.matchBadgeText}>Match</Text>
+        </View>
+      )}
+      <Pressable 
+        onPress={() => onBorrarRef(chat.id)} 
+        hitSlop={8} 
+        style={styles.deleteBtn}
+      >
+        <Ionicons name="trash-outline" size={20} color="#ff4444" />
+      </Pressable>
+    </Pressable>
+  );
+});
+ SocialChatRow.displayName = 'SocialChatRow';
+
 export function SocialTab({
   fontFamily,
   onUsuarioClick,
@@ -54,6 +111,8 @@ export function SocialTab({
   const [tab, setTab] = useState<0 | 1 | 2>(0);
   const [chats, setChats] = useState<Chat[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
+  const [socialSearch, setSocialSearch] = useState('');
+  const [buscarAtivaSocial, setBuscarAtivaSocial] = useState(false);
   const [mostrarSelector, setMostrarSelector] = useState(false);
   const [amigosSeleccionados, setAmigosSeleccionados] = useState<string[]>([]);
 
@@ -77,6 +136,33 @@ export function SocialTab({
     });
   }, [user]);
 
+  // 🔮 Filtrado Contextual de Chats y Amigos
+  const chatsFiltrados = React.useMemo(() => {
+    const q = socialSearch.toLowerCase().trim();
+    if (!q || tab !== 0) return chats;
+    return chats.filter(chat => {
+      const otherUid = chat.participants.find(id => id !== user?.uid);
+      const amigoDetalle = amigos.find(a => a.uid === otherUid);
+      const chatTitle = (chat.name || amigoDetalle?.username || chat.participantDetails?.[otherUid || '']?.username || '').toLowerCase();
+      return chatTitle.includes(q);
+    });
+  }, [chats, socialSearch, tab, user, amigos]);
+
+  const amigosFiltrados = React.useMemo(() => {
+    const q = socialSearch.toLowerCase().trim();
+    if (!q || tab !== 1) return amigos;
+    return amigos.filter(a => a.username.toLowerCase().includes(q));
+  }, [amigos, socialSearch, tab]);
+
+  const toggleSearch = () => {
+    if (socialSearch !== '') {
+      setSocialSearch('');
+      Keyboard.dismiss();
+    } else {
+      setBuscarAtivaSocial(!buscarAtivaSocial);
+    }
+  };
+
   const handleCrearChatMultiple = async () => {
     if (!user || amigosSeleccionados.length === 0) return;
     try {
@@ -91,27 +177,37 @@ export function SocialTab({
     }
   };
 
-  const handleBorrarChat = (chatId: string) => {
-    Alert.alert('Borrar Chat', '¿Estás seguro? Esta acción no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Borrar', style: 'destructive', onPress: async () => {
-          try {
-            await borrarChat(chatId);
-          } catch (e) {
-             console.error(e);
-          }
-      }},
-    ]);
+  const [chatABorrar, setChatABorrar] = useState<string | null>(null);
+
+  const handleBorrarChatAction = async () => {
+    if (!chatABorrar) return;
+    try {
+      await borrarChat(chatABorrar);
+      setChatABorrar(null);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleSetTab = (newTab: 0 | 1 | 2) => {
     setTab(newTab);
     Keyboard.dismiss();
+    setSocialSearch('');
+    setBuscarAtivaSocial(false);
   };
+
+  // 🚀 [PERFORMANCE] Memoizar Callbacks para evitar rupturas de memoización en hijos
+  const stabilizedOnChatClick = useCallback(onChatClick, [onChatClick]);
+  const stabilizedSetChatABorrar = useCallback((id: string) => setChatABorrar(id), []);
 
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
+        if (buscarAtivaSocial) {
+          setBuscarAtivaSocial(false);
+          setSocialSearch('');
+          return true;
+        }
         if (tab !== 0) {
           setTab(0);
           return true;
@@ -120,136 +216,156 @@ export function SocialTab({
       };
       const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => sub.remove();
-    }, [tab])
+    }, [tab, buscarAtivaSocial])
   );
 
   return (
     <View style={styles.flex}>
-      {/* 🛡️ Cabecera Unificada (Glaseada y Sólida) */}
-      <BlurView intensity={95} tint="dark" style={[styles.headerContainer, { height: insets.top + 80 }]} />
-      <View style={[styles.headerContainer, { height: insets.top + 80, backgroundColor: 'rgba(15, 23, 42, 0.85)' }]}>
+      {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
+      <BlurView 
+        intensity={85} 
+        tint="dark" 
+        experimentalBlurMethod="dimezisBlurView"
+        style={[styles.headerContainer, { height: insets.top + (buscarAtivaSocial ? 160 : 80) }]} 
+      />
+      <View style={[styles.headerContainer, { height: insets.top + (buscarAtivaSocial ? 160 : 80), backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
         <View style={styles.headerBorder} />
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Social</Text>
           <View style={styles.actionsTopRow}>
-            <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini}>
+            {tab !== 2 && ( // 🛡️ Ocultar lupa en la búsqueda global
+              <Pressable onPress={toggleSearch} style={styles.iconBtn} hitSlop={8}>
+                <Ionicons name="search-outline" size={28} color="#fff" />
+              </Pressable>
+            )}
+            <Pressable onPress={() => onPerfilClick?.()} style={styles.perfilBtnMini} hitSlop={8}>
               <View style={styles.perfilInnerMini}>
-                {userFoto ? (
-                  <Image source={{ uri: userFoto }} style={styles.perfilFotoMini} />
+                {userFoto && userFoto.trim() !== '' ? (
+                  <ExpoImage source={{ uri: userFoto }} style={styles.perfilFotoMini} contentFit="cover" transition={200} />
                 ) : (
-                  <Ionicons name="person" size={20} color="#fff" />
+                  <Ionicons name="person" size={22} color="#fff" />
                 )}
               </View>
             </Pressable>
           </View>
         </View>
+
+        {buscarAtivaSocial && tab !== 2 && (
+          <View style={[styles.searchField, SHADOWS.macLight, { top: Math.max(insets.top, 12) + 80 }]}>
+            <TextInput
+              value={socialSearch}
+              onChangeText={setSocialSearch}
+              placeholder={tab === 0 ? "Buscar chats..." : "Filtrar amigos..."}
+              placeholderTextColor="rgba(255,255,255,0.5)"
+              style={{ flex: 1, color: '#fff', fontFamily }}
+              autoFocus
+            />
+            {socialSearch.trim().length > 0 && (
+              <Pressable onPress={() => setSocialSearch('')} style={{ paddingLeft: 8 }}>
+                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
-      <View style={styles.content}>
-        <SolicitudesBadge count={solPendientesCount} onPress={onSolicitudesClick} fontFamily={fontFamily} />
+        <View style={[styles.content, { paddingTop: insets.top + (buscarAtivaSocial ? 170 : 90) }]}>
+          <SolicitudesBadge count={solPendientesCount} onPress={onSolicitudesClick} fontFamily={fontFamily} />
 
-        <View style={styles.tabContainer}>
-           <View style={styles.tabWrapper}>
-              <Pressable onPress={() => handleSetTab(0)} style={[styles.tabBtn, tab === 0 && styles.tabOnBtn]}>
-                <Text style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
-              </Pressable>
-              <Pressable onPress={() => handleSetTab(1)} style={[styles.tabBtn, tab === 1 && styles.tabOnBtn]}>
-                <Text style={[styles.tabText, tab === 1 && styles.tabOnText, { fontFamily }]}>Amigos</Text>
-              </Pressable>
-              <Pressable onPress={() => handleSetTab(2)} style={[styles.tabBtn, tab === 2 && styles.tabOnBtn]}>
-                <Text style={[styles.tabText, tab === 2 && styles.tabOnText, { fontFamily }]}>Buscar</Text>
-              </Pressable>
-           </View>
-        </View>
+          <View style={styles.tabContainer}>
+            <View style={styles.webCenteringWrapper}>
+              <View style={styles.tabWrapper}>
+                <Pressable onPress={() => handleSetTab(0)} style={[styles.tabBtn, tab === 0 && styles.tabOnBtn]}>
+                  <Text style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
+                </Pressable>
+                <Pressable onPress={() => handleSetTab(1)} style={[styles.tabBtn, tab === 1 && styles.tabOnBtn]}>
+                  <Text style={[styles.tabText, tab === 1 && styles.tabOnText, { fontFamily }]}>Amigos</Text>
+                </Pressable>
+                <Pressable onPress={() => handleSetTab(2)} style={[styles.tabBtn, tab === 2 && styles.tabOnBtn]}>
+                  <Text style={[styles.tabText, tab === 2 && styles.tabOnText, { fontFamily }]}>Buscar</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
 
-        <ScrollView 
-          contentContainerStyle={styles.scroll} 
-          showsVerticalScrollIndicator={false}
-        >
+          <View style={styles.webCenteringWrapper}>
+
           {tab === 0 && (
-            <View style={styles.chatList}>
-              <Pressable 
-                onPress={() => setMostrarSelector(true)}
-                style={[styles.newChatCard, SHADOWS.macLight]}
-              >
-                <View style={styles.newChatCircle}>
-                   <Ionicons name="add" size={26} color={COLORS.primary} />
-                </View>
-                <Text style={[styles.newChatText, { fontFamily }]}>Iniciar nueva conversación</Text>
-              </Pressable>
-
-              {loadingChats ? <ActivityIndicator color="#fff" style={{ marginTop: 20 }} /> : 
-                chats.length === 0 ? <Text style={styles.emptyText}>No tienes conversaciones activas</Text> :
-                chats.map(chat => {
-                  const otherUid = chat.participants.find(id => id !== user?.uid);
-                  // 🕵️ Buscamos al amigo en nuestra lista local para sacar su nombre real
-                  const amigoDetalle = amigos.find(a => a.uid === otherUid);
-                  const chatTitle = chat.name || amigoDetalle?.username || chat.participantDetails?.[otherUid || '']?.username || 'Chat...';
-                  const avatarUri = amigoDetalle?.fotoPerfil || chat.participantDetails?.[otherUid || '']?.fotoPerfil || null;
-
-                  return (
-                    <Pressable 
-                      key={chat.id} 
-                      style={[styles.chatRow, SHADOWS.macLight]} 
-                      onPress={() => onChatClick(chat.id, chat.participants, chatTitle)}
-                    >
-                      <View style={styles.chatAvatar}>
-                        {avatarUri ? (
-                          <Image source={{ uri: avatarUri }} style={styles.fullImg} />
-                        ) : (
-                          <Ionicons name={chat.type === 'group' ? 'people' : 'person'} size={24} color="rgba(255,255,255,0.4)" />
-                        )}
-                        {chat.activeMatchId && <View style={styles.matchDot} />}
-                      </View>
-                      <View style={styles.chatInfo}>
-                        <Text style={[styles.chatName, { fontFamily }]}>{chatTitle}</Text>
-                        <Text style={[styles.chatLastMsg, { fontFamily }]} numberOfLines={1}>
-                          {chat.lastMessage?.text || 'Sin mensajes aún'}
-                        </Text>
-                      </View>
-                      {chat.activeMatchId && (
-                        <View style={styles.matchBadgeMini}>
-                          <Ionicons name="flame" size={12} color="#ff6b00" />
-                          <Text style={styles.matchBadgeText}>Match</Text>
-                        </View>
-                      )}
-                      
-                      <Pressable 
-                        onPress={() => handleBorrarChat(chat.id)} 
-                        hitSlop={8} 
-                        style={styles.deleteBtn}
-                      >
-                         <Ionicons name="trash-outline" size={20} color="#ff4444" />
-                      </Pressable>
-                    </Pressable>
-                  );
-                })
-              }
-            </View>
-          )}
-
-          {tab === 1 && (
-            <View>
-              {amigos.map(a => (
-                <FriendRow 
-                  key={a.uid} 
-                  amigo={a} 
-                  onPress={() => onUsuarioClick(a.uid)} 
-                  fontFamily={fontFamily} 
+            <FlatList
+              data={chatsFiltrados}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              initialNumToRender={8}
+              maxToRenderPerBatch={5}
+              windowSize={5}
+              removeClippedSubviews={Platform.OS === 'android'}
+              ListHeaderComponent={() => (
+                <Pressable 
+                  onPress={() => setMostrarSelector(true)}
+                  style={[styles.newChatCard, SHADOWS.macLight, { marginBottom: 12 }]}
+                >
+                  <View style={styles.newChatCircle}>
+                    <Ionicons name="add" size={26} color={COLORS.primary} />
+                  </View>
+                  <Text style={[styles.newChatText, { fontFamily }]}>Iniciar nueva conversación</Text>
+                </Pressable>
+              )}
+              ListEmptyComponent={() => (
+                loadingChats ? <ActivityIndicator color="#fff" style={{ marginTop: 20 }} /> : 
+                <Text style={styles.emptyText}>{socialSearch ? 'No se encontraron chats' : 'No tienes conversaciones activas'}</Text>
+              )}
+              renderItem={({ item }) => (
+                <SocialChatRow 
+                  chat={item}
+                  user={user}
+                  amigos={amigos}
+                  onChatClick={stabilizedOnChatClick}
+                  onBorrarRef={stabilizedSetChatABorrar}
                 />
-              ))}
-            </View>
+              )}
+            />
           )}
 
-          {tab === 2 && (
-            <View>
-              <TextInput value={busqueda} onChangeText={setBusqueda} placeholder="Buscar personas..." placeholderTextColor="rgba(255,255,255,0.4)" style={styles.searchInput} />
-              {resultados.map(u => (
-                <UserSearchRow key={u.uid} usuario={{...u, fotoPerfil: u.fotoPerfil || undefined}} enviada={solEnviadas.has(u.uid)} onAdd={() => handleSendSolicitud(u.uid)} fontFamily={fontFamily} />
-              ))}
-            </View>
+          {tab !== 0 && (
+            <ScrollView 
+              contentContainerStyle={styles.scroll} 
+              showsVerticalScrollIndicator={false}
+            >
+              {tab === 1 && (
+                <View>
+                  {amigosFiltrados.map(a => (
+                    <FriendRow 
+                      key={a.uid} 
+                      amigo={a} 
+                      onPress={() => onUsuarioClick(a.uid)} 
+                      fontFamily={fontFamily} 
+                    />
+                  ))}
+                  {amigosFiltrados.length === 0 && socialSearch && (
+                    <Text style={styles.emptyText}>No se encontraron amigos</Text>
+                  )}
+                </View>
+              )}
+
+              {tab === 2 && (
+                <View>
+                  <TextInput 
+                    value={busqueda} 
+                    onChangeText={setBusqueda} 
+                    placeholder="Buscar personas en VeoVeo..." 
+                    placeholderTextColor="rgba(255,255,255,0.4)" 
+                    style={styles.searchInput} 
+                  />
+                  {resultados.map(u => (
+                    <UserSearchRow key={u.uid} usuario={{...u, fotoPerfil: u.fotoPerfil || undefined}} enviada={solEnviadas.has(u.uid)} onAdd={() => handleSendSolicitud(u.uid)} fontFamily={fontFamily} />
+                  ))}
+                </View>
+              )}
+            </ScrollView>
           )}
-        </ScrollView>
+        </View>
       </View>
 
       <Modal visible={mostrarSelector} transparent animationType="slide">
@@ -302,21 +418,41 @@ export function SocialTab({
            </View>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={!!chatABorrar}
+        onClose={() => setChatABorrar(null)}
+        onConfirm={handleBorrarChatAction}
+        title="Borrar Chat"
+        message="¿Estás seguro de que quieres eliminar esta conversación? Esta acción no se puede deshacer."
+        confirmText="Borrar"
+        cancelText="Cancelar"
+        iconName="trash"
+        fontFamily={fontFamily}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
+  webCenteringWrapper: {
+    width: '100%',
+    maxWidth: 1000, // 🚀 Centrado Premium Dashboard
+    alignSelf: 'center',
+    flex: 1,
+  },
   titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
   headerRow: { position: 'absolute', left: 24, right: 24, zIndex: 10, flexDirection: 'row', alignItems: 'center' },
   actionsTopRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   perfilBtnMini: { marginLeft: 4 },
   perfilInnerMini: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  perfilFotoMini: { width: '100%', height: '100%' },
-  content: { flex: 1, paddingTop: 110 },
-  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 },
+  perfilFotoMini: { width: 44, height: 44, borderRadius: 22 },
+  headerContainer: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2000 },
   headerBorder: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+  content: { flex: 1 },
+  iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  searchField: { position: 'absolute', left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   tabContainer: { paddingHorizontal: 20, marginTop: 10, marginBottom: 20 },
   tabWrapper: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 4, justifyContent: 'space-between' },
   tabBtn: { flex: 1, paddingVertical: 10, borderRadius: 16, alignItems: 'center' },
@@ -325,7 +461,16 @@ const styles = StyleSheet.create({
   tabOnText: { color: '#fff' },
   scroll: { paddingHorizontal: 20, paddingBottom: 140 },
   chatList: { gap: 12 },
-  chatRow: { flexDirection: 'row', backgroundColor: CardSurface, padding: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  chatRow: { 
+    flexDirection: 'row', 
+    backgroundColor: CardSurface, 
+    padding: 16, 
+    borderRadius: 20, 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: 'rgba(255,255,255,0.05)',
+    marginTop: 10, // 🚀 Sincronizado con Friends
+  },
   chatAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   matchDot: { position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: '#ff6b00', borderWidth: 2, borderColor: '#1e293b' },
   chatInfo: { flex: 1 },
@@ -357,7 +502,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(56, 189, 248, 0.3)',
   },
   newChatText: { color: '#38bdf8', fontSize: 16, fontWeight: '700' },
-  fullImg: { width: '100%', height: '100%', borderRadius: 25 },
+  fullImg: { width: 50, height: 50, borderRadius: 25 },
   deleteBtn: { padding: 8, marginLeft: 8 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#1e293b', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 24, height: '75%' },

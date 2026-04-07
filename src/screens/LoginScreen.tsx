@@ -19,6 +19,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 import { useMontserrat } from '../theme/useMontserrat';
+import { AlertModal } from '../components/common/AlertModal';
 
 export function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -30,6 +31,7 @@ export function LoginScreen() {
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [alertInfo, setAlertInfo] = useState<{ visible: boolean; title: string; message: string; icon: any; color?: string } | null>(null);
 
   const ff = loaded ? 'Montserrat_600SemiBold' : 'System';
 
@@ -134,16 +136,25 @@ export function LoginScreen() {
         <Pressable
           onPress={async () => {
             if (!email.trim()) {
-              Alert.alert(
-                'Restablecer contraseña',
-                'Por favor, introduce tu email arriba primero.',
-              );
+              setAlertInfo({
+                visible: true,
+                title: 'Restablecer contraseña',
+                message: 'Por favor, introduce tu email arriba primero.',
+                icon: 'mail-outline',
+                color: COLORS.primary
+              });
               return;
             }
             try {
               setLoading(true);
               await resetPassword(email);
-              Alert.alert('Éxito', 'Se ha enviado un correo para restablecer tu contraseña.');
+              setAlertInfo({
+                visible: true,
+                title: 'Éxito',
+                message: 'Se ha enviado un correo para restablecer tu contraseña.',
+                icon: 'checkmark-circle-outline',
+                color: '#4CAF50'
+              });
             } catch (e) {
               setErrorMessage(e instanceof Error ? e.message : 'Error al enviar correo');
             } finally {
@@ -159,6 +170,18 @@ export function LoginScreen() {
 
         <Text style={[styles.version, { fontFamily: ff }]}>v1.2.2 - Official</Text>
       </View>
+
+      {alertInfo && (
+        <AlertModal
+          visible={alertInfo.visible}
+          onClose={() => setAlertInfo(null)}
+          title={alertInfo.title}
+          message={alertInfo.message}
+          iconName={alertInfo.icon}
+          iconColor={alertInfo.color}
+          fontFamily={ff}
+        />
+      )}
     </GradientBackground>
   );
 }

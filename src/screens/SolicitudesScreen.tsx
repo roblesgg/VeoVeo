@@ -17,11 +17,10 @@ import {
   obtenerSolicitudesPendientes,
   rechazarSolicitud,
 } from '../services/repositorioSocial';
-import { GlassBorder, GlassSurface, GlassWhite } from '../theme/colors';
+import { GlassBorder, GlassSurface, COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
+import { GradientBackground } from '../components/GradientBackground';
 import type { SolicitudAmistad } from '../types';
-
-const Container = Platform.OS === 'ios' ? BlurView : View;
 
 export function SolicitudesScreen() {
   const navigation = useNavigation();
@@ -73,10 +72,12 @@ export function SolicitudesScreen() {
   };
 
   return (
-    <View style={[styles.flex, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.back} hitSlop={20}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+    <GradientBackground style={styles.flex}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
+           <BlurView intensity={80} tint="dark" style={styles.backInner}>
+              <Ionicons name="chevron-back" size={26} color="#fff" />
+           </BlurView>
         </Pressable>
         <Text style={styles.titulo}>Solicitudes</Text>
       </View>
@@ -88,105 +89,99 @@ export function SolicitudesScreen() {
         </View>
       ) : null}
 
-      {cargando && items.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator color="#fff" size="large" />
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {items.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={64} color="rgba(255,255,255,0.2)" />
-              <Text style={styles.sub}>No tienes solicitudes pendientes.</Text>
-            </View>
-          ) : (
-            items.map((s) => (
-              <Container
-                key={s.id}
-                intensity={50}
-                tint="dark"
-                style={[styles.row, SHADOWS.macLight]}
-              >
-                <View style={styles.rowContent}>
-                  <View style={styles.userInfo}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>{s.deUsername.charAt(0).toUpperCase()}</Text>
-                    </View>
-                    <View>
-                      <Text style={styles.name}>{s.deUsername}</Text>
-                      <Text style={styles.uid}>ID: {s.deUid.substring(0, 8)}...</Text>
-                    </View>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 60 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {cargando && items.length === 0 ? (
+          <ActivityIndicator color="#fff" size="large" style={{ marginTop: 40 }} />
+        ) : items.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="people-outline" size={64} color="rgba(255,255,255,0.2)" />
+            <Text style={styles.sub}>No tienes solicitudes pendientes.</Text>
+          </View>
+        ) : (
+          items.map((s) => (
+            <BlurView
+              key={s.id}
+              intensity={40}
+              tint="dark"
+              experimentalBlurMethod="dimezisBlurView"
+              style={[styles.row, SHADOWS.macLight]}
+            >
+              <View style={styles.rowContent}>
+                <View style={styles.userInfo}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{s.deUsername.charAt(0).toUpperCase()}</Text>
                   </View>
-
-                  <View style={styles.actions}>
-                    <Pressable
-                      style={[styles.btn, styles.btnOk, accionEnCurso === s.id && styles.disabled]}
-                      onPress={() => handleAceptar(s.id)}
-                      disabled={!!accionEnCurso}
-                    >
-                      <Text style={styles.btnText}>Aceptar</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.btn, styles.btnNo, accionEnCurso === s.id && styles.disabled]}
-                      onPress={() => handleRechazar(s.id)}
-                      disabled={!!accionEnCurso}
-                    >
-                      <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
-                    </Pressable>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.name} numberOfLines={1}>{s.deUsername}</Text>
+                    <Text style={styles.uid}>ID: {s.deUid.substring(0, 12)}</Text>
                   </View>
                 </View>
-              </Container>
-            ))
-          )}
-        </ScrollView>
-      )}
-    </View>
+
+                <View style={styles.actions}>
+                  <Pressable
+                    style={[styles.btn, styles.btnOk, accionEnCurso === s.id && styles.disabled]}
+                    onPress={() => handleAceptar(s.id)}
+                    disabled={!!accionEnCurso}
+                  >
+                    <Text style={styles.btnText}>Aceptar</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.btn, styles.btnNo, accionEnCurso === s.id && styles.disabled]}
+                    onPress={() => handleRechazar(s.id)}
+                    disabled={!!accionEnCurso}
+                  >
+                    <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+                  </Pressable>
+                </View>
+              </View>
+            </BlurView>
+          ))
+        )}
+      </ScrollView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, paddingHorizontal: 20 },
+  flex: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    gap: 8,
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    gap: 16,
   },
-  back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: GlassWhite,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  backBtn: { width: 44, height: 44 },
+  backInner: { flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)' },
   titulo: {
-    fontSize: 32,
+    fontSize: 28,
     color: '#fff',
-    fontWeight: '800',
+    fontWeight: '900',
     letterSpacing: -0.5,
   },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyState: {
-    marginTop: 60,
+    marginTop: 80,
     alignItems: 'center',
-    opacity: 0.8,
   },
   sub: {
     marginTop: 16,
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.4)',
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: '600'
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 138, 128, 0.1)',
+    marginHorizontal: 20,
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
     gap: 8,
     borderWidth: 1,
@@ -194,11 +189,11 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#ff8a80', fontSize: 13, fontWeight: '500' },
   row: {
-    marginTop: 12,
+    marginBottom: 12,
     borderRadius: 24,
-    backgroundColor: GlassSurface,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
-    borderColor: GlassBorder,
+    borderColor: 'rgba(255,255,255,0.06)',
     overflow: 'hidden',
   },
   rowContent: {
@@ -206,11 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  rowContentInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    gap: 12
   },
   userInfo: {
     flexDirection: 'row',
@@ -219,9 +210,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -229,39 +220,33 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   avatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
+    color: '#38bdf8',
+    fontSize: 20,
+    fontWeight: '800',
   },
   name: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  uid: { color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 },
+  uid: { color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2, textTransform: 'uppercase' },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   btn: {
-    borderRadius: 14,
-    minHeight: 40,
-    paddingVertical: 4,
+    borderRadius: 16,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   btnOk: {
-    backgroundColor: '#6C63FF',
+    backgroundColor: '#38bdf8',
     paddingHorizontal: 20,
-    shadowColor: '#6C63FF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   btnNo: {
-    width: 38,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    width: 44,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  btnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   disabled: { opacity: 0.5 },
 });
