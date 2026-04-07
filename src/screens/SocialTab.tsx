@@ -274,14 +274,17 @@ export function SocialTab({
 
           <View style={styles.tabContainer}>
             <View style={styles.webCenteringWrapper}>
-              <View style={styles.tabWrapper}>
+              <View style={[styles.tabWrapper, SHADOWS.macLight]}>
                 <Pressable onPress={() => handleSetTab(0)} style={[styles.tabBtn, tab === 0 && styles.tabOnBtn]}>
+                  <Ionicons name={tab === 0 ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"} size={18} color={tab === 0 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
                   <Text style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
                 </Pressable>
                 <Pressable onPress={() => handleSetTab(1)} style={[styles.tabBtn, tab === 1 && styles.tabOnBtn]}>
+                  <Ionicons name={tab === 1 ? "people" : "people-outline"} size={18} color={tab === 1 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
                   <Text style={[styles.tabText, tab === 1 && styles.tabOnText, { fontFamily }]}>Amigos</Text>
                 </Pressable>
                 <Pressable onPress={() => handleSetTab(2)} style={[styles.tabBtn, tab === 2 && styles.tabOnBtn]}>
+                  <Ionicons name={tab === 2 ? "person-add" : "person-add-outline"} size={18} color={tab === 2 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
                   <Text style={[styles.tabText, tab === 2 && styles.tabOnText, { fontFamily }]}>Buscar</Text>
                 </Pressable>
               </View>
@@ -454,11 +457,30 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   searchField: { position: 'absolute', left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   tabContainer: { paddingHorizontal: 20, marginTop: 10, marginBottom: 20 },
-  tabWrapper: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, padding: 4, justifyContent: 'space-between' },
-  tabBtn: { flex: 1, paddingVertical: 10, borderRadius: 16, alignItems: 'center' },
-  tabOnBtn: { backgroundColor: 'rgba(255,255,255,0.1)' },
+  tabWrapper: { 
+    flexDirection: 'row', 
+    backgroundColor: 'rgba(255,255,255,0.05)', 
+    borderRadius: 22, 
+    padding: 6, 
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  tabBtn: { 
+    flex: 1, 
+    paddingVertical: 14, 
+    borderRadius: 18, 
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  tabOnBtn: { 
+    backgroundColor: 'rgba(255,107,0,0.15)', // Sutil toque naranja
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,0,0.3)',
+  },
   tabText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '700' },
-  tabOnText: { color: '#fff' },
+  tabOnText: { color: '#fff', fontWeight: '900' },
   scroll: { paddingHorizontal: 20, paddingBottom: 140 },
   chatList: { gap: 12 },
   chatRow: { 
