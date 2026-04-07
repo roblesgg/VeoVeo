@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -168,7 +169,14 @@ export function LoginScreen() {
           </Text>
         </Pressable>
 
-        <Text style={[styles.version, { fontFamily: ff }]}>v1.2.2 - Official</Text>
+        <Text style={[styles.version, { fontFamily: ff }]}>v1.8.0 - Official</Text>
+        
+        <Pressable 
+          onPress={() => Linking.openURL('https://dripdev.dev')}
+          style={{ marginTop: 8 }}
+        >
+          <Text style={[styles.dripLink, { fontFamily: ff }]}>by DripDev</Text>
+        </Pressable>
       </View>
 
       {alertInfo && (
@@ -223,4 +231,5 @@ const styles = StyleSheet.create({
   btnTextDark: { color: '#000', fontWeight: '700' },
   link: { color: '#fff', textAlign: 'center' },
   version: { color: 'rgba(255,255,255,0.2)', textAlign: 'center', marginTop: 32, fontSize: 12 },
+  dripLink: { color: 'rgba(255,255,255,0.4)', textAlign: 'center', fontSize: 13, fontWeight: '600' },
 });
