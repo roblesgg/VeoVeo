@@ -72,7 +72,7 @@ function VersionShield() {
           </Text>
           <View style={styles.updateBtnContainer}>
              <Text 
-                onPress={() => Linking.openURL('https://veoveo.dripdev.dev')} 
+                onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')} 
                 style={styles.updateBtn}
              >
                 Actualizar ahora
