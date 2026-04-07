@@ -49,7 +49,7 @@ export function LiquidBottomBar({ onTabChange, paginaActual }: Props) {
     <View style={[
       styles.container, 
       { 
-        bottom: Math.max(insets.bottom, 20),
+        bottom: Platform.OS === 'web' ? Math.max(insets.bottom, 40) : Math.max(insets.bottom, 20),
         width: BAR_WIDTH,
         left: (windowWidth - BAR_WIDTH) / 2, // Centrado perfecto
       }

@@ -106,14 +106,25 @@ export default function App() {
          @font-face {
            font-family: 'Ionicons';
            src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
+           font-display: block;
          }
          @font-face {
            font-family: 'MaterialCommunityIcons';
            src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf') format('truetype');
+           font-display: block;
          }
          @font-face {
            font-family: 'MaterialIcons';
            src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf') format('truetype');
+           font-display: block;
+         }
+         /* Fuerza el renderizado de iconos en todos los componentes */
+         [data-contents="true"], .rn-view, .rn-text {
+           font-family: 'Montserrat', sans-serif;
+         }
+         /* Selector especial para componentes de icono de react-native-web */
+         [style*="font-family: Ionicons"], [style*="font-family: 'Ionicons'"] {
+           font-family: 'Ionicons' !important;
          }
        `;
        head.appendChild(iconStyle);
@@ -133,10 +144,6 @@ export default function App() {
            overflow-x: hidden;
            font-family: 'Montserrat', sans-serif !important;
          }
-         /* 🚀 Fix para que los iconos se rendericen con su fuente */
-         [data-contents="true"], .rn-view {
-           font-family: 'Montserrat', sans-serif;
-         }
          /* 🚀 Scrollbars Invisibles (Like Apple) */
          ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
          input, textarea { user-select: auto !important; }
@@ -144,6 +151,10 @@ export default function App() {
          #root {
            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
            min-height: 100vh;
+           /* Evita el scroll elástico que esconde la barra en iOS */
+           position: fixed;
+           top: 0; left: 0; right: 0; bottom: 0;
+           overflow-y: auto;
          }
        `;
        head.appendChild(style);
