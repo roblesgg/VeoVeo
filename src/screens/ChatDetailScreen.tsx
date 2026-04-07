@@ -361,7 +361,7 @@ export function ChatDetailScreen() {
             { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, Platform.OS === 'web' ? 44 : 22) }
           ]}
         >
-          <View style={styles.webCenteringWrapper}>
+          <View style={styles.inputCenteringWrapper}>
             <View style={styles.inputRow}>
               <Pressable 
                 style={styles.plusBtn} 
@@ -435,9 +435,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#020617' },
   webCenteringWrapper: {
     width: '100%',
-    maxWidth: 800, // 🚀 Centrado óptimo para chats en desktop
+    maxWidth: 800, 
     alignSelf: 'center',
     flex: 1,
+  },
+  inputCenteringWrapper: {
+    width: '100%',
+    maxWidth: 800, 
+    alignSelf: 'center',
   },
   chatList: { flex: 1 },
   header: { 
