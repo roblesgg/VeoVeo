@@ -11,6 +11,7 @@ import {
   updateDoc,
   where,
   addDoc,
+  documentId,
 } from 'firebase/firestore';
 import type { SolicitudAmistad, UsuarioPerfil } from '../types';
 import {
@@ -79,7 +80,7 @@ export function observarAmigos(callback: (amigos: UsuarioPerfil[]) => void): () 
 
     const qAmigos = query(
       collection(db, 'usuarios'),
-      where('uid', 'in', perfil.amigos.slice(0, 30)),
+      where(documentId(), 'in', perfil.amigos.slice(0, 30)),
     );
 
     unsubAmigos = onSnapshot(qAmigos, (amigosSnap) => {
