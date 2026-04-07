@@ -141,6 +141,14 @@ export function PerfilScreen() {
           <Text style={[styles.shareText, { fontFamily }]}>Compartir aplicación</Text>
         </Pressable>
 
+        <Pressable
+          style={styles.downloadBtn}
+          onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')}
+        >
+          <Ionicons name="cloud-download-outline" size={22} color="#fff" />
+          <Text style={[styles.downloadText, { fontFamily }]}>Descargar App</Text>
+        </Pressable>
+
 
 
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
@@ -251,6 +259,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   shareText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  downloadBtn: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255, 107, 0, 0.1)', // Sutil toque corporativo
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    width: '100%',
+    minHeight: 56,
+    paddingVertical: 12,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 107, 0, 0.4)', // Borde naranja destacable
+  },
+  downloadText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   logoutBtn: {
     marginTop: 20,
     flexDirection: 'row',
