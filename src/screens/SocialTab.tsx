@@ -273,7 +273,7 @@ export function SocialTab({
           <SolicitudesBadge count={solPendientesCount} onPress={onSolicitudesClick} fontFamily={fontFamily} />
 
           <View style={styles.tabContainer}>
-            <View style={styles.webCenteringWrapper}>
+            <View style={styles.tabCenteringWrapper}>
               <View style={[styles.tabWrapper, SHADOWS.macLight]}>
                 <Pressable onPress={() => handleSetTab(0)} style={[styles.tabBtn, tab === 0 && styles.tabOnBtn]}>
                   <Text numberOfLines={1} style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
@@ -438,9 +438,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#020617' },
   webCenteringWrapper: {
     width: '100%',
-    maxWidth: 1000, // 🚀 Centrado Premium Dashboard
+    maxWidth: 1000, 
     alignSelf: 'center',
     flex: 1,
+  },
+  tabCenteringWrapper: {
+    width: '100%',
+    maxWidth: 800, 
+    alignSelf: 'center',
   },
   titulo: { color: '#fff', fontSize: 32, fontWeight: '800' },
   headerRow: { position: 'absolute', left: 24, right: 24, zIndex: 10, flexDirection: 'row', alignItems: 'center' },
