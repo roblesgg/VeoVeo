@@ -32,11 +32,15 @@ export function useDescubrir(titulos: string[] = []) {
 
   const cargando = results.some((r) => r.isLoading);
 
-  /** Triggered manually by components if lazy loading was intended, 
-   * but useQueries handles it automatically. Keeping signature for compatibility. */
-  const cargarCarrusel = useCallback((_titulo: string) => {
-     // No-op - Query will be enabled if it's in the 'titulos' array
-  }, []);
+  /** 
+   * Manual trigger for each carousel.
+   * If forzar is true, invalidate the specific query to refetch.
+   */
+  const cargarCarrusel = useCallback((titulo: string, forzar?: boolean) => {
+    if (forzar) {
+      queryClient.invalidateQueries({ queryKey: ['carousel', titulo] });
+    }
+  }, [queryClient]);
 
   const recargarTodosLosCarruseles = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['carousel'] });
