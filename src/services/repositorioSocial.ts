@@ -23,7 +23,7 @@ async function getPerfil(uid: string): Promise<UsuarioPerfil | null> {
   const db = dbOrThrow();
   const snap = await getDoc(doc(db, 'usuarios', uid));
   if (!snap.exists()) return null;
-  return snap.data() as UsuarioPerfil;
+  return { uid: snap.id, ...snap.data() } as UsuarioPerfil;
 }
 
 export async function buscarUsuarios(queryText: string): Promise<UsuarioPerfil[]> {
@@ -33,7 +33,7 @@ export async function buscarUsuarios(queryText: string): Promise<UsuarioPerfil[]
   const snap = await getDocs(collection(db, 'usuarios'));
   const q = queryText.toLowerCase();
   return snap.docs
-    .map((d) => d.data() as UsuarioPerfil)
+    .map((d) => ({ uid: d.id, ...d.data() } as UsuarioPerfil))
     .filter((u) => u.uid !== uidActual && (u.username || '').toLowerCase().includes(q))
     .slice(0, 20);
 }
@@ -46,7 +46,7 @@ export async function obtenerAmigos(): Promise<UsuarioPerfil[]> {
   const amigos: UsuarioPerfil[] = [];
   for (const uid of perfil.amigos) {
     const snap = await getDoc(doc(db, 'usuarios', uid));
-    if (snap.exists()) amigos.push(snap.data() as UsuarioPerfil);
+    if (snap.exists()) amigos.push({ uid: snap.id, ...snap.data() } as UsuarioPerfil);
   }
   return amigos;
 }
@@ -84,7 +84,7 @@ export function observarAmigos(callback: (amigos: UsuarioPerfil[]) => void): () 
     );
 
     unsubAmigos = onSnapshot(qAmigos, (amigosSnap) => {
-      const listaAmigos = amigosSnap.docs.map((d) => d.data() as UsuarioPerfil);
+      const listaAmigos = amigosSnap.docs.map((d) => ({ uid: d.id, ...d.data() } as UsuarioPerfil));
       callback(listaAmigos);
     });
   });

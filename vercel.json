@@ -1,6 +1,9 @@
 {
     "cleanUrls": true,
     "rewrites": [
+        { "source": "/movie/:path*", "destination": "/index.html" },
+        { "source": "/actor/:path*", "destination": "/index.html" },
+        { "source": "/share", "destination": "/index.html" },
         { "source": "/descargar", "destination": "/descargar.html" },
         { "source": "/((?!assets|static|favicon.ico|_expo|.*\\.apk|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.ttf|.*\\.woff|.*\\.woff2|.*\\.json|.*\\.svg|\\.well-known).*)", "destination": "/index.html" }
     ],
