@@ -100,31 +100,34 @@ export default function App() {
        fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap';
        head.appendChild(fontLink);
 
-       // 💎 Iconografía Universal (Ionicons & MaterialCommunityIcons)
+       // 💎 Iconografía Universal (Ionicons & MaterialCommunityIcons) - Sincronizada v15.0.3
        const iconStyle = document.createElement('style');
        iconStyle.innerHTML = `
          @font-face {
            font-family: 'Ionicons';
-           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@15.0.3/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
            font-display: block;
          }
          @font-face {
            font-family: 'MaterialCommunityIcons';
-           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf') format('truetype');
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@15.0.3/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf') format('truetype');
            font-display: block;
          }
          @font-face {
            font-family: 'MaterialIcons';
-           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf') format('truetype');
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@15.0.3/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf') format('truetype');
            font-display: block;
          }
          /* Fuerza el renderizado de iconos en todos los componentes */
          [data-contents="true"], .rn-view, .rn-text {
            font-family: 'Montserrat', sans-serif;
          }
-         /* Selector especial para componentes de icono de react-native-web */
-         [style*="font-family: Ionicons"], [style*="font-family: 'Ionicons'"] {
+         /* 🚀 Selector de Máxima Prioridad para Iconos */
+         [style*="font-family: Ionicons"], [style*="font-family: 'Ionicons'"], [data-icon] {
            font-family: 'Ionicons' !important;
+         }
+         [style*="font-family: MaterialCommunityIcons"], [style*="font-family: 'MaterialCommunityIcons'"] {
+           font-family: 'MaterialCommunityIcons' !important;
          }
        `;
        head.appendChild(iconStyle);
