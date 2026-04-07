@@ -2,27 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>VeoVeo</title>
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
-      html, body { height: 100%; }
-      body { overflow: hidden; }
-      #root { display: flex; height: 100%; flex: 1; }
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
     </style>
   </head>
+
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/_expo/static/js/web/index-cf9c38233ed91f923b6156c1e2e889b3.js" defer></script>
-<script src="/_expo/static/js/web/index-e8f1a842e7b27fc13c509bb2b96f9a72.js" defer></script>
-<script src="/_expo/static/js/web/index-b0d7e7d722f5aa4fc9d8df4755c15da6.js" defer></script>
-<script src="/_expo/static/js/web/index-df5a29af46fcadf7772c6aa8e67dd542.js" defer></script>
-<script src="/_expo/static/js/web/index-db0500a368297f44f13d4a26a9ce4917.js" defer></script>
-<script src="/_expo/static/js/web/index-224b2bce71fc3b55bbaff6ccac7bb343.js" defer></script>
-<script src="/_expo/static/js/web/index-daaa7aa973191102aae90aee798c0675.js" defer></script>
-<script src="/_expo/static/js/web/index-148abc67e740d75c2dfd5c93eee5726b.js" defer></script>
-<script src="/_expo/static/js/web/index-10288761580f1db8a28a092d2fa82f6d.js" defer></script>
-<script src="/_expo/static/js/web/index-10288761580f1db8a28a092d2fa82f6d.js" defer></script>
+  <script src="/_expo/static/js/web/index-10288761580f1db8a28a092d2fa82f6d.js" defer></script>
 </body>
 </html>
