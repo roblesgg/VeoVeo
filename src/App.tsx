@@ -100,11 +100,23 @@ export default function App() {
        fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap';
        head.appendChild(fontLink);
 
-       // Ionicons
-       const iconLink = document.createElement('link');
-       iconLink.rel = 'stylesheet';
-       iconLink.href = 'https://code.ionicframework.com/ionicons/4.5.10-0/css/ionicons.min.css';
-       head.appendChild(iconLink);
+       // 💎 Iconografía Universal (Ionicons & MaterialCommunityIcons)
+       const iconStyle = document.createElement('style');
+       iconStyle.innerHTML = `
+         @font-face {
+           font-family: 'Ionicons';
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf') format('truetype');
+         }
+         @font-face {
+           font-family: 'MaterialCommunityIcons';
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf') format('truetype');
+         }
+         @font-face {
+           font-family: 'MaterialIcons';
+           src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@14.0.0/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf') format('truetype');
+         }
+       `;
+       head.appendChild(iconStyle);
 
        // 🔮 Estilos Globales Premium para Web
        const style = document.createElement('style');
@@ -119,6 +131,10 @@ export default function App() {
            margin: 0;
            padding: 0;
            overflow-x: hidden;
+           font-family: 'Montserrat', sans-serif !important;
+         }
+         /* 🚀 Fix para que los iconos se rendericen con su fuente */
+         [data-contents="true"], .rn-view {
            font-family: 'Montserrat', sans-serif;
          }
          /* 🚀 Scrollbars Invisibles (Like Apple) */
