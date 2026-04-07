@@ -276,16 +276,13 @@ export function SocialTab({
             <View style={styles.webCenteringWrapper}>
               <View style={[styles.tabWrapper, SHADOWS.macLight]}>
                 <Pressable onPress={() => handleSetTab(0)} style={[styles.tabBtn, tab === 0 && styles.tabOnBtn]}>
-                  <Ionicons name={tab === 0 ? "chatbubble-ellipses" : "chatbubble-ellipses-outline"} size={18} color={tab === 0 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
-                  <Text style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
+                  <Text numberOfLines={1} style={[styles.tabText, tab === 0 && styles.tabOnText, { fontFamily }]}>Chats</Text>
                 </Pressable>
                 <Pressable onPress={() => handleSetTab(1)} style={[styles.tabBtn, tab === 1 && styles.tabOnBtn]}>
-                  <Ionicons name={tab === 1 ? "people" : "people-outline"} size={18} color={tab === 1 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
-                  <Text style={[styles.tabText, tab === 1 && styles.tabOnText, { fontFamily }]}>Amigos</Text>
+                  <Text numberOfLines={1} style={[styles.tabText, tab === 1 && styles.tabOnText, { fontFamily }]}>Amigos</Text>
                 </Pressable>
                 <Pressable onPress={() => handleSetTab(2)} style={[styles.tabBtn, tab === 2 && styles.tabOnBtn]}>
-                  <Ionicons name={tab === 2 ? "person-add" : "person-add-outline"} size={18} color={tab === 2 ? "#fff" : "rgba(255,255,255,0.4)"} style={{ marginRight: 6 }} />
-                  <Text style={[styles.tabText, tab === 2 && styles.tabOnText, { fontFamily }]}>Buscar</Text>
+                  <Text numberOfLines={1} style={[styles.tabText, tab === 2 && styles.tabOnText, { fontFamily }]}>Buscar</Text>
                 </Pressable>
               </View>
             </View>
@@ -468,10 +465,9 @@ const styles = StyleSheet.create({
   },
   tabBtn: { 
     flex: 1, 
-    paddingVertical: 18, 
-    borderRadius: 20, 
+    paddingVertical: 12, 
+    borderRadius: 16, 
     alignItems: 'center',
-    flexDirection: 'row',
     justifyContent: 'center',
   },
   tabOnBtn: { 
