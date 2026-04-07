@@ -8,7 +8,7 @@ const IS_TEST = process.env.APP_ENV === 'test';
 module.exports = {
   ...appJson.expo,
   owner: 'drip-dev',
-  name: IS_TEST ? 'VeoVeo Test' : appJson.expo.name,
+  name: IS_TEST ? 'VeoVeo Test' : 'VeoVeo',
   android: {
     ...appJson.expo.android,
     package: IS_TEST ? 'com.roblesgg.veoveo.test' : appJson.expo.android.package,
