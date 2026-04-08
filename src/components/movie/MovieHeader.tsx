@@ -46,7 +46,7 @@ export const MovieHeader = React.memo(
           <View style={[styles.macCardWrap, SHADOWS.mac]}>
             <BlurView 
               intensity={80} 
-              style={StyleSheet.absoluteFill} 
+              style={[StyleSheet.absoluteFill, { borderRadius: 24, overflow: 'hidden', zIndex: -1 }]} 
               tint="dark" 
               experimentalBlurMethod="dimezisBlurView"
             />
@@ -54,14 +54,16 @@ export const MovieHeader = React.memo(
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: 'rgba(15, 23, 42, 0.08)', // Opacidad mínima para efecto cristal puro
+                  backgroundColor: 'rgba(15, 23, 42, 0.08)',
                   borderBottomWidth: 1,
                   borderColor: 'rgba(255, 255, 255, 0.12)',
+                  borderRadius: 24,
+                  zIndex: -1,
                 },
               ]}
             />
 
-            <View style={styles.macCardInner}>
+            <View style={[styles.macCardInner, { zIndex: 1 }]}>
               <View style={styles.posterShadow}>
                 <View style={styles.posterClip}>
                   {detalles.poster_path ? (
@@ -141,7 +143,6 @@ const styles = StyleSheet.create({
   macCardWrap: {
     borderRadius: 24,
     marginBottom: 16,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
