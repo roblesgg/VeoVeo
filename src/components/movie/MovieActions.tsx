@@ -21,13 +21,13 @@ export const MovieActions = React.memo(
       <View style={[styles.actionsGlass, SHADOWS.mac]}>
         <BlurView 
           intensity={80} 
-          style={StyleSheet.absoluteFill} 
+          style={[StyleSheet.absoluteFill, { borderRadius: 28, overflow: 'hidden', zIndex: -1 }]} 
           tint="dark" 
           experimentalBlurMethod="dimezisBlurView"
         />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.05)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.05)', borderRadius: 28, zIndex: -1 }]} />
 
-        <View style={styles.actionsInner}>
+        <View style={[styles.actionsInner, { zIndex: 1 }]}>
           {!user ? (
             <Text style={styles.aviso}>Inicia sesión para guardar en tu biblioteca.</Text>
           ) : bibCargando ? (
@@ -84,7 +84,6 @@ const styles = StyleSheet.create({
   actionsGlass: {
     borderRadius: 28,
     marginBottom: 32,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: GLASS.border,
   },

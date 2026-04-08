@@ -169,7 +169,7 @@ export function LoginScreen() {
           </Text>
         </Pressable>
 
-        <Text style={[styles.version, { fontFamily: ff }]}>v1.8.0 - Official</Text>
+        <Text style={[styles.version, { fontFamily: ff }]}>v1.8.2 - Official</Text>
         
         <Pressable 
           onPress={() => Linking.openURL('https://dripdev.dev')}
