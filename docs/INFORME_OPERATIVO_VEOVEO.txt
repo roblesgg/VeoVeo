@@ -1,0 +1,623 @@
+INFORME OPERATIVO DE VEOVEO
+Generado el: 2026-04-24
+Ruta del archivo: F:\Repositorios\VeoVeo\docs\INFORME_OPERATIVO_VEOVEO.txt
+
+====================================================================
+1. RESUMEN DEL PROYECTO
+====================================================================
+
+VeoVeo es una aplicacion construida principalmente con Expo + React Native.
+Tiene:
+- app movil Android
+- version web
+- backend serverless apoyado en Firebase
+- hosting web y distribucion del APK desde Vercel
+
+Estado actual de release documentado en este informe:
+- version publica actual: 1.8.10
+- versionCode Android actual: 32
+- rama principal de trabajo/publicacion: main
+- package Android: com.roblesgg.veoveo
+- Firebase project id: veoveo-48667
+- Expo project id: db438c91-21eb-4020-a3ad-efec69cef405
+
+====================================================================
+2. DOMINIOS Y URLS IMPORTANTES
+====================================================================
+
+Dominio principal de uso de la app web:
+- https://veoveo.dripdev.dev/
+
+Dominio/pagina de descarga oficial:
+- https://veoveo.dripdev.dev/descargar
+
+APK principal servido por la web:
+- https://veoveo.dripdev.dev/veoveo.apk
+
+Alias APK "latest":
+- https://veoveo.dripdev.dev/veoveo-latest.apk
+
+Rutas especiales configuradas en Vercel:
+- /movie/:path* -> /index.html
+- /actor/:path* -> /index.html
+- /share -> /index.html
+- /descargar -> /descargar.html
+
+Comportamiento importante de Vercel:
+- los archivos .apk se sirven con cache larga
+- la pagina de descarga se sirve desde public/descargar.html
+- la web principal exportada se publica en public/
+
+Archivo de configuracion Vercel:
+- F:\Repositorios\VeoVeo\vercel.json
+
+====================================================================
+3. FIREBASE Y BACKEND
+====================================================================
+
+Proveedor backend principal:
+- Firebase
+
+Servicios usados:
+- Firebase Auth: login, sesion y Google Sign-In
+- Firestore: base de datos principal
+- Firebase Storage: almacenamiento de archivos
+- Firebase Admin SDK: scripts de mantenimiento y automatizacion desde local
+
+Proyecto Firebase:
+- projectId: veoveo-48667
+
+Colecciones/documentos importantes detectados:
+- configuracion/app
+  Uso:
+  - guarda la version minima obligatoria
+  - guarda la URL oficial de descarga
+  - guarda el titulo y cuerpo del aviso de release
+
+- usuarios/{uid}
+  Uso:
+  - perfil del usuario
+  - username
+  - email
+  - amigos
+  - fotoPerfil
+  - estado
+  - ultimoAcceso
+  - pushToken
+  - appVersion
+  - appVersionCode
+  - platform
+
+Observaciones operativas:
+- el documento configuracion/app es critico para forzar actualizaciones
+- la app escucha este documento en tiempo real
+- si la version instalada es inferior a min_version, la app bloquea acceso y muestra el aviso de actualizar
+
+Estado actual del documento configuracion/app esperado tras una release:
+- min_version = 1.8.10
+- download_url = https://veoveo.dripdev.dev/descargar
+- release_title = Nueva actualizacion disponible
+- release_body = mensaje de la release actual
+
+Archivos relacionados:
+- F:\Repositorios\VeoVeo\src\services\firebase.ts
+- F:\Repositorios\VeoVeo\scripts\push-version.mjs
+- F:\Repositorios\VeoVeo\scripts\send-update-push.mjs
+
+IMPORTANTE:
+- no incluir claves privadas ni tokens en documentacion compartida
+- el archivo eas.json contiene variables sensibles y no debe copiarse tal cual a terceros
+
+====================================================================
+4. LENGUAJES Y TECNOLOGIAS DEL PROYECTO
+====================================================================
+
+TypeScript / TSX
+Uso:
+- codigo principal de la app
+- pantallas
+- hooks
+- servicios
+- navegacion
+- tipado de datos
+
+JavaScript / MJS
+Uso:
+- scripts operativos
+- automatizaciones de Firebase
+- scripts de release y notificaciones
+
+HTML
+Uso:
+- pagina de descarga
+- landing publica
+- export de la version web
+
+CSS
+Uso:
+- estilos de la pagina de descarga y assets web exportados
+
+Gradle
+Uso:
+- compilacion Android
+- versionCode y versionName nativos
+- configuracion de APK release
+
+PowerShell
+Uso:
+- comandos operativos en Windows
+- scripts auxiliares para pruebas y despliegues
+
+JSON
+Uso:
+- configuracion del proyecto
+- Expo
+- EAS
+- Vercel
+- metadata de builds
+
+Servicios/librerias principales:
+- Expo
+- React Native
+- React Navigation
+- React Query
+- Firebase
+- Expo Notifications
+- Expo Updates
+- TMDB API
+- Vercel
+
+====================================================================
+5. ESTRUCTURA GENERAL DEL PROYECTO
+====================================================================
+
+Raiz del repo:
+- app.json
+  Configuracion principal Expo. Version visible de la app y versionCode Android.
+
+- eas.json
+  Perfiles de build EAS.
+
+- vercel.json
+  Rewrites, redirects y cabeceras de Vercel.
+
+- package.json
+  Scripts npm y dependencias.
+
+- public/
+  Archivos que se publican en la web.
+  Importante:
+  - descargar.html
+  - veoveo.apk
+  - veoveo-latest.apk
+  - assets web
+
+- android/
+  Proyecto Android nativo generado/prebuild.
+  Importante:
+  - android/app/build.gradle
+  - android/app/build/outputs/apk/release/
+
+- scripts/
+  Scripts operativos.
+  Importante:
+  - push-version.mjs
+  - send-update-push.mjs
+  - android-test-usb.ps1
+  - check-google-auth.ps1
+
+- src/
+  Codigo fuente principal.
+
+Subcarpetas destacadas de src/:
+- src/components
+  Componentes UI reutilizables
+
+- src/context
+  Providers globales, como autenticacion e idioma
+
+- src/hooks
+  Hooks de datos y logica
+
+- src/navigation
+  Navegacion principal de la app
+
+- src/screens
+  Pantallas completas
+
+- src/services
+  Integraciones con Firebase, TMDB, repositorios y notificaciones
+
+- src/storage
+  Persistencia local y preferencias
+
+- src/theme
+  colores y estilo compartido
+
+- src/types
+  tipos TypeScript
+
+- src/utils
+  utilidades varias
+
+Archivos clave de la logica de actualizacion:
+- F:\Repositorios\VeoVeo\src\App.tsx
+  Aqui vive el VersionShield que bloquea la app si la version es antigua
+
+- F:\Repositorios\VeoVeo\src\services\notificationService.ts
+  Registro de push token y envio de push via Expo
+
+- F:\Repositorios\VeoVeo\src\services\repositorioUsuarios.ts
+  Sincroniza appVersion, appVersionCode y platform en Firestore
+
+====================================================================
+6. COMANDOS HABITUALES DEL PROYECTO
+====================================================================
+
+Todos estos comandos se ejecutan desde:
+- F:\Repositorios\VeoVeo
+
+Instalar dependencias:
+- npm install
+
+Arrancar entorno de desarrollo Expo:
+- npm run start
+
+Lanzar en Android normal:
+- npm run android
+
+Lanzar build de test Android:
+- npm run android:test
+
+Lanzar en iOS:
+- npm run ios
+
+Prebuild de Expo a nativo:
+- npm run prebuild
+
+Comprobar tipos:
+- npm run typecheck
+
+Lint:
+- npm run lint
+
+Formatear:
+- npm run format
+
+Sincronizar variables Firebase:
+- npm run env:sync
+
+Sincronizar version minima de Firebase usando app.json:
+- npm run release
+
+Publicar web exportada con script existente:
+- npm run web:deploy
+
+IMPORTANTE sobre npm run web:deploy:
+- el script existe, pero el texto del commit que lleva dentro esta desactualizado
+- actualmente mete un commit automatico con referencia antigua a v1.7.0
+- conviene revisarlo antes de usarlo como proceso oficial recurrente
+
+Compilar APK release local desde Gradle:
+- .\gradlew.bat assembleRelease
+
+Ruta de ejecucion recomendada para Gradle:
+- F:\Repositorios\VeoVeo\android
+
+Ejemplo:
+- cd android
+- .\gradlew.bat assembleRelease
+
+Salida del build release:
+- F:\Repositorios\VeoVeo\android\app\build\outputs\apk\release\
+
+Archivo universal mas util para publicar:
+- app-universal-release.apk
+
+Comprobar metadata del build:
+- Get-Content android\app\build\outputs\apk\release\output-metadata.json
+
+Copiar el APK release al public:
+- Copy-Item android\app\build\outputs\apk\release\app-universal-release.apk public\veoveo.apk -Force
+- Copy-Item android\app\build\outputs\apk\release\app-universal-release.apk public\veoveo-latest.apk -Force
+
+Git habitual:
+- git status
+- git add .
+- git commit -m "release: VeoVeo 1.8.10"
+- git push origin main
+
+====================================================================
+7. ARCHIVOS QUE NORMALMENTE HAY QUE TOCAR EN UNA RELEASE
+====================================================================
+
+1. Version visible Expo:
+- F:\Repositorios\VeoVeo\app.json
+Campos:
+- expo.version
+- expo.android.versionCode
+
+2. Version nativa Android:
+- F:\Repositorios\VeoVeo\android\app\build.gradle
+Campos:
+- versionCode
+- versionName
+
+3. Runtime version Android/Expo si aplica:
+- F:\Repositorios\VeoVeo\android\app\src\main\res\values\strings.xml
+
+4. Texto del boton de descarga web:
+- F:\Repositorios\VeoVeo\public\descargar.html
+Texto a revisar:
+- Descargar APK (vX.Y.Z)
+
+5. APK servido por la web:
+- F:\Repositorios\VeoVeo\public\veoveo.apk
+- F:\Repositorios\VeoVeo\public\veoveo-latest.apk
+
+6. Firebase version minima:
+- configuracion/app en Firestore
+Campos:
+- min_version
+- download_url
+- release_title
+- release_body
+
+====================================================================
+8. PROTOCOLO OFICIAL DE PUBLICACION DE UNA NUEVA VERSION
+====================================================================
+
+Objetivo:
+Publicar una nueva version de la app, subir el APK correcto a la web, actualizar la version minima obligatoria y avisar a usuarios con versiones antiguas.
+
+PASO 1. Preparar version nueva
+- decidir nueva version, por ejemplo 1.8.10
+- incrementar versionCode Android, por ejemplo 32
+
+PASO 2. Actualizar version en Expo
+Editar:
+- F:\Repositorios\VeoVeo\app.json
+Cambiar:
+- expo.version
+- expo.android.versionCode
+
+PASO 3. Actualizar version nativa Android
+Editar:
+- F:\Repositorios\VeoVeo\android\app\build.gradle
+Cambiar:
+- versionCode
+- versionName
+
+PASO 4. Verificar runtime/version strings si hay desalineacion
+Revisar:
+- F:\Repositorios\VeoVeo\android\app\src\main\res\values\strings.xml
+
+PASO 5. Compilar APK release
+Desde:
+- F:\Repositorios\VeoVeo\android
+Ejecutar:
+- .\gradlew.bat assembleRelease
+
+PASO 6. Verificar que el APK generado tenga la version correcta
+Revisar:
+- F:\Repositorios\VeoVeo\android\app\build\outputs\apk\release\output-metadata.json
+Debe coincidir:
+- versionName
+- versionCode
+
+PASO 7. Copiar el APK nuevo a la web
+Copiar:
+- app-universal-release.apk -> public\veoveo.apk
+- app-universal-release.apk -> public\veoveo-latest.apk
+
+PASO 8. Actualizar el texto del boton de descarga
+Editar:
+- F:\Repositorios\VeoVeo\public\descargar.html
+Cambiar:
+- Descargar APK (vX.Y.Z)
+
+PASO 9. Hacer commit y push
+Ejecutar:
+- git add .
+- git commit -m "release: VeoVeo X.Y.Z"
+- git push origin main
+
+PASO 10. Confirmar despliegue en Vercel
+Verificar:
+- https://veoveo.dripdev.dev/descargar
+- https://veoveo.dripdev.dev/veoveo.apk
+- https://veoveo.dripdev.dev/veoveo-latest.apk
+
+Comprobaciones recomendadas:
+- el boton muestra la version nueva
+- el APK descarga el archivo nuevo
+- el peso/fecha del archivo ha cambiado
+
+PASO 11. Subir la version minima a Firebase
+Ejecutar desde la raiz:
+- npm run release
+
+Esto actualiza en Firestore:
+- min_version
+- download_url
+- release_title
+- release_body
+
+PASO 12. Enviar push a usuarios con versiones antiguas
+Ejecutar:
+- node scripts/send-update-push.mjs
+
+Efecto esperado:
+- envia notificacion push a usuarios con pushToken y version antigua o sin version reportada
+
+PASO 13. Verificar mensaje al abrir app antigua
+Comprobar en movil con version anterior:
+- aparece notificacion push en barra del sistema
+- al abrir la app aparece el mensaje de nueva actualizacion
+- el boton "Actualizar ahora" abre la URL de descarga oficial
+
+PASO 14. Verificacion final en produccion
+Comprobar:
+- web correcta en Vercel
+- APK correcto en public
+- Firebase con min_version correcta
+- usuarios antiguos reciben push
+- la app antigua queda bloqueada por VersionShield
+
+====================================================================
+9. PROTOCOLO RAPIDO PARA PUBLICAR UNA NUEVA VERSION
+====================================================================
+
+Checklist corta:
+
+1. Cambiar version y versionCode
+- app.json
+- android/app/build.gradle
+
+2. Compilar APK
+- cd android
+- .\gradlew.bat assembleRelease
+
+3. Reemplazar APKs publicos
+- public\veoveo.apk
+- public\veoveo-latest.apk
+
+4. Cambiar texto de descargar
+- public\descargar.html
+
+5. Push a main
+- git add .
+- git commit -m "release: VeoVeo X.Y.Z"
+- git push origin main
+
+6. Actualizar Firebase
+- npm run release
+
+7. Enviar notificacion push
+- node scripts/send-update-push.mjs
+
+8. Probar:
+- descargar desde /descargar
+- instalar APK
+- abrir version antigua y comprobar bloqueo
+
+====================================================================
+10. PROTOCOLO DE NOTIFICACIONES DE ACTUALIZACION
+====================================================================
+
+Hay dos mecanismos distintos:
+
+A. Notificacion push en la barra del telefono
+Origen:
+- scripts/send-update-push.mjs
+
+Funcionamiento:
+- lee version objetivo desde app.json
+- busca usuarios en Firestore
+- filtra los que tienen pushToken valido
+- filtra los que tienen appVersion antigua
+- envia push mediante Expo Push API
+
+Requisito:
+- el usuario debe tener pushToken guardado en Firestore
+
+B. Mensaje al abrir la app
+Origen:
+- src/App.tsx
+
+Funcionamiento:
+- escucha Firestore configuracion/app
+- compara la version instalada con min_version
+- si la instalada es mas antigua:
+  - programa notificacion local
+  - muestra pantalla de bloqueo con mensaje de actualizacion
+  - abre la URL de descarga oficial
+
+====================================================================
+11. COMANDOS REALES UTILIZADOS EN LA ULTIMA RELEASE DOCUMENTADA
+====================================================================
+
+Ejemplo real de flujo usado para 1.8.9:
+
+- editar app.json -> 1.8.9 / 31
+- editar android/app/build.gradle -> 1.8.9 / 31
+- compilar desde android con Gradle release
+- verificar output-metadata.json
+- copiar app-universal-release.apk a:
+  - public\veoveo.apk
+  - public\veoveo-latest.apk
+- editar public\descargar.html -> v1.8.9
+- ejecutar:
+  - npm run release
+  - node scripts/send-update-push.mjs
+- hacer:
+  - git add .
+  - git commit
+  - git push origin main
+- verificar en produccion:
+  - /descargar
+  - /veoveo.apk
+  - /veoveo-latest.apk
+
+====================================================================
+12. PROBLEMAS TIPICOS A EVITAR
+====================================================================
+
+1. Subir min_version antes de subir el APK correcto
+Consecuencia:
+- los usuarios entran en bucle de actualizacion
+
+2. Cambiar app.json pero no build.gradle
+Consecuencia:
+- la app puede mostrar una version y compilar otra
+
+3. No actualizar el texto del boton en descargar.html
+Consecuencia:
+- la web dice una version pero sirve otra o genera confusion
+
+4. No reemplazar veoveo.apk y veoveo-latest.apk
+Consecuencia:
+- la web sigue entregando una build vieja
+
+5. No verificar output-metadata.json
+Consecuencia:
+- se publica un APK con versionName/versionCode incorrectos sin darse cuenta
+
+6. Olvidar npm run release
+Consecuencia:
+- Firebase no obliga a actualizar y el sistema queda desalineado
+
+7. Olvidar el push de notificaciones
+Consecuencia:
+- los usuarios antiguos no reciben aviso inmediato en la barra del telefono
+
+====================================================================
+13. RECOMENDACIONES OPERATIVAS
+====================================================================
+
+- usar siempre una checklist de release
+- no tocar min_version en Firebase hasta tener el APK correcto publicado en web
+- verificar Vercel despues del push
+- si se publica una release sensible, probar la descarga real desde movil
+- mantener app.json y build.gradle siempre alineados
+- revisar el script npm run web:deploy antes de convertirlo en automatismo oficial
+- no compartir archivos con secretos ni credenciales
+
+====================================================================
+14. DOCUMENTACION RELACIONADA YA EXISTENTE EN EL REPO
+====================================================================
+
+Documentos utiles:
+- F:\Repositorios\VeoVeo\docs\FIREBASE_SETUP.md
+- F:\Repositorios\VeoVeo\docs\GUIA_PROYECTO.md
+- F:\Repositorios\VeoVeo\docs\DripDev_Deployment_Playbook.md
+- F:\Repositorios\VeoVeo\manual_del_dev\Architecture-Overview.md
+- F:\Repositorios\VeoVeo\manual_del_dev\Firebase-Integration.md
+- F:\Repositorios\VeoVeo\manual_del_dev\Release-Workflow.md
+
+====================================================================
+15. UBICACION DEL INFORME
+====================================================================
+
+Este informe se ha generado en:
+- F:\Repositorios\VeoVeo\docs\INFORME_OPERATIVO_VEOVEO.txt

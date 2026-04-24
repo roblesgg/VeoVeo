@@ -230,7 +230,7 @@ export const tmdbApi = {
  */
 export function posterUrl(
   posterPath: string | null | undefined,
-  width: 'w185' | 'w342' | 'w500' | 'original' = 'w185',
+  width: 'w185' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original' = 'w185',
 ): string | null {
   if (!posterPath) return null;
   return `https://image.tmdb.org/t/p/${width}${posterPath}`;
