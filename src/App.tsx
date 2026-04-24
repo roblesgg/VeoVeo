@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: App.tsx
+ * DESCRIPCIÓN: Punto de entrada principal de la aplicación VeoVeo.
+ * Se encarga de la configuración global, carga de fuentes, estilos web,
+ * el escudo de versiones y la jerarquía de proveedores (Context Providers).
+ */
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -12,7 +19,8 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { COLORS } from './theme/colors';
 import { getFirestoreDb } from './services/firebase';
 
-// 🛑 Cap global de escalado de fuentes para evitar layouts rotos
+// 🛑 CONFIGURACIÓN DE ACCESIBILIDAD: Cap global de escalado de fuentes
+// Evita que configuraciones externas del sistema rompan los layouts de la app.
 if ((Text as any).defaultProps) {
   (Text as any).defaultProps.maxFontSizeMultiplier = 1.3;
 } else {
@@ -29,14 +37,36 @@ import { Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 
+// Cliente para React Query (Gestión de estado asíncrono y caché)
 const queryClient = new QueryClient();
 
-// 🛡️ Escudo de Versión: Detecta si el usuario necesita actualizar
+function compareVersions(v1: string, v2: string) {
+  const p1 = v1.split('.').map((value) => parseInt(value.replace(/[^0-9]/g, ''), 10) || 0);
+  const p2 = v2.split('.').map((value) => parseInt(value.replace(/[^0-9]/g, ''), 10) || 0);
+
+  for (let i = 0; i < Math.max(p1.length, p2.length); i += 1) {
+    const n1 = p1[i] || 0;
+    const n2 = p2[i] || 0;
+
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+
+  return 0;
+}
+
+/**
+ * COMPONENTE: VersionShield
+ * PROPÓSITO: Detecta si existe una versión mínima requerida en Firebase
+ * y bloquea la app si el usuario necesita actualizar.
+ */
 function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
   
+  // En Web no aplicamos bloqueo por versión nativa
   if (Platform.OS === 'web') return null;
 
+  // Obtenemos metadatos de la compilación actual
   const currentBuild = Constants.expoConfig?.android?.versionCode ?? 0;
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const isTest = Constants.expoConfig?.name?.includes('Test') ?? false;
@@ -45,14 +75,16 @@ function VersionShield() {
     const db = getFirestoreDb();
     if (!db) return;
 
-    // Escuchamos el documento de configuración global en Firebase
-    // Nota: Sincronizado con el script push-version.mjs
+    // Escuchamos el documento de configuración global en Firebase 'configuracion/app'
+    // Sincronizado automáticamente con el script push-version.mjs
     return onSnapshot(doc(db, 'configuracion', 'app'), (snap: any) => {
       if (snap.exists()) {
          const data = snap.data();
+         // Elegimos el campo de versión mínima según si es build de test o producción
          const minVersionName = isTest ? data.min_version_test : data.min_version;
          
-         if (minVersionName && currentVersion < minVersionName) {
+         // Si la versión actual es inferior a la requerida, activamos el escudo
+         if (minVersionName && compareVersions(currentVersion, minVersionName) === -1) {
             setNeedsUpdate(true);
          }
       }
@@ -61,6 +93,7 @@ function VersionShield() {
 
   if (!needsUpdate) return null;
 
+  // Interfaz de bloqueo por actualización obligatoria
   return (
     <View style={StyleSheet.absoluteFill}>
        <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
@@ -76,31 +109,35 @@ function VersionShield() {
                 style={styles.updateBtn}
              >
                 Actualizar ahora
-             </Text>
+              </Text>
           </View>
        </View>
     </View>
   );
 }
 
-
+/**
+ * COMPONENTE PRINCIPAL: App
+ * Integra todos los proveedores de contexto y la navegación raíz.
+ */
 export default function App() {
+  // Carga de fuentes icónicas necesarias para la UI
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
   });
 
+  // EFECTO: Configuración Visual específica para WEB
   React.useEffect(() => {
     if (Platform.OS === 'web') {
-       // 🎨 Inyectar ADN Visual Web (Scrollbars, Selección, Fuentes)
        const head = document.head;
        
-       // Google Fonts (Montserrat)
+       // Inyección de Google Fonts (Montserrat) para una estética Premium
        const fontLink = document.createElement('link');
        fontLink.rel = 'stylesheet';
        fontLink.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap';
        head.appendChild(fontLink);
 
-       // 💎 Iconografía Universal (Ionicons & MaterialCommunityIcons) - Sincronizada v15.0.3
+       // Polofill de fuentes de iconos para que se vean correctamente en el navegador
        const iconStyle = document.createElement('style');
        iconStyle.innerHTML = `
          @font-face {
@@ -118,11 +155,9 @@ export default function App() {
            src: url('https://cdn.jsdelivr.net/npm/@expo/vector-icons@15.0.3/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf') format('truetype');
            font-display: block;
          }
-         /* Fuerza el renderizado de iconos en todos los componentes */
          [data-contents="true"], .rn-view, .rn-text {
            font-family: 'Montserrat', sans-serif;
          }
-         /* 🚀 Selector de Máxima Prioridad para Iconos */
          [style*="font-family: Ionicons"], [style*="font-family: 'Ionicons'"], [data-icon] {
            font-family: 'Ionicons' !important;
          }
@@ -132,7 +167,7 @@ export default function App() {
        `;
        head.appendChild(iconStyle);
 
-       // 🔮 Estilos Globales Premium para Web
+       // Estilos globales de CSS para limpiar la UI web (scrollbars, backgrounds radiales)
        const style = document.createElement('style');
        style.innerHTML = `
          * {
@@ -147,13 +182,12 @@ export default function App() {
            overflow-x: hidden;
            font-family: 'Montserrat', sans-serif !important;
          }
-         /* 🚀 Scrollbars Invisibles (Like Apple) */
+         /* Scrollbars elegantes estilo Apple */
          ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
          input, textarea { user-select: auto !important; }
          #root {
            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
-           height: 100dvh; /* 🚀 Altura Dinámica Real */
-           /* Evita el scroll elástico que esconde la barra en iOS */
+           height: 100dvh;
            position: fixed;
            top: 0; left: 0; right: 0; bottom: 0;
            overflow-y: auto;
@@ -163,8 +197,8 @@ export default function App() {
     }
   }, []);
 
+  // EFECTO: Listener de notificaciones para depuración
   React.useEffect(() => {
-    // Listener para notificaciones en primer plano
     const subscription = Notifications.addNotificationReceivedListener(notification => {
       console.log('🔔 Notificación recibida:', notification);
     });
@@ -172,6 +206,7 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
+  // RENDER: Arbol de componentes con proveedores de contexto
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -190,6 +225,7 @@ export default function App() {
   );
 }
 
+// ESTILOS: Configuración visual global
 const styles = StyleSheet.create({
   debugScreen: {
     flex: 1,
@@ -211,7 +247,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
-  // Estilos del escudo de actualización
+  // Estilos visuales del escudo de actualización
   updateContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   updateEmoji: { fontSize: 60, marginBottom: 20 },
   updateTitle: { color: '#fff', fontSize: 26, fontWeight: '900', textAlign: 'center', marginBottom: 16 },
