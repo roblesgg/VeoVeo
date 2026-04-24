@@ -18,6 +18,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { RootNavigator } from './navigation/RootNavigator';
 import { COLORS } from './theme/colors';
 import { getFirestoreDb } from './services/firebase';
+import { ensureNotificationChannelConfigured } from './services/notificationService';
 
 // 🛑 CONFIGURACIÓN DE ACCESIBILIDAD: Cap global de escalado de fuentes
 // Evita que configuraciones externas del sistema rompan los layouts de la app.
@@ -105,7 +106,8 @@ function VersionShield() {
              content: {
                title: 'Nueva actualización disponible',
                body: `VeoVeo ${String(minVersionName).trim()} ya está lista para descargar.`,
-               data: { url: nextDownloadUrl || downloadUrl },
+                sound: 'default',
+                data: { url: nextDownloadUrl || downloadUrl },
              },
              trigger: null,
            });
@@ -222,11 +224,32 @@ export default function App() {
 
   // EFECTO: Listener de notificaciones para depuración
   React.useEffect(() => {
+    void ensureNotificationChannelConfigured();
+
     const subscription = Notifications.addNotificationReceivedListener(notification => {
       console.log('🔔 Notificación recibida:', notification);
     });
 
-    return () => subscription.remove();
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const url = response.notification.request.content.data?.url;
+        if (typeof url === 'string' && url.length > 0) {
+          void Linking.openURL(url);
+        }
+      },
+    );
+
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      const url = response?.notification.request.content.data?.url;
+      if (typeof url === 'string' && url.length > 0) {
+        void Linking.openURL(url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+      responseSubscription.remove();
+    };
   }, []);
 
   // RENDER: Arbol de componentes con proveedores de contexto

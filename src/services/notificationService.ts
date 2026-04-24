@@ -1,18 +1,20 @@
 /**
  * ARCHIVO: services/notificationService.ts
- * DESCRIPCIÓN: Gestiona el sistema de notificaciones push de la aplicación utilizando Expo Notifications.
- * Incluye el registro del dispositivo, obtención de tokens y envío de notificaciones entre usuarios.
+ * DESCRIPCION: Gestiona el sistema de notificaciones push de la aplicacion utilizando Expo Notifications.
+ * Incluye el registro del dispositivo, obtencion de tokens y envio de notificaciones entre usuarios.
  */
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getFirestoreDb } from './firebase';
 
+export const DEFAULT_NOTIFICATION_CHANNEL_ID = 'default';
+
 /**
- * CONFIGURACIÓN GLOBAL: Comportamiento cuando llega una notificación.
- * Aquí definimos que siempre se muestre la alerta, suene y actualice el badge.
+ * CONFIGURACION GLOBAL: Comportamiento cuando llega una notificacion.
+ * Aqui definimos que siempre se muestre la alerta, suene y actualice el badge.
  */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -24,55 +26,58 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export async function ensureNotificationChannelConfigured() {
+  if (Platform.OS !== 'android') return;
+
+  await Notifications.setNotificationChannelAsync(DEFAULT_NOTIFICATION_CHANNEL_ID, {
+    name: 'Actualizaciones y avisos',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#0EA5E9',
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    showBadge: true,
+  });
+}
+
 /**
- * Solicita permisos de notificación al SO y obtiene el token único de Expo Push (pushToken).
+ * Solicita permisos de notificacion al SO y obtiene el token unico de Expo Push (pushToken).
  * Este token se guarda en Firestore para poder enviar notificaciones a este usuario desde otros dispositivos.
  */
 export async function registrarTokenEnFirestore(uid: string) {
-  // Las notificaciones push nativas no funcionan igual en Web, se omite por ahora.
-  if (Platform.OS === 'web') return null; 
-  
+  if (Platform.OS === 'web') return null;
+
   if (!Device.isDevice) {
-    console.warn('Debe ser un dispositivo físico para recibir notificaciones push');
+    console.warn('Debe ser un dispositivo fisico para recibir notificaciones push');
     return null;
   }
 
-  // Comprobar y/o solicitar permisos
+  await ensureNotificationChannelConfigured();
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
-  
+
   if (existingStatus !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync();
     finalStatus = status;
   }
 
   if (finalStatus !== 'granted') {
-    console.warn('¡Permiso de notificaciones denegado!');
+    console.warn('Permiso de notificaciones denegado');
     return null;
   }
 
-  // Obtener el token de Expo
-  const token = (await Notifications.getExpoPushTokenAsync({
-    projectId: 'db438c91-21eb-4020-a3ad-efec69cef405' // ID del proyecto en el dashboard de Expo
-  })).data;
+  const token = (
+    await Notifications.getExpoPushTokenAsync({
+      projectId: 'db438c91-21eb-4020-a3ad-efec69cef405',
+    })
+  ).data;
 
-  console.log('📬 Expo Push Token:', token);
+  console.log('Expo Push Token:', token);
 
-  // Guardar el token en el perfil del usuario en Firestore
   const db = getFirestoreDb();
   if (db) {
     await updateDoc(doc(db, 'usuarios', uid), {
-      pushToken: token
-    });
-  }
-
-  // Configuración de canales para Android (Requerido para Oreo+)
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      pushToken: token,
     });
   }
 
@@ -80,16 +85,23 @@ export async function registrarTokenEnFirestore(uid: string) {
 }
 
 /**
- * Envía una notificación push directamente a la API de Expo.
+ * Envia una notificacion push directamente a la API de Expo.
  * @param expoPushToken El token del destinatario.
- * @param title Título del mensaje.
+ * @param title Titulo del mensaje.
  * @param body Cuerpo del mensaje.
- * @param data (Opcional) Datos extra para manejar navegación al pulsar la notificación.
+ * @param data Datos extra para manejar navegacion al pulsar la notificacion.
  */
-export async function enviarNotificacionPush(expoPushToken: string, title: string, body: string, data?: any) {
+export async function enviarNotificacionPush(
+  expoPushToken: string,
+  title: string,
+  body: string,
+  data?: any,
+) {
   const message = {
     to: expoPushToken,
     sound: 'default',
+    priority: 'high' as const,
+    channelId: DEFAULT_NOTIFICATION_CHANNEL_ID,
     title,
     body,
     data: data || {},
@@ -112,13 +124,13 @@ export async function enviarNotificacionPush(expoPushToken: string, title: strin
 
 /**
  * BUSCA Y NOTIFICA:
- * Recupera automáticamente el token de un usuario desde Firestore y le envía el mensaje.
+ * Recupera automaticamente el token de un usuario desde Firestore y le envia el mensaje.
  * @param uid UID del destinatario.
  */
 export async function notificarAUsuario(uid: string, title: string, body: string, data?: any) {
   const db = getFirestoreDb();
   if (!db) return;
-  
+
   const snap = await getDoc(doc(db, 'usuarios', uid));
   if (snap.exists()) {
     const userData = snap.data();
