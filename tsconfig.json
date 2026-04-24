@@ -3,16 +3,23 @@
   "compilerOptions": {
     "target": "ESNext",
     "lib": [
-      "ESNext"
+      "ESNext",
+      "DOM"
     ],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "jsx": "react-native",
     "allowJs": true,
     "skipLibCheck": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "App.tsx",
+    "index.ts"
+  ],
+  "exclude": [
+    "apps/**",
+    "node_modules"
   ]
 }

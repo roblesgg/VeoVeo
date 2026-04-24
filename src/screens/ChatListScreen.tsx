@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { useAuth } from '../context/AuthContext';
 
 // Services/Hooks/Types
 import { observarMisChats, crearChat } from '../services/repositorioChats';
@@ -30,6 +31,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ChatList'>;
 export default function ChatListScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { amigos } = useSocialData();
+  const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
 
   console.log('[DEBUG] ChatList amigos count:', amigos.length);
@@ -43,7 +45,7 @@ export default function ChatListScreen({ navigation }: Props) {
     setLoading(true);
     try {
       const chatId = await crearChat([uid]);
-      navigation.navigate('ChatDetail', { chatId, otherUserName: name });
+      navigation.navigate('ChatDetail', { chatId, chatName: name, participants: [uid] });
     } catch (err: any) {
       setError('No se pudo crear el chat: ' + err.message);
     } finally {
@@ -55,18 +57,16 @@ export default function ChatListScreen({ navigation }: Props) {
     let unsub: (() => void) | undefined;
 
     try {
-      unsub = observarMisChats(
-        (newChats) => {
-          setChats(newChats);
-          setLoading(false);
-          setError(null);
-        },
-        (err) => {
-          console.error('Error en observarMisChats:', err);
-          setError('Error al cargar chats: ' + err.message);
-          setLoading(false);
-        },
-      );
+      if (!user?.uid) {
+        setChats([]);
+        setLoading(false);
+        return undefined;
+      }
+      unsub = observarMisChats(user.uid, (newChats) => {
+        setChats(newChats);
+        setLoading(false);
+        setError(null);
+      });
     } catch (err: any) {
       console.error('Error fatal en ChatList:', err);
       setError(err.message || 'Error desconocido');
@@ -74,20 +74,22 @@ export default function ChatListScreen({ navigation }: Props) {
     }
 
     const timer = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        if (!error)
-          setError(
+      setLoading((prev) => {
+        if (prev) {
+          setError((current) =>
+            current ??
             'La carga está tardando demasiado. Verifica tu conexión o los índices de Firestore.',
           );
-      }
+        }
+        return false;
+      });
     }, 15000);
 
     return () => {
       if (unsub) unsub();
       clearTimeout(timer);
     };
-  }, []);
+  }, [user?.uid]);
 
   const renderChatItem = ({ item }: { item: Chat }) => {
     // Simplificación: En individual, mostrar el otro participante
@@ -98,7 +100,9 @@ export default function ChatListScreen({ navigation }: Props) {
         onPress={() =>
           navigation.navigate('ChatDetail', {
             chatId: item.id,
-            otherUserName: item.name || 'Chat',
+            chatName: item.name || 'Chat',
+            participants: item.participants,
+            activeMatchId: item.activeMatchId ?? null,
           })
         }
       >

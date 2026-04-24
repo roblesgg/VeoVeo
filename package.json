@@ -7,13 +7,14 @@
     "android": "expo run:android",
     "android:test": "cross-env APP_ENV=test expo run:android",
     "ios": "expo run:ios",
-    "web:deploy": "powershell -Command \"Remove-Item -Path public/index.html, public/_expo, public/static, public/assets -Recurse -ErrorAction SilentlyContinue; npx expo export --platform web; Copy-Item -Path dist/* -Destination public/ -Recurse -Force; Remove-Item -Path dist -Recurse -Force; git add .; git commit -m 'Web: Clean auto-deploy v1.7.0 💎'; git push origin main\"",
+    "web:deploy": "powershell -Command \"Remove-Item -Path public/index.html, public/_expo, public/static, public/assets -Recurse -ErrorAction SilentlyContinue; npx expo export --platform web; Copy-Item -Path dist/* -Destination public/ -Recurse -Force; Remove-Item -Path dist -Recurse -Force\"",
     "prebuild": "expo prebuild",
     "typecheck": "tsc --noEmit",
+    "security:check": "node scripts/check-security.mjs",
     "clean": "powershell -ExecutionPolicy Bypass -Command \"rm -Recurse -Force .expo, android, backups/recycled/*\"",
     "env:sync": "node scripts/sync-firebase-env.mjs",
     "release": "node scripts/push-version.mjs",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint src app.config.js scripts --ext .js,.jsx,.ts,.tsx,.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

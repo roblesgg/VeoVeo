@@ -32,6 +32,7 @@ import {
   sincronizarVersionAppInstalada,
 } from '../services/repositorioUsuarios';
 import { registrarTokenEnFirestore } from '../services/notificationService';
+import { env } from '../config/env';
 
 /**
  * Interfaz que define los métodos y estados expuestos por el contexto de autenticación.
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (Platform.OS !== 'web') {
       GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        webClientId: env.googleWebClientId,
         offlineAccess: true,
       });
     }

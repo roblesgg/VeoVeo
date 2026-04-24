@@ -1,11 +1,9 @@
 import React, { memo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { posterUrl } from '../../services/tmdbClient';
 import type { Movie } from '../../types';
-import { PLATAFORMAS_DEFS } from '../../screens/AjustesScreen';
 import { RatingBadge } from '../RatingBadge';
 
 type Props = {

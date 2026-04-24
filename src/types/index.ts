@@ -162,6 +162,8 @@ export interface Movie {
   };
 }
 
+export type ActorMovie = Movie;
+
 export interface MovieResponse {
   page: number;
   results: Movie[];

@@ -44,7 +44,9 @@ creds.json
 client_secret_*.json
 build_*.json
 doctor_*.txt
-*.json
+firebase-admin.json
+*firebase-adminsdk*.json
+*.service-account.json
 !app.json
 !package.json
 !package-lock.json
@@ -59,3 +61,4 @@ doctor_*.txt
 !web_out/
 !web_out/**
 !web_out/**.json
+.vercel

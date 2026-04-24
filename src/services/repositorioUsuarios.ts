@@ -36,6 +36,8 @@ export async function obtenerPerfilUsuarioPorUid(uid: string): Promise<UsuarioPe
   return snap.data() as UsuarioPerfil;
 }
 
+export const obtenerUsuarioPorUid = obtenerPerfilUsuarioPorUid;
+
 /**
  * Crea un perfil básico en Firestore para nuevos usuarios.
  */
