@@ -34,3 +34,4 @@ export const GlassSurface = GLASS.surface;
 export const GlassBorder = GLASS.border;
 export const GlassWhite = GLASS.white;
 export const AccentColor = COLORS.primary;
+export const AccentBorder = GLASS.border;

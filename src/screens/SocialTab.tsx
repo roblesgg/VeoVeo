@@ -17,6 +17,8 @@ import {
   TextInput,
   View,
   Keyboard,
+  Modal,
+  Platform,
   BackHandler,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -24,7 +26,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { Modal, Platform } from 'react-native';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 
 // Hooks & Services

@@ -8,7 +8,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Linking, StyleSheet, Text, View, TextInput } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { doc, onSnapshot } from 'firebase/firestore';
 import Constants from 'expo-constants';
 import { BlurView } from 'expo-blur';
@@ -34,7 +34,6 @@ if ((TextInput as any).defaultProps) {
 }
 
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -64,15 +63,15 @@ function compareVersions(v1: string, v2: string) {
 function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
   const [downloadUrl, setDownloadUrl] = React.useState('https://veoveo.dripdev.dev/descargar');
+  const [releaseTitle, setReleaseTitle] = React.useState('Nueva versión disponible');
+  const [releaseBody, setReleaseBody] = React.useState('Hemos lanzado mejoras críticas. Actualiza ahora para seguir disfrutando de VeoVeo en la versión más reciente.');
   const lastNotifiedVersion = React.useRef<string | null>(null);
   
-  // En Web no aplicamos bloqueo por versión nativa
-  if (Platform.OS === 'web') return null;
-
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const isTest = Constants.expoConfig?.name?.includes('Test') ?? false;
 
   React.useEffect(() => {
+    if (Platform.OS === 'web') return undefined;
     const db = getFirestoreDb();
     if (!db) return;
 
@@ -89,6 +88,10 @@ function VersionShield() {
          // Elegimos el campo de versión mínima según si es build de test o producción
          const minVersionName = findValue(isTest ? 'min_version_test' : 'min_version');
          const nextDownloadUrl = findValue(isTest ? 'download_url_test' : 'download_url');
+         const rTitle = findValue('release_title');
+         const rBody = findValue('release_body');
+         if (rTitle) setReleaseTitle(String(rTitle));
+         if (rBody) setReleaseBody(String(rBody));
          
          // Si la versión actual es inferior a la requerida, activamos el escudo
          const updateNeeded =
@@ -116,27 +119,23 @@ function VersionShield() {
     });
   }, [currentVersion, downloadUrl, isTest]);
 
-  if (!needsUpdate) return null;
+  if (Platform.OS === 'web' || !needsUpdate) return null;
 
-  // Interfaz de bloqueo por actualización obligatoria
   return (
-    <View style={StyleSheet.absoluteFill}>
-       <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
-       <View style={styles.updateContainer}>
-          <Text style={styles.updateEmoji}>🚀</Text>
-          <Text style={styles.updateTitle}>Nueva versión disponible</Text>
-          <Text style={styles.updateText}>
-            Hemos lanzado mejoras críticas. Actualiza ahora para seguir disfrutando de VeoVeo en la versión más reciente.
-          </Text>
-          <View style={styles.updateBtnContainer}>
-             <Text 
-                onPress={() => Linking.openURL(downloadUrl)} 
-                style={styles.updateBtn}
-             >
-                Actualizar ahora
-              </Text>
-          </View>
-       </View>
+    <View style={styles.updateContainer}>
+      <BlurView intensity={30} tint="dark" style={styles.updateBtnContainer}>
+        <Text style={styles.updateEmoji}>🚀</Text>
+        <Text style={styles.updateTitle}>{releaseTitle}</Text>
+        <Text style={styles.updateText}>{releaseBody}</Text>
+        <Text
+          style={styles.updateBtn}
+          onPress={() => {
+            void Linking.openURL(downloadUrl);
+          }}
+        >
+          Actualizar ahora
+        </Text>
+      </BlurView>
     </View>
   );
 }

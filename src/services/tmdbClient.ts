@@ -15,6 +15,7 @@ import type {
   WatchProvidersResponse,
 } from '../types';
 import * as preferences from '../storage/preferences';
+import { env } from '../config/env';
 
 // URL base de la API de TMDB v3
 const BASE_URL = 'https://api.themoviedb.org/3/';
@@ -44,13 +45,7 @@ async function getOrFetchCached<TKey, TValue>(
  * Recupera el token de lectura (Bearer) desde las variables de entorno.
  */
 function getBearer(): string {
-  const t = process.env.EXPO_PUBLIC_TMDB_READ_TOKEN;
-  if (!t || !t.trim()) {
-    throw new Error(
-      'Falta EXPO_PUBLIC_TMDB_READ_TOKEN en .env (mismo token Bearer que RetrofitClient en Android).',
-    );
-  }
-  return t.trim();
+  return env.tmdbReadToken;
 }
 
 /**

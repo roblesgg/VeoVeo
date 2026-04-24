@@ -2,3 +2,13 @@ node_modules/
 android/
 .expo/
 .gemini/
+.git/
+.env
+.env.*
+scripts/
+backups/
+manual_del_dev/
+firebase-admin.json
+*firebase-adminsdk*.json
+creds.json
+client_secret_*.json
