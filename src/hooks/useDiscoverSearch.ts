@@ -1,6 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * ARCHIVO: hooks/useDiscoverSearch.ts
+ * DESCRIPCIÓN: Hook para la gestión de búsqueda global en la pestaña Descubrir.
+ * Implementa debouncing de 500ms y enriquecimiento dinámico de datos (streaming providers)
+ * para los resultados de búsqueda de películas. Soporta búsqueda de actores.
+ */
+
+import { useState, useEffect } from 'react';
 import { tmdbApi } from '../services/tmdbClient';
-import type { Movie } from '../../types';
+import type { Movie } from '../types';
 
 export function useDiscoverSearch() {
   const [textoBuscar, setTextoBuscar] = useState('');
@@ -9,16 +16,26 @@ export function useDiscoverSearch() {
   const [tipoBusqueda, setTipoBusqueda] = useState<'movie' | 'person'>('movie');
 
   useEffect(() => {
+    // Evitamos búsquedas con menos de 3 caracteres
     if (textoBuscar.length < 3) {
       setResultadosBusqueda([]);
       return;
     }
 
+    /** ⏱️ LÓGICA DE DEBOUNCING:
+     * Retardamos la ejecución de la búsqueda para no saturar la API
+     * mientras el usuario escribe rápidamente.
+     */
     const timer = setTimeout(async () => {
       setBuscando(true);
       try {
         if (tipoBusqueda === 'movie') {
+          // 🎬 BÚSQUEDA DE PELÍCULAS
           const res = await tmdbApi.buscarPeliculas(textoBuscar, 'es-ES');
+          
+          /** Enriquecimiento: Para cada resultado de búsqueda, consultamos 
+           * sus plataformas de streaming para mostrar los iconos de una vez.
+           */
           const moviesWithProviders = await Promise.all(
             res.results.map(async (movie: Movie) => {
               try {
@@ -30,23 +47,24 @@ export function useDiscoverSearch() {
                 );
                 return { ...movie, providers: { flatrate, rent } };
               } catch {
-                return movie;
+                return movie; // Fallback si falla la carga de proveedores
               }
             }),
           );
           setResultadosBusqueda(moviesWithProviders);
         } else {
+          // 👤 BÚSQUEDA DE ACTORES
           const res = await tmdbApi.buscarActores(textoBuscar, 'es-ES');
           setResultadosBusqueda(res.results);
         }
       } catch {
-        // Ignorar error de búsqueda
+        // Error silencioso en UI: resultados vacíos
       } finally {
         setBuscando(false);
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timer); // Limpieza del timer si el efecto se vuelve a disparar
   }, [textoBuscar, tipoBusqueda]);
 
   return {

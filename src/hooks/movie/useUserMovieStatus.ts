@@ -1,3 +1,13 @@
+/**
+ * ARCHIVO: hooks/movie/useUserMovieStatus.ts
+ * DESCRIPCIÓN: Hook para gestionar el "Estado de Usuario" de una película específica.
+ * Maneja la sincronización con Firestore para:
+ * - Comprobar si está en la biblioteca (Vistas/Por Ver).
+ * - Añadir/Quitar de "Por Ver".
+ * - Marcar como "Vista" con o sin valoración.
+ * - Actualizar valoraciones existentes.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -9,17 +19,26 @@ import {
 } from '../../services/repositorioPeliculasUsuario';
 import type { PeliculaUsuario, MovieDetails } from '../../types';
 
+/**
+ * Orquesta las acciones de biblioteca para una película.
+ * @param movieId ID de TMDB.
+ * @param detalles Datos de la película (necesarios para el alta en Firestore).
+ * @param providers Datos de streaming (para filtros de biblioteca).
+ */
 export function useUserMovieStatus(
   movieId: number,
   detalles: MovieDetails | null,
   providers?: any,
 ) {
   const { user } = useAuth();
+  
+  // ESTADOS DE UI
   const [peliculaBib, setPeliculaBib] = useState<PeliculaUsuario | null>(null);
   const [bibCargando, setBibCargando] = useState(true);
-  const [accionBib, setAccionBib] = useState(false);
+  const [accionBib, setAccionBib] = useState(false); // Bloqueo mientras se escribe en DB
   const [error, setError] = useState<string | null>(null);
 
+  /** 🔄 Consulta inicial: ¿Está esta peli ya en mi colección? */
   const recargarBiblioteca = useCallback(async () => {
     if (!user) {
       setPeliculaBib(null);
@@ -41,13 +60,16 @@ export function useUserMovieStatus(
     void recargarBiblioteca();
   }, [recargarBiblioteca]);
 
+  /** 🚀 ACCIÓN: Alternar estado "Por Ver" */
   const onPorVer = async () => {
     if (!user || !detalles) return;
     setAccionBib(true);
     try {
       if (peliculaBib?.estado === 'por_ver') {
+        // Si ya está por ver, la quitamos directamente
         await eliminarPelicula(movieId);
       } else {
+        // Si estaba en otro estado (ej: vista), la sobrescribimos
         if (peliculaBib) await eliminarPelicula(movieId);
         await agregarPelicula({
           idPelicula: movieId,
@@ -73,17 +95,23 @@ export function useUserMovieStatus(
     }
   };
 
+  /** ✅ ACCIÓN: Marcar como Vista */
   const onToggleVista = async (valoracionFinal = 0) => {
     if (!user || !detalles) return;
     setAccionBib(true);
     try {
       if (peliculaBib?.estado === 'vista' && valoracionFinal === 0) {
+        // Desmarcar (quitar de biblioteca)
         await eliminarPelicula(movieId);
       } else {
         if (peliculaBib?.estado === 'por_ver') {
+          // Transición simple: de 'por_ver' a 'vista'
           await actualizarEstadoPelicula(movieId, 'vista');
-          if (valoracionFinal !== 0) await actualizarValoracion(movieId, valoracionFinal);
+          if (valoracionFinal !== 0) {
+              await actualizarValoracion(movieId, valoracionFinal);
+          }
         } else {
+          // Alta nueva como 'vista'
           if (peliculaBib) await eliminarPelicula(movieId);
           await agregarPelicula({
             idPelicula: movieId,
@@ -111,6 +139,7 @@ export function useUserMovieStatus(
     }
   };
 
+  /** ⭐ ACCIÓN: Cambiar solo la nota */
   const onActualizarValoracion = async (valor: number) => {
     if (!user || !peliculaBib) return;
     setAccionBib(true);
