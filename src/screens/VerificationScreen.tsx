@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/VerificationScreen.tsx
+ * DESCRIPCIÓN: Pantalla de bloqueo por verificación de email.
+ * Obliga al usuario a confirmar su dirección de correo antes de acceder.
+ * Proporciona métodos para reenviar el email de confirmación y refrescar el estado.
+ */
+
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useState } from 'react';
@@ -11,6 +18,8 @@ import { sendEmailVerification } from 'firebase/auth';
 
 export function VerificationScreen() {
   const insets = useSafeAreaInsets();
+  
+  // Acceso al usuario actual y métodos de sincronización
   const { user, refreshUser, logout } = useAuth();
   const { fontFamily, loaded } = useMontserrat();
   const ff = fontFamily || 'System';
@@ -20,10 +29,12 @@ export function VerificationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
 
+  /** 🔄 Consulta a Firebase si el usuario ya ha pulsado el enlace del email */
   const onCheckStatus = async () => {
     setCargando(true);
     setError(null);
     try {
+      // Forzamos un refresco del token/usuario para detectar el cambio de 'emailVerified'
       await refreshUser();
     } catch (err) {
       setError('Error al refrescar estado.');
@@ -32,6 +43,7 @@ export function VerificationScreen() {
     }
   };
 
+  /** 📧 Solicita a Firebase un nuevo envío del correo de confirmación */
   const onResendEmail = async () => {
     if (!user) return;
     setReenviando(true);
@@ -40,6 +52,7 @@ export function VerificationScreen() {
       await sendEmailVerification(user);
       setMensaje('Correo enviado. Revisa tu bandeja de entrada o spam.');
     } catch (err) {
+      // Firebase limita los reenvíos para evitar Spam
       setError('Demasiados intentos. Inténtalo más tarde.');
     } finally {
       setReenviando(false);
@@ -51,6 +64,7 @@ export function VerificationScreen() {
   return (
     <GradientBackground style={[styles.center, { paddingTop: insets.top }]}>
       <View style={styles.pad}>
+        {/* ICONO CENTRAL RESALTADO */}
         <View style={[styles.iconBox, SHADOWS.mac]}>
           <Ionicons name="mail-unread" size={60} color="#fff" />
         </View>
@@ -61,6 +75,7 @@ export function VerificationScreen() {
           <Text style={styles.emailText}>{user?.email}</Text>
         </Text>
 
+        {/* TARJETA INTERACTIVA (GLASEADA) */}
         <View style={styles.card}>
           <BlurView intensity={20} tint="dark" style={styles.cardInner}>
             <Text style={[styles.info, { fontFamily: ff }]}>
@@ -79,18 +94,21 @@ export function VerificationScreen() {
               )}
             </Pressable>
 
+            {/* FEEDBACK VISUAL */}
             {mensaje && <Text style={[styles.msg, { fontFamily: ff }]}>{mensaje}</Text>}
             {error && <Text style={[styles.err, { fontFamily: ff }]}>{error}</Text>}
           </BlurView>
         </View>
 
         <View style={styles.footer}>
+          {/* ACCIÓN: Reclamo de email extraviado */}
           <Pressable onPress={onResendEmail} disabled={reenviando}>
             <Text style={[styles.link, { fontFamily: ff, opacity: reenviando ? 0.5 : 1 }]}>
               {reenviando ? 'Enviando...' : 'Reenviar código de verificación'}
             </Text>
           </Pressable>
 
+          {/* ACCIÓN: Salir de la cuenta si el email es incorrecto o desea entrar con otro perfil */}
           <Pressable onPress={logout} style={{ marginTop: 24 }}>
             <View style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={18} color="rgba(255,255,255,0.4)" />

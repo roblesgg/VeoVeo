@@ -1,50 +1,54 @@
 /**
- * VeoVeo - Consolidated Type Definitions
- * This file centralizes all core data models for the application.
+ * ARCHIVO: types/index.ts
+ * DESCRIPCIÓN: Definiciones de tipos consolidadas para toda la aplicación.
+ * Centraliza los modelos de datos de usuarios, chat, lógica de match y respuestas de TMDB.
  */
 
-// --- USER & PROFILE ---
+// --- MODELOS DE USUARIO Y PERFIL ---
 export type UsuarioPerfil = {
-  uid: string;
-  username: string;
-  username_servido?: string; // Nombre en minúsculas para búsquedas
-  email: string;
-  fotoPerfil: string | null;
-  amigos: string[];
-  fechaCreacion?: number;
-  bloqueados?: string[];
-  estado?: 'online' | 'offline' | 'ausente';
-  ultimoAcceso?: number;
-  pushToken?: string;
+  uid: string;                    // ID única del usuario en Firebase
+  username: string;               // Nombre de pantalla
+  username_servido?: string;      // Username en minúsculas para búsquedas eficientes
+  email: string;                  // Correo electrónico
+  fotoPerfil: string | null;      // URL de la imagen de perfil
+  amigos: string[];               // Lista de UIDs de amigos
+  fechaCreacion?: number;         // Timestamp de registro
+  bloqueados?: string[];          // Lista de UIDs bloqueados
+  estado?: 'online' | 'offline' | 'ausente'; // Estado de conexión en tiempo real
+  ultimoAcceso?: number;          // Última vez que abrió la app
+  pushToken?: string;             // Token de Expo para notificaciones push
+  appVersion?: string;            // Última versión de app reportada por el cliente
+  appVersionCode?: number;        // Último versionCode reportado por el cliente
+  platform?: string;              // Plataforma del dispositivo
 };
 
-// --- SOCIAL & FRIENDS ---
+// --- MODELOS SOCIALES ---
 export type SolicitudAmistad = {
   id: string;
-  deUid: string;
-  paraUid: string;
-  deUsername: string;
+  deUid: string;                  // Quién envía la solicitud
+  paraUid: string;                // Quién debe recibirla
+  deUsername: string;             // Username del emisor (para previsualización)
   estado: 'pendiente' | 'aceptada' | 'rechazada';
   fecha: number;
 };
 
-// --- CHAT & MESSAGING ---
+// --- MODELOS DE CHAT Y MENSAJERÍA ---
 export type ChatType = 'individual' | 'group';
 
 export type Chat = {
   id: string;
   type: ChatType;
-  participants: string[];
-  participantDetails?: { [uid: string]: Partial<UsuarioPerfil> };
-  lastMessage?: {
+  participants: string[];         // UIDs de los participantes
+  participantDetails?: { [uid: string]: Partial<UsuarioPerfil> }; // Caché de perfiles
+  lastMessage?: {                 // Resumen del último mensaje para la lista de chats
     text: string;
     senderId: string;
     timestamp: number;
   };
-  activeMatchId?: string | null;
+  activeMatchId?: string | null;  // ID del juego de Movie Match activo en este chat
   createdAt: number;
-  name?: string;
-  groupIcon?: string;
+  name?: string;                  // Nombre del grupo (si aplica)
+  groupIcon?: string;             // Icono del grupo (si aplica)
 };
 
 export type MessageType = 'text' | 'movie' | 'match_invite' | 'match_result';
@@ -57,15 +61,15 @@ export type Message = {
   text: string;
   type: MessageType;
   timestamp: number;
-  matchId?: string;
-  movieData?: {
+  matchId?: string;               // ID del match asociado (si el mensaje es una invitación)
+  movieData?: {                   // Datos de película embebida (si el mensaje es de tipo 'movie')
     id: number;
     title: string;
     posterPath: string;
   };
 };
 
-// --- MOVIE MATCHES ---
+// --- MODELOS DE LÓGICA DE MATCH ---
 export type MatchStatus = 'active' | 'finished' | 'cancelled';
 
 export type MovieMatch = {
@@ -75,33 +79,33 @@ export type MovieMatch = {
   participants: string[];
   status: MatchStatus;
   settings: {
-    targetMatches: number;
-    excludeSeen: boolean;
+    targetMatches: number;        // Cuántas coincidencias detienen el juego
+    excludeSeen: boolean;         // Ignorar películas ya vistas por los participantes
   };
-  matchedMovies: number[];
-  votes: { [movieId: number]: string[] };
-  noVotes: { [movieId: number]: string[] };
+  matchedMovies: number[];        // IDs de TMDB que han sido aceptadas por todos
+  votes: { [movieId: number]: string[] };   // mapa peliId -> lista de UIDs que votaron SÍ
+  noVotes: { [movieId: number]: string[] }; // mapa peliId -> lista de UIDs que votaron NO
   createdAt: number;
   finishedAt?: number;
 };
 
-// --- USER MOVIES ---
+// --- MODELOS DE PELÍCULAS DEL USUARIO (BIBLIOTECA) ---
 export type PeliculaUsuario = {
-  idPelicula: number;
+  idPelicula: number;             // ID de TMDB
   titulo: string;
   rutaPoster: string | null;
-  estado: 'por_ver' | 'vista';
-  valoracion: number;
+  estado: 'por_ver' | 'vista';    // Watchlist o Biblioteca
+  valoracion: number;             // Puntuación de 1 a 10
   fechaAnadido: number;
   fechaLanzamiento?: string;
   fechaVisto?: number;
-  providers?: {
+  providers?: {                   // IDs de plataformas donde está disponible (cáche)
     flatrate: number[];
     rent: number[];
   };
 };
 
-// --- TIER LISTS ---
+// --- MODELOS DE TIER LISTS ---
 export type TierList = {
   id: string;
   nombre: string;
@@ -109,7 +113,7 @@ export type TierList = {
   creadorUid: string;
   fechaCreacion: number;
   ultimaModificacion: number;
-  tierObraMaestra: number[];
+  tierObraMaestra: number[];      // Arrays de IDs de películas por rango
   tierMuyBuena: number[];
   tierBuena: number[];
   tierMala: number[];
@@ -118,6 +122,7 @@ export type TierList = {
   portadaUrl?: string | null;
 };
 
+/** Constructor helper para una Tier List vacía */
 export function nuevaTierListVacia(): TierList {
   return {
     id: '',
@@ -136,18 +141,19 @@ export function nuevaTierListVacia(): TierList {
   };
 }
 
+/** Obtiene todos los IDs de películas contenidos en una Tier List (sin importar el rango) */
 export function todasLasPeliculasTierList(t: TierList): number[] {
   return [...t.tierObraMaestra, ...t.tierMuyBuena, ...t.tierBuena, ...t.tierMala, ...t.tierNefasta];
 }
 
-// --- TMDB API ---
+// --- MODELOS DE TMDB API ---
 export interface Movie {
   id: number;
   title: string;
   overview: string;
   poster_path: string | null;
   release_date: string | null;
-  vote_average: number; // 🌟 Añadido para las estrellas!
+  vote_average: number;
   genre_ids?: number[];
   popularity?: number;
   providers?: {
@@ -241,4 +247,10 @@ export interface CreditsResponse {
   cast: CastMember[]; 
   crew: CrewMember[]; 
 }
-export interface WatchProvider { logo_path: string; provider_id: number; provider_name: string; display_priority: number; }
+
+export interface WatchProvider { 
+  logo_path: string; 
+  provider_id: number; 
+  provider_name: string; 
+  display_priority: number; 
+}

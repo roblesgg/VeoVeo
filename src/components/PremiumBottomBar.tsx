@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: components/PremiumBottomBar.tsx
+ * DESCRIPCIÓN: Barra de navegación inferior personalizada 'Premium'.
+ * Utiliza BlurView para el efecto cristal y React Native Reanimated para
+ * una animación 'Liquid' elástica al cambiar entre pestañas.
+ */
+
 import React, { useEffect } from 'react';
 import { StyleSheet, View, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,14 +17,12 @@ import Animated, {
   withSpring,
   withSequence,
   withTiming,
-  interpolate,
-  Extrapolate
 } from 'react-native-reanimated';
 
 const { width: windowWidth } = Dimensions.get('window');
-const BAR_WIDTH = windowWidth - 48;
+const BAR_WIDTH = windowWidth - 48; // Márgenes laterales de 24
 const BAR_HEIGHT = 64;
-const TAB_WIDTH = BAR_WIDTH / 4;
+const TAB_WIDTH = BAR_WIDTH / 4; // 4 secciones: Descubrir, Biblioteca, TierLists, Social
 
 type Props = {
   onTabChange: (index: number) => void;
@@ -27,28 +32,32 @@ type Props = {
 export function PremiumBottomBar({ onTabChange, paginaActual }: Props) {
   const insets = useSafeAreaInsets();
   
-  // 1. Animated States
-  const activeX = useSharedValue(0);
-  const stretch = useSharedValue(1);
-  const scaleY = useSharedValue(1);
+  // VALORES ANIMADOS (Shared Values)
+  const activeX = useSharedValue(0);       // Posición horizontal de la burbuja blanca
+  const stretch = useSharedValue(1);       // Factor de estiramiento horizontal (Efecto chicle)
+  const scaleY = useSharedValue(1);        // Factor de compresión vertical
 
   useEffect(() => {
-    // 2. Liquid Elastic Animation Logic
-    // When the tab changes, we "stretch" the indicator horizontally and "compress" it vertically
-    const targetX = (paginaActual * TAB_WIDTH) + (TAB_WIDTH / 2) - 22; // 22 is half of the indicator width
+    /** 🧠 LÓGICA DE ANIMACIÓN LIQUID ELASTIC:
+     * Al cambiar de pestaña, la burbuja blanca se estira hacia los lados
+     * y se aplana mientras se desplaza a la nueva posición, recuperando
+     * su forma circular mediante un muelle (Spring) al llegar.
+     */
+    const targetX = (paginaActual * TAB_WIDTH) + (TAB_WIDTH / 2) - 22;
 
-    // Stretch Sequence
+    // Secuencia de estiramiento (X)
     stretch.value = withSequence(
-      withTiming(1.6, { duration: 150 }), // Stretch out
-      withSpring(1, { damping: 12, stiffness: 90 }) // Snap back
+      withTiming(1.6, { duration: 150 }), // Se estira durante el recorrido
+      withSpring(1, { damping: 12, stiffness: 90 }) // Recupera forma con rebote
     );
     
+    // Secuencia de compresión (Y)
     scaleY.value = withSequence(
-      withTiming(0.65, { duration: 150 }), // Flatten down
-      withSpring(1, { damping: 12, stiffness: 90 }) // Pop back
+      withTiming(0.65, { duration: 150 }), // Se aplana
+      withSpring(1, { damping: 12, stiffness: 90 }) // Vuelve a ser alta
     );
 
-    // Smooth movement
+    // Movimiento fluido de la posición X
     activeX.value = withSpring(targetX, {
       damping: 18,
       stiffness: 120,
@@ -56,6 +65,7 @@ export function PremiumBottomBar({ onTabChange, paginaActual }: Props) {
     });
   }, [paginaActual]);
 
+  // Aplicación de transformaciones a la burbuja indicadora
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: activeX.value },
@@ -64,6 +74,7 @@ export function PremiumBottomBar({ onTabChange, paginaActual }: Props) {
     ],
   }));
 
+  // Definición de las pestañas
   const items = [
     { iconActive: 'compass', iconInactive: 'compass-outline', index: 0 },
     { iconActive: 'library', iconInactive: 'library-outline', index: 1 },
@@ -73,21 +84,21 @@ export function PremiumBottomBar({ onTabChange, paginaActual }: Props) {
 
   return (
     <View style={[styles.container, { bottom: Math.max(insets.bottom, 20) }]}>
-      {/* 3. Real Glass Background (Stable & Performant) */}
+      {/* 🔮 FONDO: Glassmorphism real con BlurView */}
       <BlurView intensity={90} tint="dark" style={styles.blurBackground}>
         <View style={styles.innerContainer}>
           
-          {/* 4. Elastic Liquid Indicator */}
+          {/* 💧 INDICADOR LÍQUIDO (Burbuja blanca que viaja) */}
           <Animated.View style={[styles.indicator, indicatorStyle]}>
             <LinearGradient
               colors={['#fff', 'rgba(255, 255, 255, 0.4)']}
               style={StyleSheet.absoluteFill}
             />
-            {/* Specular Glare for 3D glass effect */}
+            {/* Pequeño reflejo para simular volumen 3D */}
             <View style={styles.specular} />
           </Animated.View>
 
-          {/* 5. Interactive Tab Icons */}
+          {/* ICONOS INTERACTIVOS */}
           {items.map((item) => {
             const isActive = paginaActual === item.index;
             return (
@@ -110,12 +121,13 @@ export function PremiumBottomBar({ onTabChange, paginaActual }: Props) {
   );
 }
 
-// Sub-component for bouncy icons
+/** Componente interno para animar individualmente los iconos */
 function AnimatedIcon({ name, isActive }: { name: any, isActive: boolean }) {
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
 
   useEffect(() => {
+    // Si el icono se activa, salta y crece un poco
     if (isActive) {
       scale.value = withSpring(1.2, { damping: 10, stiffness: 200 });
       translateY.value = withSpring(-4, { damping: 10, stiffness: 200 });
@@ -134,7 +146,7 @@ function AnimatedIcon({ name, isActive }: { name: any, isActive: boolean }) {
       <Ionicons
         name={name}
         size={24}
-        color={isActive ? '#020617' : 'rgba(255, 255, 255, 0.45)'} // Dark color inside the white bubble
+        color={isActive ? '#020617' : 'rgba(255, 255, 255, 0.45)'}
       />
     </Animated.View>
   );

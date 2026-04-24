@@ -3,7 +3,7 @@
     "name": "VeoVeo",
     "slug": "veoveo",
     "scheme": "veoveo",
-    "version": "1.8.8",
+    "version": "1.8.9",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 30,
+      "versionCode": 31,
       "googleServicesFile": "./google-services.json"
     },
     "web": {

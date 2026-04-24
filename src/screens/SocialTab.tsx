@@ -1,7 +1,14 @@
+/**
+ * ARCHIVO: screens/SocialTab.tsx
+ * DESCRIPCIÓN: Pestaña 'Social'. Gestiona la lista de conversaciones (Chats),
+ * la lista de amigos y el buscador global de usuarios.
+ * Incluye funcionalidades de creación de chats grupales y gestión de solicitudes.
+ */
+
 import React, { useState, useEffect, memo, useCallback } from 'react';
 import {
   ActivityIndicator,
-  FlatList, // 🚀 Añadido para virtualización
+  FlatList,
   Image,
   Pressable,
   ScrollView,
@@ -42,7 +49,11 @@ type Props = {
   userFoto?: string | null;
 };
 
-// 🚀 [MEMO] Componente de Fila Memoizado para Máxima Performance
+/**
+ * 🚀 [MEMO] Fila de Chat individual para la lista.
+ * Se encarga de inferir el nombre del chat (si es un amigo directo o un grupo)
+ * y mostrar indicadores de 'Movie Match' activo.
+ */
 const SocialChatRow = memo(({ 
   chat, 
   user, 
@@ -58,6 +69,8 @@ const SocialChatRow = memo(({
 }) => {
   const otherUid = chat.participants.find(id => id !== user?.uid);
   const amigoDetalle = amigos.find(a => a.uid === otherUid);
+  
+  // Decidimos el título: Nombre del grupo > Nombre del amigo > User del perfil cacheado
   const chatTitle = chat.name || amigoDetalle?.username || chat.participantDetails?.[otherUid || '']?.username || 'Chat...';
   const avatarUri = amigoDetalle?.fotoPerfil || chat.participantDetails?.[otherUid || '']?.fotoPerfil || null;
 
@@ -72,6 +85,7 @@ const SocialChatRow = memo(({
         ) : (
           <Ionicons name={chat.type === 'group' ? 'people' : 'person'} size={24} color="rgba(255,255,255,0.4)" />
         )}
+        {/* PUNTO NARANJA: Indica que hay un juego de Match activo en este chat */}
         {chat.activeMatchId && <View style={styles.matchDot} />}
       </View>
       <View style={styles.chatInfo}>
@@ -96,8 +110,11 @@ const SocialChatRow = memo(({
     </Pressable>
   );
 });
- SocialChatRow.displayName = 'SocialChatRow';
+SocialChatRow.displayName = 'SocialChatRow';
 
+/**
+ * COMPONENTE: SocialTab
+ */
 export function SocialTab({
   fontFamily,
   onUsuarioClick,
@@ -108,7 +125,9 @@ export function SocialTab({
 }: Props) {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const [tab, setTab] = useState<0 | 1 | 2>(0);
+  
+  // ESTADOS DE UI
+  const [tab, setTab] = useState<0 | 1 | 2>(0); // 0: Chats, 1: Amigos, 2: Buscar
   const [chats, setChats] = useState<Chat[]>([]);
   const [loadingChats, setLoadingChats] = useState(true);
   const [socialSearch, setSocialSearch] = useState('');
@@ -116,6 +135,7 @@ export function SocialTab({
   const [mostrarSelector, setMostrarSelector] = useState(false);
   const [amigosSeleccionados, setAmigosSeleccionados] = useState<string[]>([]);
 
+  // HOOK: Lógica social (amigos, búsquedas, solicitudes)
   const {
     amigos,
     resultados,
@@ -128,6 +148,7 @@ export function SocialTab({
     handleEliminarAmigo,
   } = useSocialData();
 
+  // EFECTO: Escuchar cambios en los chats del usuario en tiempo real
   useEffect(() => {
     if (!user) return;
     return observarMisChats(user.uid, (data) => {
@@ -136,7 +157,7 @@ export function SocialTab({
     });
   }, [user]);
 
-  // 🔮 Filtrado Contextual de Chats y Amigos
+  /** Filtrado local para la lista de chats */
   const chatsFiltrados = React.useMemo(() => {
     const q = socialSearch.toLowerCase().trim();
     if (!q || tab !== 0) return chats;
@@ -148,12 +169,14 @@ export function SocialTab({
     });
   }, [chats, socialSearch, tab, user, amigos]);
 
+  /** Filtrado local para la lista de amigos */
   const amigosFiltrados = React.useMemo(() => {
     const q = socialSearch.toLowerCase().trim();
     if (!q || tab !== 1) return amigos;
     return amigos.filter(a => a.username.toLowerCase().includes(q));
   }, [amigos, socialSearch, tab]);
 
+  /** Activa o resetea la búsqueda en la pestaña actual */
   const toggleSearch = () => {
     if (socialSearch !== '') {
       setSocialSearch('');
@@ -163,6 +186,7 @@ export function SocialTab({
     }
   };
 
+  /** Inicia un chat con uno o varios amigos (Individual o Grupal) */
   const handleCrearChatMultiple = async () => {
     if (!user || amigosSeleccionados.length === 0) return;
     try {
@@ -189,6 +213,7 @@ export function SocialTab({
     }
   };
 
+  // Resetea búsqueda al cambiar de solapa
   const handleSetTab = (newTab: 0 | 1 | 2) => {
     setTab(newTab);
     Keyboard.dismiss();
@@ -196,10 +221,11 @@ export function SocialTab({
     setBuscarAtivaSocial(false);
   };
 
-  // 🚀 [PERFORMANCE] Memoizar Callbacks para evitar rupturas de memoización en hijos
+  // Callbacks estabilizados para optimizar componentes memoizados hijos
   const stabilizedOnChatClick = useCallback(onChatClick, [onChatClick]);
   const stabilizedSetChatABorrar = useCallback((id: string) => setChatABorrar(id), []);
 
+  // Gestión de botón atrás para navegación intuitiva entre pestañas
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -221,7 +247,7 @@ export function SocialTab({
 
   return (
     <View style={styles.flex}>
-      {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
+      {/* 🔮 CABECERA GLASEADA */}
       <BlurView 
         intensity={85} 
         tint="dark" 
@@ -233,7 +259,7 @@ export function SocialTab({
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Social</Text>
           <View style={styles.actionsTopRow}>
-            {tab !== 2 && ( // 🛡️ Ocultar lupa en la búsqueda global
+            {tab !== 2 && ( 
               <Pressable onPress={toggleSearch} style={styles.iconBtn} hitSlop={8}>
                 <Ionicons name="search-outline" size={28} color="#fff" />
               </Pressable>
@@ -250,6 +276,7 @@ export function SocialTab({
           </View>
         </View>
 
+        {/* INPUT DE BÚSQUEDA / FILTRO */}
         {buscarAtivaSocial && tab !== 2 && (
           <View style={[styles.searchField, SHADOWS.macLight, { top: Math.max(insets.top, 12) + 80 }]}>
             <TextInput
@@ -270,8 +297,10 @@ export function SocialTab({
       </View>
 
         <View style={[styles.content, { paddingTop: insets.top + (buscarAtivaSocial ? 170 : 90) }]}>
+          {/* BADGE DE SOLICITUDES: Solo visible si hay peticiones de amistad pendientes */}
           <SolicitudesBadge count={solPendientesCount} onPress={onSolicitudesClick} fontFamily={fontFamily} />
 
+          {/* SELECTOR DE SUB-PESTAÑAS (CHATS / AMIGOS / BUSCAR) */}
           <View style={styles.tabContainer}>
             <View style={styles.tabCenteringWrapper}>
               <View style={[styles.tabWrapper, SHADOWS.macLight]}>
@@ -291,6 +320,7 @@ export function SocialTab({
           <View style={styles.webCenteringWrapper}>
 
           {tab === 0 && (
+            /* LISTADO DE CONVERSACIONES (Virtualizado para rendimiento) */
             <FlatList
               data={chatsFiltrados}
               keyExtractor={(item) => item.id}
@@ -333,6 +363,7 @@ export function SocialTab({
               contentContainerStyle={styles.scroll} 
               showsVerticalScrollIndicator={false}
             >
+              {/* LISTA DE AMIGOS CONSOLIDADOS */}
               {tab === 1 && (
                 <View>
                   {amigosFiltrados.map(a => (
@@ -349,6 +380,7 @@ export function SocialTab({
                 </View>
               )}
 
+              {/* BUSCADOR GLOBAL DE USUARIOS EN LA PLATAFORMA */}
               {tab === 2 && (
                 <View>
                   <TextInput 
@@ -359,7 +391,13 @@ export function SocialTab({
                     style={styles.searchInput} 
                   />
                   {resultados.map(u => (
-                    <UserSearchRow key={u.uid} usuario={{...u, fotoPerfil: u.fotoPerfil || undefined}} enviada={solEnviadas.has(u.uid)} onAdd={() => handleSendSolicitud(u.uid)} fontFamily={fontFamily} />
+                    <UserSearchRow 
+                      key={u.uid} 
+                      usuario={{...u, fotoPerfil: u.fotoPerfil || undefined}} 
+                      enviada={solEnviadas.has(u.uid)} 
+                      onAdd={() => handleSendSolicitud(u.uid)} 
+                      fontFamily={fontFamily} 
+                    />
                   ))}
                 </View>
               )}
@@ -368,6 +406,7 @@ export function SocialTab({
         </View>
       </View>
 
+      {/* MODAL: Selector de amigos para nuevo chat grupal */}
       <Modal visible={mostrarSelector} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
@@ -419,6 +458,7 @@ export function SocialTab({
         </View>
       </Modal>
 
+      {/* CONFIRMACIÓN: Para borrar chats */}
       <ConfirmModal
         visible={!!chatABorrar}
         onClose={() => setChatABorrar(null)}
@@ -476,14 +516,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabOnBtn: { 
-    backgroundColor: 'rgba(255,107,0,0.15)', // Sutil toque naranja
+    backgroundColor: 'rgba(255,107,0,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,107,0,0.3)',
   },
   tabText: { color: 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: '700' },
   tabOnText: { color: '#fff', fontWeight: '900' },
   scroll: { paddingHorizontal: 20, paddingBottom: 140 },
-  chatList: { gap: 12 },
   chatRow: { 
     flexDirection: 'row', 
     backgroundColor: CardSurface, 
@@ -492,7 +531,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     borderWidth: 1, 
     borderColor: 'rgba(255,255,255,0.05)',
-    marginTop: 10, // 🚀 Sincronizado con Friends
+    marginTop: 10,
   },
   chatAvatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   matchDot: { position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderRadius: 7, backgroundColor: '#ff6b00', borderWidth: 2, borderColor: '#1e293b' },

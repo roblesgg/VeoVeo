@@ -1,3 +1,11 @@
+/**
+ * ARCHIVO: screens/MovieMatchScreen.tsx
+ * DESCRIPCIÓN: Pantalla principal del juego 'Movie Match'.
+ * Implementa una interfaz tipo 'Tinder' para películas donde los usuarios deslizan
+ * a la derecha (SI) o izquierda (NO).
+ * Utiliza React Native Reanimated y Gesture Handler para animaciones de 60fps.
+ */
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useState, useEffect, useCallback } from 'react';
@@ -32,8 +40,6 @@ import { MovieMatch, MovieDetails } from '../types';
 import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 
-// 🚀 Los valores se calculan ahora dentro del componente para ser responsivos
-
 export function MovieMatchScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -41,42 +47,47 @@ export function MovieMatchScreen() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
   
-  // 📐 Layout Adaptativo
+  // 📐 LAYOUT CONFIG: Ajustes dinámicos para el swipe
   const SCREEN_WIDTH = windowWidth;
-  const BAR_WIDTH = Math.min(windowWidth * 0.85, 420); // Capped for desktop
-  const SWIPE_THRESHOLD = BAR_WIDTH * 0.25;
+  const BAR_WIDTH = Math.min(windowWidth * 0.85, 420); 
+  const SWIPE_THRESHOLD = BAR_WIDTH * 0.25; // Distancia mínima para confirmar voto
 
   const { matchId } = route.params;
   const [match, setMatch] = useState<MovieMatch | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [queue, setQueue] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0); // Puntero de la película actual en la cola
+  const [queue, setQueue] = useState<any[]>([]); // Cola de películas para votar
   const [loading, setLoading] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [currentDetails, setCurrentDetails] = useState<MovieDetails | null>(null);
-  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]); // 🆕 Detalles de ganadoras
+  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]); // Películas que ya son Match
 
+  // VALORES COMPARTIDOS (REANIMATED)
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  // 1. Escuchar el match
+  // EFECTO: Suscripción en tiempo real al estado del juego (puntuaciones, finalización)
   useEffect(() => {
     return observarMatch(matchId, setMatch);
   }, [matchId]);
 
-  // 2. Cargar pelis inteligentes (Por Ver de otros + Sugeridas)
+  /** 🧠 ALGORITMO DE RECOMENDACIÓN INTELIGENTE (Client-Side):
+   * 1. Extrae películas de las Watchlists de los demás participantes.
+   * 2. Utiliza películas bien valoradas por el usuario como semillas para recomendaciones de TMDB.
+   * 3. Filtra películas que el usuario actual YA ha votado en esta sesión.
+   */
   useEffect(() => {
-    if (!match || !user || queue.length > 0) return; // Solo cargar al inicio
+    if (!match || !user || queue.length > 0) return; 
     void (async () => {
        try {
          const db = getFirestore();
          let watchlistMovies: any[] = [];
          let seenSeeds: number[] = [];
          
-         // 1. Obtener "Por Ver" de los otros y nuestras "Vistas" como semillas
+         // Analizamos perfiles de los participantes
          for (const uid of match.participants) {
             const isMe = uid === user.uid;
             
-            // Watchlist del otro
+            // Prioridad: Películas que a mis amigos les interesan
             if (!isMe) {
               const libRef = doc(db, 'usuarios', uid, 'biblioteca', 'por_ver');
               const snap = await getDoc(libRef);
@@ -86,7 +97,7 @@ export function MovieMatchScreen() {
               }
             }
 
-            // Nuestras vistas con buena nota (Semillas)
+            // Semillas: Nuestras pelis favoritas para buscar similares
             const vistasRef = doc(db, 'usuarios', uid, 'biblioteca', 'vistas');
             const vistasSnap = await getDoc(vistasRef);
             if (vistasSnap.exists()) {
@@ -98,7 +109,7 @@ export function MovieMatchScreen() {
             }
          }
 
-         // 2. Filtrar pelis que YA HEMOS VOTADO en este match (Importante para reentrada)
+         // Filtramos lo que ya votamos en este juego para no repetir
          const votedIds = new Set<string>();
          const currentVotes = (match.votes || {}) as Record<string, string[]>;
          const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
@@ -112,7 +123,7 @@ export function MovieMatchScreen() {
 
          let finalQueue: any[] = [];
 
-         // Añadir Watchlist filtrada
+         // Procesamos la watchlist filtrada
          const filteredWatchlist = watchlistMovies
            .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
            .filter(p => !votedIds.has(String(p.idPelicula)))
@@ -125,12 +136,12 @@ export function MovieMatchScreen() {
          
          finalQueue.push(...filteredWatchlist);
 
-         // 3. Recomendaciones basadas en semillas (si faltan o para mezclar)
+         // Solicitamos recomendaciones a la API si la cola es corta
          if (seenSeeds.length > 0 && finalQueue.length < 20) {
             const seed = seenSeeds[Math.floor(Math.random() * seenSeeds.length)];
             const recommendations = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', 1);
             const filteredRecs = recommendations.results
-              .filter((p: any) => p.vote_average > 6.0) // Solo calidad
+              .filter((p: any) => p.vote_average > 6.0) 
               .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
               .map((p: any) => ({
                 id: p.id,
@@ -139,14 +150,7 @@ export function MovieMatchScreen() {
                 release_date: p.release_date?.split('-')[0] || ''
               }));
             
-            // Mezclamos un poco
             finalQueue.push(...filteredRecs);
-         }
-
-         // 4. Ultimo recurso: Populares de calidad
-         if (finalQueue.length < 5) {
-            const popular = await tmdbApi.obtenerPopulares('es-ES', 1);
-            finalQueue.push(...popular.results.filter((p: any) => p.vote_average > 6.5 && !votedIds.has(String(p.id))));
          }
 
          setQueue(finalQueue);
@@ -158,14 +162,14 @@ export function MovieMatchScreen() {
     })();
   }, [match, user]);
 
-  // 3. Cargar detalles para el modal de info
+  // Precarga de detalles TMDB para la película actual (Info Modal)
   useEffect(() => {
     if (queue[currentIndex]) {
       void tmdbApi.obtenerDetallesPelicula(Number(queue[currentIndex].id)).then(setCurrentDetails);
     }
   }, [currentIndex, queue]);
 
-  // 4. Cargar detalles de las películas ganadoras (cuando el match termina)
+  // Si el match termina, cargamos las fichas finales de las ganadoras
   useEffect(() => {
     if (match?.status === 'finished' && match.matchedMovies.length > 0) {
       void (async () => {
@@ -180,6 +184,7 @@ export function MovieMatchScreen() {
     }
   }, [match?.status, match?.matchedMovies]);
 
+  /** Registra el voto en Firestore y resetea las animaciones */
   const onSwipeComplete = useCallback((direction: 'right' | 'left') => {
     if (!user || !match || !queue[currentIndex]) return;
     const movieId = queue[currentIndex].id;
@@ -190,13 +195,15 @@ export function MovieMatchScreen() {
     setCurrentIndex(prev => prev + 1);
   }, [currentIndex, matchId, queue, user, match]);
 
+  /** Gestión de gestos del dedo */
   const onGestureEvent = (event: any) => {
     translateX.value = event.nativeEvent.translationX;
     translateY.value = event.nativeEvent.translationY;
   };
 
+  /** Finalización del gesto: ¿Se confirma el voto o vuelve al centro? */
   const onHandlerStateChange = (event: any) => {
-    if (event.nativeEvent.state === 5) { // END
+    if (event.nativeEvent.state === 5) { // END STATE
       if (Math.abs(event.nativeEvent.translationX) > SWIPE_THRESHOLD) {
         const direction = event.nativeEvent.translationX > 0 ? 'right' : 'left';
         translateX.value = withSpring(direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100);
@@ -208,10 +215,15 @@ export function MovieMatchScreen() {
     }
   };
 
+  // ESTILOS ANIMADOS DINÁMICOS (Reanimated 2)
   const cardStyle = useAnimatedStyle(() => {
     const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2], [-10, 0, 10], Extrapolate.CLAMP);
     return {
-      transform: [{ translateX: translateX.value }, { translateY: translateY.value }, { rotate: `${rotate}deg` }],
+      transform: [
+        { translateX: translateX.value }, 
+        { translateY: translateY.value }, 
+        { rotate: `${rotate}deg` }
+      ],
     };
   });
 
@@ -235,12 +247,13 @@ export function MovieMatchScreen() {
 
   return (
     <View style={styles.container}>
+      {/* CABECERA CON CONTADOR DE MATCHES EN TIEMPO REAL */}
       <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
-          <Text style={styles.headerTitle}>Match Movie</Text>
+          <Text style={styles.headerTitle}>Movie Match</Text>
           <View style={styles.matchCounter}>
             <Ionicons name="flame" size={16} color="#ff6b00" />
             <Text style={styles.countText}>{match.matchedMovies.length} Matches</Text>
@@ -249,6 +262,7 @@ export function MovieMatchScreen() {
       </BlurView>
 
       <View style={styles.deck}>
+        {/* ESCENARIO A: El juego ha terminado (Hay ganadoras) */}
         {match.status === 'finished' ? (
           <ScrollView contentContainerStyle={styles.resultsScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.resultsHeader}>
@@ -260,25 +274,21 @@ export function MovieMatchScreen() {
             </View>
 
             <View style={styles.resultsGrid}>
-              {matchedDetails.length > 0 ? (
-                matchedDetails.map(movie => (
-                  <Pressable 
-                    key={movie.id} 
-                    style={styles.resultCard} 
-                    onPress={() => {
-                      setCurrentDetails(movie);
-                      setShowInfo(true);
-                    }}
-                  >
-                    <Image source={{ uri: posterUrl(movie.poster_path, 'w342')! }} style={styles.resultPoster} />
-                    <View style={styles.resultInfo}>
-                      <Text style={styles.resultTitle} numberOfLines={2}>{movie.title}</Text>
-                    </View>
-                  </Pressable>
-                ))
-              ) : (
-                <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
-              )}
+              {matchedDetails.map(movie => (
+                <Pressable 
+                  key={movie.id} 
+                  style={styles.resultCard} 
+                  onPress={() => {
+                    setCurrentDetails(movie);
+                    setShowInfo(true);
+                  }}
+                >
+                  <Image source={{ uri: posterUrl(movie.poster_path, 'w342')! }} style={styles.resultPoster} />
+                  <View style={styles.resultInfo}>
+                    <Text style={styles.resultTitle} numberOfLines={2}>{movie.title}</Text>
+                  </View>
+                </Pressable>
+              ))}
             </View>
 
             <Pressable style={styles.btnCerrarFinal} onPress={() => navigation.goBack()}>
@@ -286,6 +296,7 @@ export function MovieMatchScreen() {
             </Pressable>
           </ScrollView>
         ) : currentIndex < queue.length ? (
+          /* ESCENARIO B: Juego en curso (Cartas Swipables) */
           <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
             <Animated.View style={[
               styles.card, 
@@ -301,11 +312,14 @@ export function MovieMatchScreen() {
                 </View>
                 <Pressable onPress={() => setShowInfo(true)} style={styles.infoBtn}><Ionicons name="information-circle-outline" size={34} color="#fff" /></Pressable>
               </LinearGradient>
+              
+              {/* BADGES DINÁMICOS DE VOTO (SÍ / NO) */}
               <Animated.View style={[styles.badge, styles.likeBadge, likeOpacity]}><Text style={styles.badgeText}>SÍ</Text></Animated.View>
               <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}><Text style={styles.badgeText}>NO</Text></Animated.View>
             </Animated.View>
           </PanGestureHandler>
         ) : (
+          /* ESCENARIO C: Sin más películas en la cola actual */
           <View style={styles.emptyDeck}>
              <ActivityIndicator color={COLORS.primary} size="large" />
              <Text style={styles.emptyText}>Buscando más recomendaciones...</Text>
@@ -313,11 +327,13 @@ export function MovieMatchScreen() {
         )}
       </View>
 
+      {/* BOTONES DE ACCIÓN RÁPIDA (Alternativa al swipe táctil) */}
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
          <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(-SCREEN_WIDTH - 100); runOnJS(onSwipeComplete)('left'); }}><Ionicons name="close" size={32} color="#ff5050" /></Pressable>
          <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(SCREEN_WIDTH + 100); runOnJS(onSwipeComplete)('right'); }}><Ionicons name="heart" size={32} color="#2ecc71" /></Pressable>
       </View>
 
+      {/* MODAL DE INFORMACIÓN (MODAL GLAREADO) */}
       {showInfo && currentDetails && (
         <View style={StyleSheet.absoluteFillObject}>
            <Pressable onPress={() => setShowInfo(false)} style={StyleSheet.absoluteFillObject}><BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} /></Pressable>
@@ -360,7 +376,6 @@ const styles = StyleSheet.create({
   emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, textAlign: 'center' },
   matchFinishedTitle: { color: '#fff', fontSize: 28, fontWeight: '900', textAlign: 'center', marginTop: 10 },
   matchFinishedSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 30 },
-  btnCerrar: { backgroundColor: COLORS.primary, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 20 },
   btnCerrarText: { color: '#000', fontWeight: '800', fontSize: 16 },
   infoModal: { position: 'absolute', left: 24, right: 24, backgroundColor: '#1e293b', borderRadius: 24, padding: 24, maxHeight: 300 },
   modalTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 12 },
@@ -369,7 +384,7 @@ const styles = StyleSheet.create({
   modalDetails: { flexDirection: 'row', gap: 20, marginTop: 20 },
   modalMeta: { color: COLORS.primary, fontWeight: '800' },
   
-  // Estilos de resultados finalizados
+  // Resultados finalizados
   resultsScroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 100 },
   resultsHeader: { alignItems: 'center', marginBottom: 30 },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },

@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: navigation/RootNavigator.tsx
+ * DESCRIPCIÓN: Controlador principal de la navegación de la aplicación.
+ * Gestiona el enrutamiento dinámico basado en el estado de autenticación (Login vs App)
+ * y la verificación del correo electrónico.
+ */
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
@@ -21,8 +28,13 @@ import { BibliotecaAmigoScreen } from '../screens/BibliotecaAmigoScreen';
 import { COLORS } from '../theme/colors';
 import type { RootStackParamList } from './types';
 
+// Stack nativo para transiciones fluidas entre pantallas
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+/**
+ * CONFIGURACIÓN DE DEEP LINKING:
+ * Define cómo la app responde a URLs externas (ej: veoveo://movie/123).
+ */
 const linking = {
   prefixes: ['veoveo://', 'https://veoveo.dripdev.dev', 'https://veoveo-app.netlify.app', 'https://dripdev.dev'],
   config: {
@@ -36,12 +48,19 @@ const linking = {
   },
 };
 
+/**
+ * COMPONENTE: RootNavigator
+ * Es el cerebro de la navegación. Decide qué pantallas mostrar según:
+ * 1. Si hay una sesión activa (Auth).
+ * 2. Si el email está verificado (Security).
+ */
 export function RootNavigator() {
   const { user, loading } = useAuth();
 
   return (
     <NavigationContainer linking={linking}>
       {loading ? (
+        /* PANTALLA DE CARGA INICIAL: Previene parpadeos durante el chequeo de sesión */
         <View
           style={{
             flex: 1,
@@ -53,20 +72,24 @@ export function RootNavigator() {
           <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       ) : (
+        /* NAVEGACIÓN DINÁMICA CONDICIONAL */
         <Stack.Navigator
           key={user ? (user.emailVerified ? 'in' : 'ver') : 'out'}
           screenOptions={{ headerShown: false, animation: 'fade' }}
         >
           {user == null ? (
+            /* FLUJO A: No autenticado (Auth Stack) */
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="Register" component={RegisterScreen} />
             </>
           ) : !user.emailVerified ? (
+            /* FLUJO B: Autenticado pero sin verificar email */
             <>
               <Stack.Screen name="Verification" component={VerificationScreen} />
             </>
           ) : (
+            /* FLUJO C: Acceso total a la aplicación (App Stack) */
             <>
               <Stack.Screen name="Main" component={MainScreen} />
               <Stack.Screen name="Perfil" component={PerfilScreen} />

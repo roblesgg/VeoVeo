@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/ActorScreen.tsx
+ * DESCRIPCIÓN: Pantalla de detalle de un actor o profesional del cine.
+ * Muestra la biografía del artista y su filmografía completa (sacada de TMDB).
+ * Permite filtrar las películas del actor por género cinematográfico y ordenarlas.
+ */
+
 import React, { useState, useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -24,31 +31,16 @@ import { posterUrl } from '../services/tmdbClient';
 import { SHADOWS } from '../theme/theme';
 import { shareActor } from '../utils/shareUtils';
 import type { RootStackParamList } from '../navigation/types';
-import { GradientBottom } from '../theme/colors';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 74) / 3;
+const CARD_WIDTH = (width - 74) / 3; // Cálculo para mostrar 3 columnas exactas
 
+// Mapeo manual de IDs de TMDB a nombres en español (Fallback)
 const GENRE_MAP: Record<number, string> = {
-  28: 'Acción',
-  12: 'Aventura',
-  16: 'Animación',
-  35: 'Comedia',
-  80: 'Crimen',
-  99: 'Documental',
-  18: 'Drama',
-  10751: 'Familia',
-  14: 'Fantasía',
-  36: 'Historia',
-  27: 'Terror',
-  10402: 'Música',
-  9648: 'Misterio',
-  10749: 'Romance',
-  878: 'Ciencia ficción',
-  10770: 'Película de TV',
-  53: 'Suspense',
-  10752: 'Bélica',
-  37: 'Western',
+  28: 'Acción', 12: 'Aventura', 16: 'Animación', 35: 'Comedia', 80: 'Crimen',
+  99: 'Documental', 18: 'Drama', 10751: 'Familia', 14: 'Fantasía', 36: 'Historia',
+  27: 'Terror', 10402: 'Música', 9648: 'Misterio', 10749: 'Romance',
+  878: 'Ciencia ficción', 10770: 'Película de TV', 53: 'Suspense', 10752: 'Bélica', 37: 'Western',
 };
 
 export function ActorScreen() {
@@ -59,12 +51,17 @@ export function ActorScreen() {
   const { fontFamily: ff } = useMontserrat();
   const fontFamily = ff || 'System';
 
-  const { detalles, peliculas, cargando, error } = useActorData(actorId);
+  // HOOK: Obtiene biografía, fotos y filmografía desde TMDB
+  const { detalles, peliculas, cargando } = useActorData(actorId);
 
   const [filtroGenero, setFiltroGenero] = useState<number | null>(null);
   const [orden, setOrden] = useState<'popularity' | 'date'>('popularity');
   const [mostrarMenu, setMostrarMenu] = useState(false);
 
+  /** 🧠 PROCESAMIENTO DINÁMICO:
+   * Extrae todos los géneros únicos presentes en la filmografía del actor
+   * para construir dinámicamente las opciones del filtro.
+   */
   const generosOpciones = useMemo(() => {
     const set = new Set<number>();
     peliculas.forEach((p) => p.genre_ids?.forEach((g: number) => set.add(g)));
@@ -77,6 +74,7 @@ export function ActorScreen() {
     return options;
   }, [peliculas]);
 
+  /** Aplica el filtrado y ordenación sobre la filmografía */
   const pelisFiltradas = useMemo(() => {
     const base = [...peliculas];
     if (orden === 'date')
@@ -102,6 +100,7 @@ export function ActorScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
+          {/* BOTONES DE NAVEGACIÓN Y TOOLS */}
           <Pressable
             onPress={() => navigation.goBack()}
             style={[styles.navBtn, { left: 20, top: Math.max(insets.top, 12) }]}
@@ -110,22 +109,22 @@ export function ActorScreen() {
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </BlurView>
           </Pressable>
-          <Pressable
-            onPress={() => navigation.popToTop()}
-            style={[styles.navBtn, { right: 20, top: Math.max(insets.top, 12) }]}
-          >
-            <BlurView intensity={30} tint="dark" style={styles.btnInner}>
-              <Ionicons name="home-outline" size={20} color="#fff" />
-            </BlurView>
-          </Pressable>
-          <Pressable
-            onPress={() => shareActor(actorId, detalles?.name || 'Actor')}
-            style={[styles.navBtn, { right: 70, top: Math.max(insets.top, 12) }]}
-          >
-            <BlurView intensity={30} tint="dark" style={styles.btnInner}>
-              <Ionicons name="share-social-outline" size={20} color="#fff" />
-            </BlurView>
-          </Pressable>
+
+          <View style={{ flexDirection: 'row', position: 'absolute', right: 20, top: Math.max(insets.top, 12), gap: 10 }}>
+            <Pressable onPress={() => shareActor(actorId, detalles?.name || 'Actor')}>
+                <BlurView intensity={30} tint="dark" style={styles.btnInner}>
+                <Ionicons name="share-social-outline" size={20} color="#fff" />
+                </BlurView>
+            </Pressable>
+            
+            <Pressable onPress={() => navigation.popToTop()}>
+                <BlurView intensity={30} tint="dark" style={styles.btnInner}>
+                <Ionicons name="home-outline" size={20} color="#fff" />
+                </BlurView>
+            </Pressable>
+          </View>
+
+          {/* Icono de filtros flotante (derecha centro) */}
           <Pressable
             onPress={() => setMostrarMenu(true)}
             style={[styles.navBtn, { right: 20, top: Math.max(insets.top, 12) + 50 }]}
@@ -135,6 +134,7 @@ export function ActorScreen() {
             </BlurView>
           </Pressable>
 
+          {/* CABECERA: Foto circular y nombre */}
           <ActorHeader
             foto={detalles?.profile_path ?? undefined}
             nombre={detalles?.name ?? ''}
@@ -143,6 +143,7 @@ export function ActorScreen() {
           />
         </View>
 
+        {/* BLOQUE: Biografía glaseada */}
         {detalles?.biography && (
           <View style={styles.bioBox}>
             <BlurView intensity={15} tint="dark" style={styles.glassCard}>
@@ -154,15 +155,16 @@ export function ActorScreen() {
           </View>
         )}
 
+        {/* LISTADO: Filmografía destacada (Grid de 3 columnas) */}
         <View style={styles.filmography}>
           <Text style={[styles.secTitle, { fontFamily, marginLeft: 25, marginBottom: 15 }]}>
-            Películas destacadas
+            Filmografía destacada
           </Text>
           <FlatList
             data={pelisFiltradas}
             keyExtractor={(item) => String(item.id)}
             numColumns={3}
-            scrollEnabled={false}
+            scrollEnabled={false} // Se desplaza con el ScrollView padre
             contentContainerStyle={styles.list}
             renderItem={({ item: p }) => (
               <Pressable
@@ -183,21 +185,18 @@ export function ActorScreen() {
         </View>
       </ScrollView>
 
+      {/* MENÚ: Filtrado por Géneros y Ordenación */}
       <FilterSortMenu
         visible={mostrarMenu}
         onClose={() => setMostrarMenu(false)}
         title="Ordenar por"
         options={[
           {
-            label: 'Popularidad',
-            value: 'popularity',
-            icon: 'trending-up-outline',
-            description: 'Películas más exitosas.',
+            label: 'Popularidad', value: 'popularity', icon: 'trending-up-outline',
+            description: 'Películas más exitosas del actor.',
           },
           {
-            label: 'Fecha de estreno',
-            value: 'date',
-            icon: 'calendar-outline',
+            label: 'Fecha de estreno', value: 'date', icon: 'calendar-outline',
             description: 'Más recientes primero.',
           },
         ]}

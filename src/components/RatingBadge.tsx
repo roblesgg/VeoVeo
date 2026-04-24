@@ -1,56 +1,67 @@
+/**
+ * ARCHIVO: components/RatingBadge.tsx
+ * DESCRIPCIÓN: Pequeño indicador visual de valoración (estrellas).
+ * Soporta escalas de 5 (personal) y 10 (TMDB), normalizando ambas.
+ * Incluye efectos de brillo para notas altas y soporte para valoraciones '💩'.
+ */
+
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
-  rating: number; // 0-5 (Personal) o 0-10 (TMDB)
-  maxRating?: number; // 5 o 10
+  rating: number; // Valor numérico. Puede ser 0-5 o 0-10.
+  maxRating?: number; // Define el tope de la escala de entrada.
   fontFamily?: string;
-  hideText?: boolean;
+  hideText?: boolean; // Si es true, solo muestra las estrellas en formato compacto.
 };
 
 export function RatingBadge({ rating: rawRating, maxRating = 5, fontFamily, hideText = true }: Props) {
-  // Normalizar a escala de 5
+  
+  // NORMALIZACIÓN: Siempre trabajamos internamente sobre una base de 5 estrellas.
   const rating = maxRating === 10 ? rawRating / 2 : rawRating;
 
-  const ratingDescription = useMemo(() => {
-    if (rating >= 4.5) return 'Obra Maestra';
-    if (rating >= 4) return 'Espectacular';
-    if (rating >= 3) return 'Muy buena';
-    if (rating >= 2) return 'Recomendada';
-    return 'Está bien';
-  }, [rating]);
-
+  // Render vacío si no hay puntuación
   if (rating === 0) return null;
 
-  const isPoop = rawRating === -1;
+  // LÓGICA DE ICONOGRAFÍA
+  const isPoop = rawRating === -1; // Valor especial para películas 'nefastas'
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
+  // LÓGICA DE COLOR (Gradación según nota)
   let iconColor = '#FFD700'; 
-  let glow = rating >= 4.5;
+  let glow = rating >= 4.5; // Efecto premium para 'Obras Maestras'
 
-  if (rating >= 4.5) iconColor = '#FFD700';
-  else if (rating >= 3.5) iconColor = '#FFC107';
-  else iconColor = '#FF9800';
+  if (rating >= 4.5) iconColor = '#FFD700';      // Oro
+  else if (rating >= 3.5) iconColor = '#FFC107'; // Ámbar
+  else iconColor = '#FF9800';                    // Naranja
 
   return (
     <View style={[styles.badge, glow && styles.glow, hideText && styles.miniBadge]}>
       <View style={[styles.inner, hideText && styles.miniInner]}>
+        
         {isPoop ? (
           <Text style={{ fontSize: 16 }}>💩</Text>
         ) : (
           <View style={styles.starsRow}>
+            {/* ESTRELLAS LLENAS */}
             {[...Array(fullStars)].map((_, i) => (
               <Ionicons key={`f-${i}`} name="star" size={hideText ? 10 : 12} color={iconColor} />
             ))}
+            
+            {/* MEDIA ESTRELLA */}
             {hasHalfStar && (
               <Ionicons name="star-half" size={hideText ? 10 : 12} color={iconColor} />
             )}
+            
+            {/* ESTRELLAS VACÍAS (Solo en modo extendido) */}
             {!hideText && [...Array(emptyStars)].map((_, i) => (
               <Ionicons key={`e-${i}`} name="star-outline" size={12} color="rgba(255,255,255,0.3)" />
             ))}
+            
+            {/* NOTA NUMÉRICA (Solo en modo extendido) */}
             {!hideText && (
               <Text style={[styles.text, { fontFamily, color: '#fff' }]}>
                 {rating.toFixed(1)}

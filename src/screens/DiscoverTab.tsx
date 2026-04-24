@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/DiscoverTab.tsx
+ * DESCRIPCIÓN: Pestaña 'Descubrir'. Es el motor central de contenido de la app.
+ * Presenta carruseles dinámicos de películas, sistema de búsqueda global de cine/actores
+ * y personalización de la Home mediante drag & drop de categorías.
+ */
+
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState, useRef, memo, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -38,7 +45,10 @@ import { CarruselPeliculas } from '../components/discover/CarruselPeliculas';
 import { CategoryModal } from '../components/discover/CategoryModal';
 import { useLanguage } from '../context/LanguageContext';
 
-// 🚀 [MEMO] Item de Película en Grilla
+/**
+ * 🚀 [MEMO] Item de Película para la Grilla de Búsqueda.
+ * Optimizado para renderizar cientos de resultados sin lag.
+ */
 const MovieResultItem = memo(({ item, onPeliculaClick, libraryMap }: { item: any, onPeliculaClick: any, libraryMap: any }) => (
   <View style={styles.movieGridItem}>
     <Pressable
@@ -51,6 +61,7 @@ const MovieResultItem = memo(({ item, onPeliculaClick, libraryMap }: { item: any
         contentFit="cover"
         transition={200}
       />
+      {/* Badge de estado: Indica si ya la hemos visto o está en 'Por ver' */}
       {libraryMap[item.id]?.estado === 'vista' ? (
         <RatingBadge rating={libraryMap[item.id].valoracion} hideText />
       ) : libraryMap[item.id]?.estado === 'por_ver' ? (
@@ -61,7 +72,9 @@ const MovieResultItem = memo(({ item, onPeliculaClick, libraryMap }: { item: any
 ));
 MovieResultItem.displayName = 'MovieResultItem';
 
-// 🚀 [MEMO] Item de Actor en Grilla
+/**
+ * 🚀 [MEMO] Item de Actor para la Grilla de Búsqueda.
+ */
 const ActorResultItem = memo(({ item, onActorClick }: { item: any, onActorClick: any }) => (
   <View style={styles.actorGridItem}>
     <Pressable
@@ -80,6 +93,9 @@ const ActorResultItem = memo(({ item, onActorClick }: { item: any, onActorClick:
 ));
 ActorResultItem.displayName = 'ActorResultItem';
 
+/**
+ * COMPONENTE: DiscoverTab
+ */
 export function DiscoverTab({
   fontFamily,
   estaActiva,
@@ -104,14 +120,18 @@ export function DiscoverTab({
 
   const mainListRef = useRef<any>(null);
   const searchInputRef = useRef<TextInput>(null);
-  const libraryMap = useLibraryStatus(); // 🛡️ Cerebro de biblioteca
+  
+  // Hook que devuelve un mapa [id_pelicula]: {estado, valoracion} para pintar badges rápidamente
+  const libraryMap = useLibraryStatus(); 
 
+  // ESTADO: Configuración de la Home
   const [carruselesActivos, setCarruselesActivos] = useState<string[]>([]);
   const [buscarAtiva, setBuscarAtiva] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [mostrarDialogo, setMostrarDialogo] = useState(false);
   const [misPlataformas, setMisPlataformas] = useState<number[]>([]);
 
+  // HOOK: Lógica de carga de datos TMDB (populares, tendencias, etc.)
   const {
     peliculasPorCarrusel,
     cargando,
@@ -119,6 +139,7 @@ export function DiscoverTab({
     recargarTodosLosCarruseles,
   } = useDescubrir(carruselesActivos);
 
+  // HOOK: Lógica de búsqueda interactiva
   const {
     textoBuscar,
     setTextoBuscar,
@@ -128,7 +149,7 @@ export function DiscoverTab({
     setTipoBusqueda,
   } = useDiscoverSearch();
 
-  // Initial load
+  // EFECTO: Cargar configuración personalizada de carruseles del usuario
   useEffect(() => {
     void (async () => {
       const saved = await cargarCarruselesActivos();
@@ -137,7 +158,7 @@ export function DiscoverTab({
     })();
   }, []);
 
-  // Sync platforms
+  // EFECTO: Cargar plataformas de streaming preferidas para filtrar logos
   useFocusEffect(
     useCallback(() => {
       void (async () => {
@@ -147,6 +168,7 @@ export function DiscoverTab({
     }, []),
   );
 
+  /** Guarda permanentemente el orden y visibilidad de los carruseles */
   const persistCarruseles = useCallback(
     (next: string[]) => {
       setCarruselesActivos(next);
@@ -158,6 +180,7 @@ export function DiscoverTab({
     [user],
   );
 
+  /** Activa/Desactiva el modo búsqueda con enfoque automático del input */
   const toggleSearch = () => {
     const newState = !buscarAtiva;
     setBuscarAtiva(newState);
@@ -165,6 +188,7 @@ export function DiscoverTab({
     else Keyboard.dismiss();
   };
 
+  /** Gestiona el retroceso para cerrar la búsqueda antes que la app */
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -183,7 +207,7 @@ export function DiscoverTab({
 
   return (
     <View style={styles.flex}>
-      {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
+      {/* 🔮 CABECERA PREMIUM: Efecto Glassmorphism con Blur dinámico */}
       <BlurView 
         intensity={85} 
         tint="dark" 
@@ -195,6 +219,7 @@ export function DiscoverTab({
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Explorar</Text>
           <View style={styles.actionsTopRow}>
+            {/* HERRAMIENTAS DE EDICIÓN (Sort & Add) */}
             {modoEdicion && (
               <Pressable onPress={() => setMostrarDialogo(true)} style={styles.iconBtn}>
                 <Ionicons name="add-circle" size={32} color={COLORS.primary} />
@@ -214,6 +239,7 @@ export function DiscoverTab({
           </View>
         </View>
 
+        {/* ÁREA DE BÚSQUEDA DINÁMICA */}
         {buscarAtiva && (
           <Animated.View entering={FadeInDown} style={[styles.searchArea, { top: Math.max(insets.top, 12) + 80 }]}>
             <View style={[styles.searchField, SHADOWS.macLight]}>
@@ -243,10 +269,11 @@ export function DiscoverTab({
         )}
       </View>
 
-      {/* 📦 Contenido Principal */}
+      {/* 📦 LISTADO DE CONTENIDO (PANTALLA PRINCIPAL) */}
       <View style={styles.content}>
         <View style={styles.webCenteringWrapper}>
           {modoEdicion ? (
+          /* MODO EDICIÓN: Lista interactiva para reordenar carruseles */
           <DraggableFlatList
             data={carruselesActivos}
             keyExtractor={(item) => item}
@@ -271,6 +298,7 @@ export function DiscoverTab({
             contentContainerStyle={{ paddingTop: insets.top + (buscarAtiva ? 230 : 90), paddingBottom: 140 }}
           />
         ) : (
+          /* MODO EXPLORACIÓN: Lista optimizada de carruseles con carga bajo demanda */
           <FlatList
             ref={mainListRef}
             data={carruselesActivos}
@@ -300,13 +328,14 @@ export function DiscoverTab({
         </View>
       </View>
 
-      {/* 🔍 Resultados de Búsqueda (Cae justo después de la cabecera) */}
+      {/* 🔍 CAPA DE RESULTADOS DE BÚSQUEDA (Overlay) */}
       {(buscarAtiva || textoBuscar.length >= 2) && (
         <Pressable style={[StyleSheet.absoluteFillObject, { zIndex: 1200 }]} onPress={() => { setBuscarAtiva(false); Keyboard.dismiss(); }}>
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
         </Pressable>
       )}
 
+      {/* Renderizado de la grilla de búsqueda al escribir */}
       {textoBuscar.length >= 2 && (
         <Animated.View 
           entering={FadeIn} 
@@ -325,13 +354,6 @@ export function DiscoverTab({
                 paddingTop: insets.top + (buscarAtiva ? 230 : 95), 
                 paddingBottom: 140 
               }}
-              onScroll={(e) => {
-                if (e.nativeEvent.contentOffset.y < -60) {
-                  setBuscarAtiva(false);
-                  setTextoBuscar('');
-                  Keyboard.dismiss();
-                }
-              }}
               onScrollBeginDrag={() => Keyboard.dismiss()}
               renderItem={({ item }) => (
                 <View style={tipoBusqueda === 'movie' ? styles.movieGridItem : styles.actorGridItem}>
@@ -343,6 +365,7 @@ export function DiscoverTab({
                       source={{ uri: tipoBusqueda === 'movie' ? posterUrl(item.poster_path, 'w342')! : profileUrl(item.profile_path)! }}
                       style={styles.fullImg}
                     />
+                    {/* Indicadores de biblioteca embebidos en los resultados de búsqueda */}
                     {tipoBusqueda === 'movie' && (
                        libraryMap[item.id]?.estado === 'vista' ? (
                          <RatingBadge rating={libraryMap[item.id].valoracion} hideText />
@@ -361,6 +384,7 @@ export function DiscoverTab({
         </Animated.View>
       )}
 
+      {/* Modal para añadir nuevos carruseles/categorías */}
       <CategoryModal
         visible={mostrarDialogo}
         onClose={() => setMostrarDialogo(false)}
@@ -406,8 +430,6 @@ const styles = StyleSheet.create({
   actorGridItem: { width: '50%', padding: 6 },
   resultCard: { width: '100%', aspectRatio: 2/3, borderRadius: 12, overflow: 'hidden', backgroundColor: CardSurface },
   fullImg: { width: '100%', height: '100%' },
-  badge: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 6, borderRadius: 6 },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   actorName: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 12, textAlign: 'center', paddingVertical: 4 },
   eyeBadge: {
     position: 'absolute',

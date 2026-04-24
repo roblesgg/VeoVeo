@@ -1,3 +1,11 @@
+/**
+ * ARCHIVO: components/discover/CarruselPeliculas.tsx
+ * DESCRIPCIÓN: Carrusel horizontal de películas para la pantalla 'Descubrir'.
+ * Cada carrusel representa una categoría (Tendencias, Popular, etc).
+ * Soporta modo edición (reordenar por drag y eliminar), recarga manual 
+ * y estados de biblioteca (visto/por ver) integrados en los carteles.
+ */
+
 import React, { memo, useEffect, useState, useRef } from 'react';
 import {
   FlatList,
@@ -5,15 +13,10 @@ import {
   StyleSheet,
   Text,
   View,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeInRight,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
 } from 'react-native-reanimated';
 import { PosterItem } from './PosterItem';
 import type { Movie } from '../../types';
@@ -24,12 +27,16 @@ type Props = {
   modoEdicion: boolean;
   fontFamily: string;
   peliculas: Movie[];
+  /** Callback para solicitar carga de datos a TMDB */
   cargarCarrusel: (titulo: string, forzar?: boolean) => void;
   onEliminar: () => void;
   onPeliculaClick: (id: number) => void;
+  /** Inicia el gesto de arrastre (DraggableFlatList) */
   drag: () => void;
+  /** Estado de arrastre activo */
   isActive: boolean;
   misPlataformas?: number[];
+  /** Mapa de cache de la biblioteca del usuario para pintar badges */
   libraryMap?: { [id: number]: { estado: 'por_ver' | 'vista', valoracion: number } };
 };
 
@@ -51,18 +58,22 @@ export const CarruselPeliculas = memo(
     const lastCall = useRef(0);
     const listRef = useRef<FlatList>(null);
 
+    // CARGA INICIAL: Si no hay datos, los pedimos automáticamente
     useEffect(() => {
       if (peliculas.length === 0) cargarCarrusel(titulo);
     }, [titulo, peliculas.length, cargarCarrusel]);
 
+    /** Lógica de recarga manual al llegar al final del carrusel */
     const handleManualRefresh = () => {
       if (refreshing) return;
       const now = Date.now();
+      // Throttling de 2 segundos para evitar spam a la API
       if (now - lastCall.current > 2000) {
         lastCall.current = now;
         setRefreshing(true);
         cargarCarrusel(titulo, true);
-        // Auto-scroll back to start after a delay
+        
+        // Efecto scroll automático al inicio tras recargar
         setTimeout(() => {
           setRefreshing(false);
           listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -73,6 +84,7 @@ export const CarruselPeliculas = memo(
     return (
       <View style={{ marginBottom: 28, opacity: isActive ? 0.5 : 1 }}>
         <View style={styles.carruselHeader}>
+          {/* TÍTULO CON GESTO DE DRAG */}
           <Pressable onLongPress={drag} delayLongPress={200} style={styles.carruselTitleContainer}>
             <Text style={[styles.carruselTitulo, { fontFamily }]}>{titulo}</Text>
             {modoEdicion && (
@@ -86,6 +98,8 @@ export const CarruselPeliculas = memo(
               </Animated.View>
             )}
           </Pressable>
+
+          {/* BOTÓN ELIMINAR (Solo en edición) */}
           {modoEdicion && (
             <Pressable onPress={onEliminar} hitSlop={12} style={styles.eliminarBtn}>
               <Ionicons name="close-circle" size={24} color={COLORS.error} />
@@ -93,6 +107,7 @@ export const CarruselPeliculas = memo(
           )}
         </View>
 
+        {/* LISTADO HORIZONTAL */}
         <FlatList
           ref={listRef}
           horizontal
@@ -101,9 +116,11 @@ export const CarruselPeliculas = memo(
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 25, gap: 14 }}
           nestedScrollEnabled
-          removeClippedSubviews
+          removeClippedSubviews // Optimización para listas largas
           initialNumToRender={5}
           overScrollMode="always"
+          
+          // ELEMENTO FINAL: Botón 'Recargar' (Nuevas películas)
           ListFooterComponent={() => (
             <Pressable
               onPress={handleManualRefresh}
@@ -116,10 +133,11 @@ export const CarruselPeliculas = memo(
                 <Ionicons name={refreshing ? 'sync' : 'refresh'} size={28} color={COLORS.primary} />
               </View>
               <Text style={[styles.footerText, { fontFamily }]}>
-                {refreshing ? 'Nuevas...' : 'Recargar'}
+                {refreshing ? 'Cargando...' : 'Recargar'}
               </Text>
             </Pressable>
           )}
+          
           renderItem={({ item }) => (
             <PosterItem
               item={item}

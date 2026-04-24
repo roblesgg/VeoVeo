@@ -1,3 +1,11 @@
+/**
+ * ARCHIVO: screens/PerfilScreen.tsx
+ * DESCRIPCIÓN: Pantalla de perfil de usuario.
+ * Permite visualizar estadísticas (vistas, por ver, reseñas), editar el nombre
+ * de usuario y la foto de perfil, y gestionar la sesión.
+ * Incluye accesos a ajustes, usuarios bloqueados y descarga de la app.
+ */
+
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -42,6 +50,7 @@ export function PerfilScreen() {
   const { t } = useLanguage();
   const fontFamily = ff || 'System';
 
+  // HOOK CENTRALIZADO: Gestiona la carga y actualización del perfil en Firestore
   const {
     usuario,
     cargando,
@@ -53,11 +62,12 @@ export function PerfilScreen() {
     recargar,
   } = useUserProfile();
 
+  // ESTADOS DE MODALES
   const [showUserModal, setShowUserModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-
+  // ESTADO DE CARGA INICIAL
   if (cargando && !usuario) {
     return (
       <GradientBackground style={styles.center}>
@@ -66,6 +76,7 @@ export function PerfilScreen() {
     );
   }
 
+  // MANEJO DE ERROR DE CARGA
   if (!usuario) {
     return (
       <GradientBackground style={styles.center}>
@@ -81,6 +92,7 @@ export function PerfilScreen() {
 
   return (
     <GradientBackground style={styles.flex}>
+      {/* BOTÓN ATRÁS VOLADOR */}
       <Pressable
         onPress={() => navigation.goBack()}
         style={[styles.backBtn, { top: Math.max(insets.top, 12) }]}
@@ -93,6 +105,7 @@ export function PerfilScreen() {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 60, paddingBottom: 40 }]}
       >
+        {/* SECCIÓN DE AVATAR Y EDICIÓN RÁPIDA */}
         <View style={styles.avatarSection}>
           <Pressable
             style={[styles.avatarWrap, SHADOWS.mac]}
@@ -118,6 +131,7 @@ export function PerfilScreen() {
           </Pressable>
         </View>
 
+        {/* COMPONENTE: Estadísticas numéricas de la biblioteca */}
         <ProfileStats
           vistas={stats.vistas}
           porVer={stats.porVer}
@@ -125,6 +139,7 @@ export function PerfilScreen() {
           fontFamily={fontFamily}
         />
 
+        {/* COMPONENTE: Menú de opciones (Ajustes, Bloqueados, Cerrar sesión) */}
         <ProfileOptions
           onAjustes={() => navigation.navigate('Ajustes')}
           onBloqueados={() => navigation.navigate('Bloqueados')}
@@ -132,7 +147,7 @@ export function PerfilScreen() {
           fontFamily={fontFamily}
         />
 
-
+        {/* ACCIONES SECUNDARIAS: Compartir y Descargar APK */}
         <Pressable
           style={styles.shareBtn}
           onPress={() => Share.share({ message: `${t('share_msg')} https://dripdev.dev` })}
@@ -149,12 +164,14 @@ export function PerfilScreen() {
           <Text style={[styles.downloadText, { fontFamily }]}>Descargar App v1.8.8</Text>
         </Pressable>
 
-
-
+        {/* FEEDBACK DE ACCIONES (OK/ERR) */}
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
         {mensaje && <Text style={styles.feedbackOk}>{mensaje}</Text>}
       </ScrollView>
 
+      {/* --- MODALES DE EDICIÓN --- */}
+      
+      {/* Editar Nombre de Usuario */}
       <UsernameModal
         visible={showUserModal}
         initialValue={usuario.username}
@@ -163,6 +180,7 @@ export function PerfilScreen() {
         fontFamily={fontFamily}
       />
 
+      {/* Editar Foto de Perfil (Subida a Firebase Storage) */}
       <AvatarModal
         visible={showAvatarModal}
         initialValue={fotoUri || ''}
@@ -172,6 +190,7 @@ export function PerfilScreen() {
         fontFamily={fontFamily}
       />
 
+      {/* Confirmar Salida */}
       <ConfirmModal
         visible={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
@@ -261,7 +280,7 @@ const styles = StyleSheet.create({
   shareText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   downloadBtn: {
     marginTop: 16,
-    backgroundColor: 'rgba(255, 107, 0, 0.1)', // Sutil toque corporativo
+    backgroundColor: 'rgba(255, 107, 0, 0.1)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -271,28 +290,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 107, 0, 0.4)', // Borde naranja destacable
+    borderColor: 'rgba(255, 107, 0, 0.4)',
   },
   downloadText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  logoutBtn: {
-    marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalTitle: { color: '#fff', fontSize: 22, fontWeight: '900', textAlign: 'center', marginBottom: 8 },
-  logoutCard: { 
-    width: '100%', 
-    backgroundColor: 'rgba(23, 23, 40, 0.9)', 
-    borderRadius: 32, 
-    padding: 32, 
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.12)'
-  },
-  logoutIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,68,68,0.1)', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  logoutTextSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 32 },
-  logoutActions: { flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' },
-  logoutBtnCancel: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
-  logoutBtnConfirm: { flex: 1.2, height: 56, backgroundColor: '#ff4444', borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

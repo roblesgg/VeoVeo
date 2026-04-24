@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/BibliotecaTab.tsx
+ * DESCRIPCIÓN: Pestaña de 'Biblioteca'. Permite visualizar y gestionar las películas
+ * que el usuario ha marcado como 'Por Ver' o 'Vistas'. Incluye filtros avanzados por
+ * plataforma de streaming, ordenación y búsqueda local.
+ */
+
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,27 +51,26 @@ export function BibliotecaTab({
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  const [seccion, setSeccion] = useState<0 | 1>(0);
-  const [orden, setOrden] = useState<'recientes' | 'alpha' | 'fecha_peli' | 'valoracion'>(
-    'recientes',
-  );
-  
-  // 🛡️ Filtro de Selección Múltiple (Lista de nombres seleccionados)
+  // ESTADOS DE UI Y FILTRADO
+  const [seccion, setSeccion] = useState<0 | 1>(0); // 0: Por Ver, 1: Vistas
+  const [orden, setOrden] = useState<'recientes' | 'alpha' | 'fecha_peli' | 'valoracion'>('recientes');
   const [platsSeleccionadas, setPlatsSeleccionadas] = useState<string[]>([]);
-  
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showPlatModal, setShowPlatModal] = useState(false);
   const [buscar, setBuscar] = useState(false);
   const [textoBuscar, setTextoBuscar] = useState('');
   const [refreshToken, setRefreshToken] = useState(0);
 
+  // Lista de plataformas que el usuario tiene contratadas
   const [userPlats, setUserPlats] = useState<{ name: string, ids: number[] }[]>([]);
 
   const searchInputRef = useRef<TextInput>(null);
   const scrollerRef = useRef<ScrollView>(null);
 
+  // HOOK: Obtiene los datos de la biblioteca desde Firestore
   const { porVer, vistas, cargando } = useBiblioteca(user, refreshToken);
 
+  // Efecto para scroll al inicio cuando se pulsa el icono de la tab dos veces
   useEffect(() => {
     if (resetToken > 0) {
       if (buscar) setBuscar(false);
@@ -72,18 +78,21 @@ export function BibliotecaTab({
     }
   }, [resetToken, buscar]);
 
+  // Carga inicial de preferencias y plataformas disponibles
   useFocusEffect(
     useCallback(() => {
       void (async () => {
         const misPlatsIds = await preferences.cargarPlataformas();
         const ids = misPlatsIds.map(Number);
         try {
+          // Consultamos TMDB para agrupar proveedores (Netflix, Disney+, etc)
           const res = await tmdbApi.obtenerProveedoresRegion('ES');
           const all = res.results;
           const grupos: { [n: string]: number[] } = {};
           all.forEach((p: any) => {
             if (ids.includes(p.provider_id)) {
               let name = p.provider_name;
+              // Normalización de nombres
               if (name.includes('Amazon') || name.includes('Prime Video')) name = 'Prime Video';
               else if (name.includes('Apple TV')) name = 'Apple TV';
               else if (name.includes('Disney')) name = 'Disney+';
@@ -104,16 +113,21 @@ export function BibliotecaTab({
     }, [seccion])
   );
 
+  /** Maneja la selección múltiple de plataformas para el filtrado */
   const togglePlataforma = (name: string) => {
     setPlatsSeleccionadas(prev => 
       prev.includes(name) ? prev.filter(p => p !== name) : [...prev, name]
     );
   };
 
+  /** 🧠 PROCESAMIENTO DE CONTENIDO:
+   * Aplica filtros de texto, filtros de plataforma y ordenación 
+   * sobre la lista cargada de Firestore.
+   */
   const renderContent = useMemo(() => {
     let raw = [...(seccion === 0 ? porVer : vistas)];
     
-    // 🛡️ Filtro por Selección Múltiple
+    // FILTRO 1: Por Plataforma de Streaming
     if (platsSeleccionadas.length > 0) {
       const allSelectedIds = userPlats
         .filter(up => platsSeleccionadas.includes(up.name))
@@ -122,16 +136,19 @@ export function BibliotecaTab({
       raw = raw.filter(p => (p.providers?.flatrate || []).some(id => allSelectedIds.includes(id)));
     }
 
+    // FILTRO 2: Búsqueda por Texto
     if (textoBuscar.trim()) {
       const q = textoBuscar.toLowerCase().trim();
       raw = raw.filter(p => p.titulo.toLowerCase().includes(q));
     }
 
+    // ORDENACIÓN
     if (orden === 'alpha') raw.sort((a, b) => a.titulo.localeCompare(b.titulo));
     else if (orden === 'fecha_peli') raw.sort((a, b) => (b.fechaLanzamiento || '').localeCompare(a.fechaLanzamiento || ''));
     else if (orden === 'valoracion') raw.sort((a, b) => (b.valoracion || 0) - (a.valoracion || 0));
     else raw.sort((a, b) => b.fechaAnadido - a.fechaAnadido);
 
+    // AGRUPACIÓN TEMPORAL (Solo para vista cronológica de Películas Vistas)
     if (seccion === 1 && orden === 'recientes' && !textoBuscar) {
       const ahora = Date.now();
       const unaSemanaAtras = ahora - (7 * 24 * 60 * 60 * 1000);
@@ -150,11 +167,13 @@ export function BibliotecaTab({
     return <View style={styles.grid}>{raw.map(renderCard)}</View>;
   }, [seccion, porVer, vistas, orden, textoBuscar, platsSeleccionadas, userPlats]);
 
+  /** Renderiza cada tarjeta de película en el grid */
   function renderCard(p: any) {
     return (
       <View key={p.idPelicula} style={styles.gridItem}>
         <Pressable style={[styles.card, SHADOWS.macLight]} onPress={() => onPeliculaClick(p.idPelicula)}>
           <Image source={{ uri: posterUrl(p.rutaPoster, 'w342')! }} style={styles.poster} />
+          {/* Badge de valoración (Solo en sección de Vistas) */}
           {seccion === 1 && p.valoracion !== undefined && (
             <RatingBadge rating={p.valoracion} fontFamily={fontFamily} hideText />
           )}
@@ -165,6 +184,7 @@ export function BibliotecaTab({
 
   return (
     <View style={styles.container}>
+      {/* 🔮 CABECERA GLASEADA DINÁMICA */}
       <View style={[styles.headerContainer, { height: insets.top + (buscar ? 230 : 150) }]}>
         <BlurView 
           intensity={85} 
@@ -178,18 +198,22 @@ export function BibliotecaTab({
         <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
           <Text style={[styles.titulo, { fontFamily, flex: 1 }]}>Biblioteca</Text>
           <View style={styles.actionsTopRow}>
+            {/* Filtro de TV: Abre el modal de plataformas */}
             <Pressable onPress={() => setShowPlatModal(true)} style={[styles.iconBtn, platsSeleccionadas.length > 0 && styles.iconBtnOn]} hitSlop={8}>
               <Ionicons name="tv-outline" size={26} color={platsSeleccionadas.length > 0 ? "#000" : "#fff"} />
             </Pressable>
+            {/* Ordenación: Abre menú contextual */}
             <Pressable onPress={() => setShowSortMenu(true)} style={styles.iconBtn} hitSlop={8}>
               <Ionicons name="swap-vertical-outline" size={26} color="#fff" />
             </Pressable>
+            {/* Lupa: Activa el buscador local */}
             <Pressable onPress={() => setBuscar(!buscar)} style={styles.iconBtn} hitSlop={8}>
               <Ionicons name="search-outline" size={28} color="#fff" />
             </Pressable>
           </View>
         </View>
 
+        {/* SELECTOR DE ESTADO (POR VER / VISTAS) */}
         <View style={[styles.tabsContainer, { top: Math.max(insets.top, 12) + 90 }]}>
           <Pressable onPress={() => setSeccion(0)} style={[styles.tabBtn, seccion === 0 && styles.tabBtnActive]}><Text style={[styles.tabText, { fontFamily }, seccion === 0 && styles.tabTextActive]}>POR VER</Text></Pressable>
           <View style={styles.tabDivider} />
@@ -204,7 +228,12 @@ export function BibliotecaTab({
       </View>
 
         <View style={styles.webCenteringWrapper}>
-          <ScrollView ref={scrollerRef} contentContainerStyle={{ paddingTop: insets.top + (buscar ? 240 : 160), paddingBottom: 140, paddingHorizontal: 8 }} refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => setRefreshToken(p => p + 1)} tintColor="#fff" progressViewOffset={100} />}>
+          <ScrollView 
+            ref={scrollerRef} 
+            contentContainerStyle={{ paddingTop: insets.top + (buscar ? 240 : 160), paddingBottom: 140, paddingHorizontal: 8 }} 
+            refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => setRefreshToken(p => p + 1)} tintColor="#fff" progressViewOffset={100} />}
+          >
+            {/* BARRA DE FILTROS ACTIVOS */}
             {platsSeleccionadas.length > 0 && (
               <View style={styles.activeFilterBar}>
                 <Ionicons name="funnel" size={14} color={COLORS.primary} style={{ marginRight: 8 }} />
@@ -218,7 +247,7 @@ export function BibliotecaTab({
           </ScrollView>
         </View>
 
-      {/* 🛡️ Modal de Plataformas MULTI-SELECCIÓN (Solo Nombres) */}
+      {/* 🛡️ MODAL: Selección de Plataformas */}
       <Modal visible={showPlatModal} transparent animationType="fade">
         <Pressable style={styles.modalBackdrop} onPress={() => setShowPlatModal(false)}>
           <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
@@ -241,6 +270,7 @@ export function BibliotecaTab({
         </Pressable>
       </Modal>
 
+      {/* MENÚ DE ORDENACIÓN */}
       <FilterSortMenu 
         visible={showSortMenu} 
         onClose={() => setShowSortMenu(false)} 
@@ -286,8 +316,6 @@ const styles = StyleSheet.create({
   gridItem: { width: '33.33%', padding: 4 },
   card: { width: '100%', aspectRatio: 2/3, borderRadius: 16, backgroundColor: CardSurface, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   poster: { width: '100%', height: '100%' },
-  ratingBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: 'rgba(0,0,0,0.75)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.2)' },
-  ratingText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   sectionHeader: { width: '100%', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, marginTop: 12, marginBottom: 12 },
   sectionHeaderText: { color: COLORS.primary, fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
   sectionHeaderLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,107,0,0.2)', marginLeft: 16 },
