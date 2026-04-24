@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: services/repositorioPeliculasUsuario.ts
+ * DESCRIPCIÓN: Gestiona la biblioteca personal de películas de cada usuario.
+ * Permite guardar películas como 'por ver' o 'vistas', valorarlas y listarlas.
+ * Utiliza subcolecciones dentro del documento de cada usuario en Firestore.
+ */
+
 import {
   collection,
   deleteDoc,
@@ -12,11 +19,14 @@ import {
 import type { PeliculaUsuario } from '../types';
 import { getFirebaseAuth, getFirestoreDb, dbOrThrow, uidOrThrow } from './firebase';
 
+/** Helper: Genera la referencia al documento de una película en la biblioteca del usuario. */
 function refPelicula(uid: string, idPelicula: number) {
   return doc(dbOrThrow(), 'usuarios', uid, 'peliculas', String(idPelicula));
 }
 
-/** Documento de la película en la biblioteca del usuario, o null. */
+/** 
+ * Recupera la información de una película específica dentro de la biblioteca del usuario actual.
+ */
 export async function obtenerPeliculaUsuario(idPelicula: number): Promise<PeliculaUsuario | null> {
   try {
     const uid = getFirebaseAuth()?.currentUser?.uid;
@@ -30,6 +40,9 @@ export async function obtenerPeliculaUsuario(idPelicula: number): Promise<Pelicu
   }
 }
 
+/** 
+ * Recupera la información de una película específica de CUALQUIER usuario (ej: un amigo).
+ */
 export async function obtenerPeliculaDeUsuario(
   uid: string,
   idPelicula: number,
@@ -41,6 +54,9 @@ export async function obtenerPeliculaDeUsuario(
   return snap.data() as PeliculaUsuario;
 }
 
+/** 
+ * Obtiene la lista de películas del usuario actual filtradas por estado (por_ver / vista).
+ */
 export async function listarPeliculasPorEstado(
   estado: 'por_ver' | 'vista',
 ): Promise<PeliculaUsuario[]> {
@@ -51,6 +67,9 @@ export async function listarPeliculasPorEstado(
   return snap.docs.map((d: any) => d.data() as PeliculaUsuario);
 }
 
+/** 
+ * Obtiene la biblioteca de un usuario específico filtrada por estado.
+ */
 export async function listarPeliculasPorEstadoDeUsuario(
   uid: string,
   estado: 'por_ver' | 'vista',
@@ -61,11 +80,17 @@ export async function listarPeliculasPorEstadoDeUsuario(
   return snap.docs.map((d: any) => d.data() as PeliculaUsuario);
 }
 
+/** 
+ * Añade una película a la biblioteca del usuario.
+ */
 export async function agregarPelicula(p: PeliculaUsuario): Promise<void> {
   const uid = uidOrThrow();
   await setDoc(refPelicula(uid, p.idPelicula), p);
 }
 
+/** 
+ * Cambia el estado de una película (ej: de 'por ver' a 'vista').
+ */
 export async function actualizarEstadoPelicula(
   idPelicula: number,
   nuevoEstado: 'por_ver' | 'vista',
@@ -74,17 +99,25 @@ export async function actualizarEstadoPelicula(
   await updateDoc(refPelicula(uid, idPelicula), { estado: nuevoEstado });
 }
 
+/** 
+ * Actualiza la puntuación de estrellas (1-10) dada por el usuario.
+ */
 export async function actualizarValoracion(idPelicula: number, valoracion: number): Promise<void> {
   const uid = uidOrThrow();
   await updateDoc(refPelicula(uid, idPelicula), { valoracion });
 }
 
+/** 
+ * Elimina una película de la biblioteca del usuario.
+ */
 export async function eliminarPelicula(idPelicula: number): Promise<void> {
   const uid = uidOrThrow();
   await deleteDoc(refPelicula(uid, idPelicula));
 }
 
-/** Cuenta películas por estado (perfil); no lanza si no hay sesión. */
+/** 
+ * Cuenta cuántas películas tiene el usuario en un estado determinado.
+ */
 export async function contarPeliculasPorEstado(estado: string): Promise<number> {
   try {
     const uid = getFirebaseAuth()?.currentUser?.uid;
@@ -98,7 +131,10 @@ export async function contarPeliculasPorEstado(estado: string): Promise<number> 
   }
 }
 
-/** Quitar de biblioteca y añadir como por ver (flujo Android al pasar de vista a por ver). */
+/** 
+ * Helper de flujo: Elimina la película y la vuelve a añadir como 'por ver'.
+ * Útil para reiniciar el estado de una película rápidamente.
+ */
 export async function reemplazarPorPorVer(
   idPelicula: number,
   titulo: string,

@@ -1,22 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>VeoVeo</title>
-    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <title>VeoVeo - Tu red social de cine</title>
+
+    <!-- 🎨 RESET DE ESTILOS (React Native Web)
+         Asegura que el contenedor #root ocupe el 100% de la pantalla
+         y deshabilita el scroll nativo del body para usar el de la App. -->
     <style id="expo-reset">
-      /* These styles make the body full-height */
       html,
       body {
         height: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #020617; /* Slate 950 para evitar flashes blancos */
       }
-      /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
       }
-      /* These styles make the root element full-height */
       #root {
         display: flex;
         height: 100%;
@@ -26,12 +29,14 @@
   </head>
 
   <body>
-    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
     <noscript>
-      You need to enable JavaScript to run this app.
+      Necesitas activar JavaScript para disfrutar de VeoVeo en la web.
     </noscript>
-    <!-- The root element for your Expo app. -->
+
+    <!-- PUNTO DE MONTAJE de la aplicación en React/Expo -->
     <div id="root"></div>
-  <script src="/_expo/static/js/web/index-50ddf9a9c08052b1022334bf31ae0389.js" defer></script>
-</body>
+
+    <!-- Script generado por el bundle de Expo (v1.8.8) -->
+    <script src="/_expo/static/js/web/index-50ddf9a9c08052b1022334bf31ae0389.js" defer></script>
+  </body>
 </html>

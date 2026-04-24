@@ -1,3 +1,9 @@
+/**
+ * ARCHIVO: services/userPreferences.ts
+ * DESCRIPCIÓN: Gestiona la sincronización de ajustes de usuario (plataformas, filtros) 
+ * entre el almacenamiento local (AsyncStorage) y la nube (Firestore).
+ */
+
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { getFirestoreDb } from './firebase';
 import {
@@ -7,18 +13,22 @@ import {
   guardarPlataformas,
 } from '../storage/preferences';
 
+/**
+ * Sincroniza las preferencias del usuario al iniciar sesión.
+ * Si existen en Firestore, se descargan. Si no, se suben las locales.
+ */
 export async function sincronizarPreferenciasConFirestore(userId: string) {
   const db = getFirestoreDb();
   if (!db) return;
 
-  const userRef = doc(db, 'usuarios', userId);
-  const profileRef = doc(userRef, 'perfil', 'preferencias');
+  // Ubicación: usuarios/{uid}/perfil/preferencias
+  const profileRef = doc(db, 'usuarios', userId, 'perfil', 'preferencias');
 
   try {
     const snap = await getDoc(profileRef);
     if (snap.exists()) {
       const data = snap.data();
-      // Descargar de Firestore a Local
+      // ESCENARIO: Descargar de Firestore a Local (el usuario ya tenía ajustes en la nube)
       if (data.carruseles) {
         await guardarCarruselesActivos(data.carruseles);
       }
@@ -26,7 +36,7 @@ export async function sincronizarPreferenciasConFirestore(userId: string) {
         await guardarPlataformas(data.plataformas.map(String));
       }
     } else {
-      // Subir de Local a Firestore si es la primera vez
+      // ESCENARIO: Subir de Local a Firestore (primera vez que el usuario se sincroniza)
       const localCarruseles = await cargarCarruselesActivos();
       const localPlataformas = await cargarPlataformas();
       await setDoc(
@@ -34,7 +44,7 @@ export async function sincronizarPreferenciasConFirestore(userId: string) {
         {
           carruseles: localCarruseles,
           plataformas: localPlataformas,
-          updatedAt: new Set().add(Date.now()), // Just a trigger
+          updatedAt: Date.now(),
         },
         { merge: true },
       );
@@ -44,6 +54,9 @@ export async function sincronizarPreferenciasConFirestore(userId: string) {
   }
 }
 
+/**
+ * Guarda una preferencia específica tanto en Firestore como en local (implícito si se usa después de este servicio).
+ */
 export async function guardarPreferenciaFirestore(
   userId: string,
   key: 'carruseles' | 'plataformas',

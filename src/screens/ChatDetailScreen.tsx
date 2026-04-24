@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/ChatDetailScreen.tsx
+ * DESCRIPCIÓN: Pantalla de chat individual o grupal.
+ * Gestiona el envío de mensajes de texto, el intercambio de fichas de películas
+ * y la integración visual de las invitaciones al juego 'Movie Match'.
+ */
+
 import { Ionicons } from '@expo/vector-icons';
 import { Image as ExpoImage } from 'expo-image';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -15,7 +22,7 @@ import {
   Image,
   Keyboard,
   Animated,
-  Modal, // 🆕 Para editar nombre de grupo
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -35,12 +42,16 @@ import { SHADOWS } from '../theme/theme';
 import { ChatPlusMenu } from '../components/chat/ChatPlusMenu';
 import { ChatMoviePicker } from '../components/chat/ChatMoviePicker';
 
-// 🕵️ Componente interno para manejar cada invitación de Match de forma individual
-// 🕵️ Componente interno para manejar cada invitación de Match de forma individual - MEMOIZADO
+/**
+ * 🕵️ COMPONENTE: MatchInvitation (MEMOIZADO)
+ * Representa una tarjeta interactiva de 'Movie Match' dentro del flujo del chat.
+ * Se suscribe a los cambios del juego (progreso de coincidencias) en tiempo real.
+ */
 const MatchInvitation = memo(({ matchId, onEnter }: { matchId: string, onEnter: (id: string, finished: boolean) => void }) => {
   const [matchData, setMatchData] = useState<MovieMatch | null>(null);
 
   useEffect(() => {
+    // Escuchamos el estado del juego para actualizar la barra de progreso en la invitación
     return observarMatch(matchId, setMatchData);
   }, [matchId]);
 
@@ -79,7 +90,10 @@ const MatchInvitation = memo(({ matchId, onEnter }: { matchId: string, onEnter: 
 });
 MatchInvitation.displayName = 'MatchInvitation';
 
-// 🚀 [MEMO] Burbuja de Mensaje Optimizada
+/**
+ * 🚀 COMPONENTE: MessageBubble (MEMOIZADO)
+ * Renderiza los diferentes tipos de mensajes: Texto, Compartición de Película o Invitación a Match.
+ */
 const MessageBubble = memo(({ 
   item, 
   userId, 
@@ -93,6 +107,7 @@ const MessageBubble = memo(({
 }) => {
   const isMe = item.senderId === userId;
 
+  // ESCENARIO 1: Invitación a juego de Match
   if (item.type === 'match_invite' && item.matchId) {
     return (
       <View style={[styles.msgWrapper, styles.msgMatch]}>
@@ -104,6 +119,7 @@ const MessageBubble = memo(({
     );
   }
 
+  // ESCENARIO 2: Compartición de película (Ficha visual)
   if (item.type === 'movie' && item.movieData) {
     const { movieData } = item;
     return (
@@ -130,6 +146,7 @@ const MessageBubble = memo(({
     );
   }
 
+  // ESCENARIO 3: Mensaje de texto básico
   return (
     <View style={[styles.msgWrapper, isMe ? styles.msgMe : styles.msgOther]}>
       <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
@@ -140,15 +157,19 @@ const MessageBubble = memo(({
 });
 MessageBubble.displayName = 'MessageBubble';
 
+/**
+ * COMPONENTE: ChatDetailScreen
+ */
 export function ChatDetailScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   
+  // Parámetros recibidos por la ruta
   const { chatId, chatName, activeMatchId: initialMatchId, participants: initialParticipants } = route.params;
   
-  const [mensajes, setMensajes] = useState<Message[]>([]); // 🔄 Restaurado
+  const [mensajes, setMensajes] = useState<Message[]>([]);
   const [participants, setParticipants] = useState<string[]>(initialParticipants || []);
   const [chatInfo, setChatInfo] = useState<any>(null);
   const [editGroupName, setEditGroupName] = useState(false);
@@ -156,21 +177,21 @@ export function ChatDetailScreen() {
   const [texto, setTexto] = useState('');
   const [matchActivo, setMatchActivo] = useState<MovieMatch | null>(null);
   
-  // 🆕 Estados para el menú + y el selector de películas
+  // UI de expansión del input (Menú '+' y Selector de películas)
   const [menuPlusVisible, setMenuPlusVisible] = useState(false);
   const [pickerMode, setPickerMode] = useState<'vista' | 'por_ver' | 'explorar' | null>(null);
-  const [amigoPerfil, setAmigoPerfil] = useState<UsuarioPerfil | null>(null); // Para ver su foto real
+  const [amigoPerfil, setAmigoPerfil] = useState<UsuarioPerfil | null>(null); 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   
   const listRef = useRef<FlatList>(null);
-  const keyboardHeight = useRef(new Animated.Value(0)).current; // 🆕 Altura animada
+  const keyboardHeight = useRef(new Animated.Value(0)).current; 
 
+  // SUSCRIPCIÓN: Escuchar mensajes y metapropiedades del chat
   useEffect(() => {
     const unsub = obtenerMensajesChat(chatId, (msgs) => {
       setMensajes(msgs); 
     });
     
-    // Obtener info del chat (nombre, participantes reales)
     const db = getFirestore();
     const chatRef = doc(db, 'chats', chatId);
     const unsubChat = onSnapshot(chatRef, (snap) => {
@@ -185,13 +206,16 @@ export function ChatDetailScreen() {
     return () => { unsub(); unsubChat(); };
   }, [chatId]);
 
-  // Observar el match si existe
+  // SUSCRIPCIÓN: Observar si hay un Movie Match activo para mostrar el acceso directo en la cabecera
   useEffect(() => {
     if (!initialMatchId) return;
     return observarMatch(initialMatchId, (m) => setMatchActivo(m));
   }, [initialMatchId]);
 
-  // ⚡ [NUEVO] Reactividad total del teclado (Animado)
+  /** ⚡ GESTIÓN ANIMADA DEL TECLADO:
+   * Ajusta dinámicamente el scroll y el padding inferior para que el input
+   * nunca quede cubierto por el teclado del SO.
+   */
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -199,10 +223,11 @@ export function ChatDetailScreen() {
     const showSub = Keyboard.addListener(showEvent, (e) => {
       setIsKeyboardVisible(true);
       Animated.timing(keyboardHeight, {
-        toValue: e.endCoordinates.height, // 🆕 Sincronizado exacto (sin el +10)
+        toValue: e.endCoordinates.height,
         duration: Platform.OS === 'ios' ? e.duration : 200,
         useNativeDriver: false,
       }).start();
+      // Scroll automático al último mensaje al abrir teclado
       setTimeout(() => listRef.current?.scrollToOffset({ offset: 0, animated: true }), 100);
     });
 
@@ -221,6 +246,7 @@ export function ChatDetailScreen() {
     };
   }, []);
 
+  /** Envía un mensaje de texto */
   const handleEnviar = useCallback(async () => {
     if (!texto.trim() || !user) return;
     const txt = texto.trim();
@@ -234,15 +260,16 @@ export function ChatDetailScreen() {
     });
   }, [texto, user, chatId]);
 
+  /** Navega directamente a la sesión activa de juego o a la configuración si no hay uno */
   const irAMatch = useCallback(() => {
-    if (matchActivo) {
+    if (matchActivo && matchActivo.status === 'active') {
       navigation.navigate('MovieMatch', { matchId: matchActivo.id });
     } else {
       navigation.navigate('MatchConfig', { chatId, participants });
     }
   }, [matchActivo, navigation, chatId, participants]);
 
-  // Observar el perfil del amigo para tener su foto actualizada
+  // Lógica para obtener la foto real del amigo (si no es grupo)
   const isGroup = participants.length > 2;
   const otherUid = participants.find(id => id !== user?.uid);
 
@@ -254,6 +281,7 @@ export function ChatDetailScreen() {
     });
   }, [otherUid, isGroup]);
 
+  /** Actualiza el nombre del grupo */
   const handleSaveGroupName = async () => {
     if (!newGroupName.trim()) return;
     try {
@@ -265,6 +293,7 @@ export function ChatDetailScreen() {
     }
   };
 
+  /** Se dispara cuando el usuario selecciona una película para compartirla en el chat */
   const handleMovieSelect = useCallback(async (movie: { id: number; title: string; posterPath: string }) => {
     setPickerMode(null);
     if (!user) return;
@@ -279,7 +308,7 @@ export function ChatDetailScreen() {
     });
   }, [user, chatId]);
 
-  // Determinar título del chat
+  // RESOLUCIÓN DE TÍTULOS Y AVATARES
   const otherDetails = chatInfo?.participantDetails?.[otherUid || ''];
   const displayTitle = isGroup 
     ? (chatInfo?.name || `Grupo de ${participants.length} personas`) 
@@ -291,6 +320,7 @@ export function ChatDetailScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 🔮 CABECERA GLASEADA */}
       <View style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15, backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
         <BlurView intensity={80} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
 
@@ -305,10 +335,10 @@ export function ChatDetailScreen() {
             disabled={!isGroup}
           >
             <View style={styles.avatarMini}>
-               {isGroup ? (
-                 displayAvatar ? <ExpoImage source={{ uri: displayAvatar }} style={styles.avatarImgMini} contentFit="cover" transition={200} /> : <Ionicons name="people" size={18} color="rgba(255,255,255,0.4)" />
+               {displayAvatar ? (
+                 <ExpoImage source={{ uri: displayAvatar }} style={styles.avatarImgMini} contentFit="cover" transition={200} />
                ) : (
-                 displayAvatar ? <ExpoImage source={{ uri: displayAvatar }} style={styles.avatarImgMini} contentFit="cover" transition={200} /> : <Ionicons name="person" size={18} color="rgba(255,255,255,0.4)" />
+                 <Ionicons name={isGroup ? "people" : "person"} size={18} color="rgba(255,255,255,0.4)" />
                )}
             </View>
             <View>
@@ -317,6 +347,7 @@ export function ChatDetailScreen() {
             </View>
           </Pressable>
           
+          {/* BOTÓN DE ACCESO AL MOVIE MATCH */}
           <Pressable onPress={irAMatch} style={[styles.matchActionBtn, matchActivo && styles.matchActionBtnOn]}>
             <Ionicons name="flame" size={20} color={matchActivo ? "#fff" : "#ff6b00"} />
             {matchActivo && <Text style={styles.matchCounter}>{matchActivo.matchedMovies.length}</Text>}
@@ -329,7 +360,7 @@ export function ChatDetailScreen() {
           <FlatList
             ref={listRef}
             data={useMemo(() => [...mensajes].reverse(), [mensajes])}
-            inverted
+            inverted // Empezamos desde abajo (último mensaje)
             keyExtractor={(item) => item.id}
             initialNumToRender={12}
             maxToRenderPerBatch={10}
@@ -352,6 +383,7 @@ export function ChatDetailScreen() {
           />
         </View>
 
+        {/* INPUT DE MENSAJE TIPO WHATSAPP/IMESSAGE */}
         <BlurView 
           intensity={80} 
           tint="dark" 
@@ -363,6 +395,7 @@ export function ChatDetailScreen() {
         >
           <View style={styles.inputCenteringWrapper}>
             <View style={styles.inputRow}>
+              {/* BOTÓN PLUS: Expande el menú de películas */}
               <Pressable 
                 style={styles.plusBtn} 
                 onPress={() => {
@@ -372,6 +405,7 @@ export function ChatDetailScreen() {
               >
                 <Ionicons name={menuPlusVisible ? "close" : "add"} size={26} color={menuPlusVisible ? COLORS.primary : "rgba(255,255,255,0.4)"} />
               </Pressable>
+              
               <TextInput
                 value={texto}
                 onChangeText={setTexto}
@@ -380,6 +414,7 @@ export function ChatDetailScreen() {
                 style={styles.input}
                 multiline
               />
+              
               <Pressable onPress={handleEnviar} style={styles.sendBtn} disabled={!texto.trim()}>
                 <Ionicons name="arrow-up" size={22} color="#000" />
               </Pressable>
@@ -387,7 +422,7 @@ export function ChatDetailScreen() {
           </View>
         </BlurView>
 
-        {/* --- COMPONENTES DE COMPARTICIÓN --- */}
+        {/* --- MODALIDADES DE COMPARTICIÓN (COMPOSICIÓN) --- */}
         <ChatPlusMenu 
           visible={menuPlusVisible} 
           onSelect={(mode) => {
@@ -405,7 +440,7 @@ export function ChatDetailScreen() {
         />
       </Animated.View>
 
-      {/* Modal para editar nombre del grupo */}
+      {/* Modal para editar el nombre del grupo (Solo para chats grupales) */}
       <Modal visible={editGroupName} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
            <BlurView intensity={60} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFill} />
@@ -496,14 +531,14 @@ const styles = StyleSheet.create({
   matchCardFinished: { backgroundColor: 'rgba(241, 196, 15, 0.05)', borderColor: 'rgba(241, 196, 15, 0.2)' },
   matchIconRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   matchCardTitle: { color: '#38bdf8', fontSize: 14, fontWeight: '900', letterSpacing: 1 },
-  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '800' }, // 🆕 Añadido
+  modalTitle: { color: '#fff', fontSize: 20, fontWeight: '800' }, 
   matchCardText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 16 },
   matchBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 16 },
   matchBtnActive: { backgroundColor: '#38bdf8' },
   matchBtnFinished: { backgroundColor: '#f1c40f' },
   matchBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   
-  // 🆕 Estilos para compartir películas
+  // Compartir películas
   movieShareCard: {
     width: 200,
     height: 300,
@@ -541,7 +576,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Estilos del Modal de edición
+  // Modal de edición de grupo
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   modalCardFlotante: { 
     width: '100%',

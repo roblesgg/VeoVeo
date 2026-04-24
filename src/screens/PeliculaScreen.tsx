@@ -1,7 +1,16 @@
+/**
+ * ARCHIVO: screens/PeliculaScreen.tsx
+ * DESCRIPCIÓN: Ficha detallada de una película.
+ * Muestra información de TMDB (reparto, sinopsis, proveedores) y permite al usuario
+ * interactuar con ella (añadir a 'Por Ver', marcar como 'Vista', valorar).
+ * Utiliza efectos visuales de degradado y Blur para una estética 'Premium'.
+ */
+
 import React, { useState, useCallback } from 'react';
 import {
   Image,
   ActivityIndicator,
+  InteractionManager,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,7 +35,7 @@ import { useMovieData } from '../hooks/movie/useMovieData';
 import { useUserMovieStatus } from '../hooks/movie/useUserMovieStatus';
 import { shareMovie } from '../utils/shareUtils';
 
-// Modular Components
+// Componentes Modulares
 import { MovieHeader } from '../components/movie/MovieHeader';
 import { MovieActions } from '../components/movie/MovieActions';
 import { MovieRatingButton } from '../components/movie/MovieRatingButton';
@@ -45,7 +54,7 @@ export function PeliculaScreen() {
   const { fontFamily: ff } = useMontserrat();
   const fontFamily = ff || 'System';
 
-  // Logic Hooks
+  // HOOK: Obtiene datos técnicos de la película desde TMDB
   const {
     cargando,
     error: tmdbError,
@@ -54,6 +63,8 @@ export function PeliculaScreen() {
     providers,
     coleccion,
   } = useMovieData(movieId);
+
+  // HOOK: Verifica si el usuario ya tiene esta peli en su biblioteca y gestiona acciones
   const {
     peliculaBib,
     bibCargando,
@@ -61,24 +72,37 @@ export function PeliculaScreen() {
     userError,
     onPorVer,
     onToggleVista,
-    onActualizarValoracion,
   } = useUserMovieStatus(movieId, detalles, providers);
 
-  const [descExp, setDescExp] = useState(false);
+  const [descExp, setDescExp] = useState(false); // Control de expansión de sinopsis
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [misPlataformas, setMisPlataformas] = useState<number[]>([]);
+  const [showDeferredSections, setShowDeferredSections] = useState(false);
 
+  // Sincronizamos las plataformas del usuario para marcar dónde puede verla
   useFocusEffect(
     useCallback(() => {
-      void (async () => {
+      (async () => {
         const plots = await cargarPlataformas();
         setMisPlataformas(plots.map(Number));
       })();
     }, []),
   );
 
+  React.useEffect(() => {
+    setShowDeferredSections(false);
+    const task = InteractionManager.runAfterInteractions(() => {
+      setShowDeferredSections(true);
+    });
+
+    return () => {
+      task.cancel();
+    };
+  }, [movieId]);
+
   const error = tmdbError || userError;
 
+  // ESTADO DE CARGA LOGÍSTICA
   if (cargando && !detalles) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: GradientBottom }]}>
@@ -87,6 +111,7 @@ export function PeliculaScreen() {
     );
   }
 
+  // MANEJO DE ERRORES (Red o API)
   if (error && !detalles) {
     return (
       <View style={[styles.flex, styles.center, { backgroundColor: GradientBottom, padding: 24 }]}>
@@ -102,15 +127,18 @@ export function PeliculaScreen() {
 
   if (!detalles) return null;
 
+  // Determina el icono y color de los botones de acción basados en el estado actual
+  // 0: Nada, 1: Por Ver, 2: Vista
   const estadoPelicula = !peliculaBib ? 0 : peliculaBib.estado === 'por_ver' ? 1 : 2;
 
   return (
     <View style={[styles.flex, { backgroundColor: GradientBottom }]}>
-      {/* Fixed Backdrop Background */}
+      
+      {/* 🖼️ FONDO: Poster desenfocado con gradiente envolvente */}
       {(detalles.backdrop_path || detalles.poster_path) && (
         <View style={styles.fixedBackdrop}>
           <Image
-            source={{ uri: posterUrl(detalles.backdrop_path || detalles.poster_path, 'original')! }}
+            source={{ uri: posterUrl(detalles.backdrop_path || detalles.poster_path, 'w780')! }}
             style={styles.backdropImg}
           />
           <LinearGradient
@@ -120,13 +148,15 @@ export function PeliculaScreen() {
               'rgba(30,27,75,0.4)',
               GradientBottom,
               GradientBottom,
+              GradientBottom,
             ]}
-            locations={[0, 0.2, 0.5, 0.75, 1]}
+            locations={[0, 0.2, 0.5, 0.75, 0.9, 1]}
             style={StyleSheet.absoluteFillObject}
           />
         </View>
       )}
-      {/* Navigation Bars */}
+
+      {/* 🧭 CABECERA DE NAVEGACIÓN (Floating) */}
       <View style={[styles.navHeader, { top: Math.max(insets.top, 12) + 8 }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.iconBtn}>
           <BlurView intensity={50} tint="dark" style={styles.blurBtn}>
@@ -157,6 +187,7 @@ export function PeliculaScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
+        {/* COMPONENTE: Título, Año, Duración y Logos de Streaming */}
         <MovieHeader
           detalles={detalles}
           fontFamily={fontFamily}
@@ -165,6 +196,7 @@ export function PeliculaScreen() {
         />
 
         <View style={styles.body}>
+          {/* BOTONES DE ACCIÓN: Por Ver / Vista */}
           <MovieActions
             user={user}
             estadoPelicula={estadoPelicula}
@@ -174,13 +206,18 @@ export function PeliculaScreen() {
             onVista={() => (estadoPelicula === 2 ? onToggleVista(0) : setShowRatingModal(true))}
             fontFamily={fontFamily}
           />
+
+          {/* BOTÓN DE VALORACIÓN: Solo brilla si la película es 'Vista' */}
           <MovieRatingButton
             peliculaUsuario={peliculaBib}
             onPress={() => setShowRatingModal(true)}
             fontFamily={fontFamily}
           />
 
-          <MovieSocialProof movieId={movieId} fontFamily={fontFamily} />
+          {/* SOCIAL PROOF: ¿A qué otros amigos les gusta esta peli? */}
+          {showDeferredSections ? (
+            <MovieSocialProof movieId={movieId} fontFamily={fontFamily} />
+          ) : null}
 
           <Text style={[styles.sectionTitle, { fontFamily }]}>Sinopsis</Text>
           <Text style={[styles.overview, { fontFamily }]} numberOfLines={descExp ? undefined : 3}>
@@ -197,24 +234,34 @@ export function PeliculaScreen() {
             </Pressable>
           )}
 
-          <CollectionSaga
-            coleccion={coleccion}
-            fontFamily={fontFamily}
-            onMovieClick={(id) => navigation.push('Pelicula', { movieId: id })}
-          />
+          {/* COMPONENTE: Carrusel de películas de la misma saga (si aplica) */}
+          {showDeferredSections ? (
+            <CollectionSaga
+              coleccion={coleccion}
+              fontFamily={fontFamily}
+              onMovieClick={(id) => navigation.push('Pelicula', { movieId: id })}
+            />
+          ) : null}
 
-          <MovieCast
-            reparto={reparto}
-            fontFamily={fontFamily}
-            onActorClick={(id, name) =>
-              navigation.navigate('Actor', { actorId: id, actorName: name })
-            }
-          />
+          {/* COMPONENTE: Lista de actores (Reparto) */}
+          {showDeferredSections ? (
+            <MovieCast
+              reparto={reparto}
+              fontFamily={fontFamily}
+              onActorClick={(id, name) =>
+                navigation.navigate('Actor', { actorId: id, actorName: name })
+              }
+            />
+          ) : null}
 
-          <MovieProviders providers={providers} fontFamily={fontFamily} />
+          {/* COMPONENTE: Todos los proveedores (Compra, Alquiler, Suscripción) */}
+          {showDeferredSections ? (
+            <MovieProviders providers={providers} fontFamily={fontFamily} />
+          ) : null}
         </View>
       </ScrollView>
 
+      {/* MODAL: Selector de estrellas para valorar la película */}
       <MovieRatingModal
         visible={showRatingModal}
         titulo={detalles.title}
@@ -223,11 +270,11 @@ export function PeliculaScreen() {
         onClose={() => setShowRatingModal(false)}
         onNoValorar={() => {
           setShowRatingModal(false);
-          void onToggleVista(0);
+          onToggleVista(0);
         }}
         onGuardar={(v) => {
           setShowRatingModal(false);
-          void onToggleVista(v);
+          onToggleVista(v);
         }}
       />
     </View>

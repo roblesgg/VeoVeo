@@ -18,16 +18,33 @@ export const DEFAULT_CARRUSELES = [
   'Acción y Pura Adrenalina',
 ];
 
+let cachedAdultPreference: boolean | null = null;
+let cachedAdultPreferencePromise: Promise<boolean> | null = null;
+let cachedPlatforms: string[] | null = null;
+let cachedPlatformsPromise: Promise<string[]> | null = null;
+
 export async function cargarPreferenciaAdulto(): Promise<boolean> {
-  try {
-    const val = await AsyncStorage.getItem(KEY_INCLUIR_ADULTO);
-    return val === 'true'; // Default false
-  } catch {
-    return false;
-  }
+  if (cachedAdultPreference != null) return cachedAdultPreference;
+  if (cachedAdultPreferencePromise) return cachedAdultPreferencePromise;
+
+  cachedAdultPreferencePromise = (async () => {
+    try {
+      const val = await AsyncStorage.getItem(KEY_INCLUIR_ADULTO);
+      cachedAdultPreference = val === 'true';
+      return cachedAdultPreference;
+    } catch {
+      cachedAdultPreference = false;
+      return false;
+    } finally {
+      cachedAdultPreferencePromise = null;
+    }
+  })();
+
+  return cachedAdultPreferencePromise;
 }
 
 export async function guardarPreferenciaAdulto(incluir: boolean): Promise<void> {
+  cachedAdultPreference = incluir;
   await AsyncStorage.setItem(KEY_INCLUIR_ADULTO, incluir ? 'true' : 'false');
 }
 
@@ -62,14 +79,26 @@ export async function guardarOrdenBiblioteca(
 }
 
 export async function cargarPlataformas(): Promise<string[]> {
-  try {
-    const raw = await AsyncStorage.getItem(KEY_PLATAFORMAS);
-    if (raw) return JSON.parse(raw) as string[];
-  } catch {}
-  return [];
+  if (cachedPlatforms) return cachedPlatforms;
+  if (cachedPlatformsPromise) return cachedPlatformsPromise;
+
+  cachedPlatformsPromise = (async () => {
+    try {
+      const raw = await AsyncStorage.getItem(KEY_PLATAFORMAS);
+      cachedPlatforms = raw ? (JSON.parse(raw) as string[]) : [];
+      return cachedPlatforms;
+    } catch {
+      cachedPlatforms = [];
+      return cachedPlatforms;
+    } finally {
+      cachedPlatformsPromise = null;
+    }
+  })();
+
+  return cachedPlatformsPromise;
 }
 
 export async function guardarPlataformas(plataformas: string[]): Promise<void> {
-  console.log('--- SAVING PLATFORMS:', plataformas);
+  cachedPlatforms = plataformas;
   await AsyncStorage.setItem(KEY_PLATAFORMAS, JSON.stringify(plataformas));
 }

@@ -39,10 +39,12 @@ async function pushVersion() {
 
   // También actualizamos la URL de descarga oficial
   const downloadUrlField = isTest ? 'download_url_test' : 'download_url';
-  updateData[downloadUrlField] = 'https://veoveo.dripdev.dev';
+  updateData[downloadUrlField] = 'https://veoveo.dripdev.dev/descargar';
+  updateData.release_title = 'Nueva actualización disponible';
+  updateData.release_body = `Ya puedes descargar VeoVeo v${version} con mejoras de rendimiento y estabilidad.`;
 
   try {
-    await docRef.update(updateData);
+    await docRef.set(updateData, { merge: true });
     console.log(`✅ ¡Éxito! Campo '${field}' actualizado a '${version}' en Firestore.`);
     process.exit(0);
   } catch (error) {

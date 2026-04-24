@@ -1,40 +1,42 @@
 import { useState, useEffect } from 'react';
-import { onSnapshot, collection, getFirestore } from 'firebase/firestore';
+import { onSnapshot, collection } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import { getFirestoreDb } from '../services/firebase';
 
 export function useLibraryStatus() {
   const { user } = useAuth();
-  const [libraryMap, setLibraryMap] = useState<{ [id: number]: { estado: 'por_ver' | 'vista', valoracion: number } }>({});
+  const [libraryMap, setLibraryMap] = useState<{
+    [id: number]: { estado: 'por_ver' | 'vista'; valoracion: number };
+  }>({});
 
   useEffect(() => {
-    if (!user) return;
-    const db = getFirestore();
-    
-    // Escuchar "Por Ver"
-    const unsubPv = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca', 'por_ver', 'peliculas'), (snap) => {
-       setLibraryMap(prev => {
-         const next = { ...prev };
-         snap.docs.forEach(doc => {
-           const d = doc.data();
-           next[d.idPelicula] = { estado: 'por_ver', valoracion: 0 };
-         });
-         return next;
-       });
+    if (!user) {
+      setLibraryMap({});
+      return;
+    }
+
+    const db = getFirestoreDb();
+    if (!db) return;
+
+    const unsub = onSnapshot(collection(db, 'usuarios', user.uid, 'peliculas'), (snap) => {
+      const next: {
+        [id: number]: { estado: 'por_ver' | 'vista'; valoracion: number };
+      } = {};
+
+      snap.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        next[data.idPelicula] = {
+          estado: data.estado,
+          valoracion: data.valoracion || 0,
+        };
+      });
+
+      setLibraryMap(next);
     });
 
-    // Escuchar "Vistas"
-    const unsubV = onSnapshot(collection(db, 'usuarios', user.uid, 'biblioteca', 'vistas', 'peliculas'), (snap) => {
-       setLibraryMap(prev => {
-         const next = { ...prev };
-         snap.docs.forEach(doc => {
-           const d = doc.data();
-           next[d.idPelicula] = { estado: 'vista', valoracion: d.valoracion || 0 };
-         });
-         return next;
-       });
-    });
-
-    return () => { unsubPv(); unsubV(); };
+    return () => {
+      unsub();
+    };
   }, [user]);
 
   return libraryMap;

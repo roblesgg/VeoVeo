@@ -1,3 +1,11 @@
+/**
+ * ARCHIVO: components/discover/CategoryModal.tsx
+ * DESCRIPCIÓN: Selector modal de categorías para la pantalla 'Descubrir'.
+ * Permite al usuario elegir qué carruseles (Géneros, Listas curadas)
+ * quiere ver en su muro principal.
+ * Diseñado con una estética de tarjeta deslizable (Snap-to-bottom).
+ */
+
 import React, { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, FlatList, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,8 +16,8 @@ import { CARRUSELES_DISPONIBLES } from '../../constants/carruseles';
 type Props = {
   visible: boolean;
   onClose: () => void;
-  carruselesActivos: string[];
-  onToggle: (nombre: string) => void;
+  carruselesActivos: string[]; // Nombres de los carruseles ya visibles
+  onToggle: (nombre: string) => void; // Callback para añadir/quitar
   fontFamily: string;
 };
 
@@ -17,6 +25,7 @@ export const CategoryModal = React.memo(
   ({ visible, onClose, carruselesActivos, onToggle, fontFamily }: Props) => {
     const insets = useSafeAreaInsets();
 
+    /** Gestión del botón atrás físico en Android */
     useEffect(() => {
       if (!visible) return;
       const backAction = () => {
@@ -30,6 +39,7 @@ export const CategoryModal = React.memo(
     return (
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
         <View style={styles.modalBackdrop}>
+          {/* 🔮 FONDO: Efecto de cristal oscuro que ocupa el 85% de la pantalla */}
           <BlurView
             intensity={100}
             tint="dark"
@@ -48,6 +58,7 @@ export const CategoryModal = React.memo(
                 </Pressable>
               </View>
 
+              {/* LISTADO: Grid de categorías disponibles (2 columnas) */}
               <FlatList
                 data={CARRUSELES_DISPONIBLES}
                 keyExtractor={(item) => item}
@@ -55,7 +66,7 @@ export const CategoryModal = React.memo(
                 columnWrapperStyle={{ gap: 12 }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
-                  paddingBottom: insets.bottom + 120, // Extra space to avoid overlap with buttons
+                  paddingBottom: insets.bottom + 120, // Espacio para el botón flotante
                   paddingTop: 4,
                 }}
                 renderItem={({ item: nombre }) => {
@@ -83,6 +94,7 @@ export const CategoryModal = React.memo(
                 }}
               />
 
+              {/* BOTÓN DE ACCIÓN FLOTANTE (Fijado al fondo del modal) */}
               <View style={[styles.floatingFooter, { bottom: insets.bottom + 20 }]}>
                 <Pressable
                   onPress={onClose}
@@ -110,7 +122,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
     overflow: 'hidden',
-    backgroundColor: 'rgba(15, 23, 42, 0.9)', // Darker base for less transparency
+    backgroundColor: 'rgba(15, 23, 42, 0.9)', 
   },
   modalCard: { flex: 1, padding: 24 },
   modalHeader: {

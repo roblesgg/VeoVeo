@@ -1,3 +1,9 @@
+/**
+ * ARCHIVO: context/AuthContext.tsx
+ * DESCRIPCIÓN: Proveedor de autenticación que gestiona el ciclo de vida de la sesión del usuario.
+ * Integra Firebase Auth con perfiles de Firestore y sincronización de estado local/remoto.
+ */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
@@ -20,15 +26,20 @@ import {
 import { AppState, type AppStateStatus, Platform } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { getFirebaseAuth } from '../services/firebase';
-import { actualizarEstadoConexion, asegurarPerfilFirestore } from '../services/repositorioUsuarios';
+import {
+  actualizarEstadoConexion,
+  asegurarPerfilFirestore,
+  sincronizarVersionAppInstalada,
+} from '../services/repositorioUsuarios';
 import { registrarTokenEnFirestore } from '../services/notificationService';
 
-// WebBrowser.maybeCompleteAuthSession(); No longer needed with native Google Sign-In
-
+/**
+ * Interfaz que define los métodos y estados expuestos por el contexto de autenticación.
+ */
 type AuthContextValue = {
-  user: User | null;
-  loading: boolean;
-  firebaseReady: boolean;
+  user: User | null;              // Usuario actual de Firebase
+  loading: boolean;               // Indica si se está verificando la sesión inicial
+  firebaseReady: boolean;         // Indica si Firebase está correctamente configurado
   login: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   linkGoogleAccount: () => Promise<void>;
@@ -43,6 +54,10 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * COMPONENTE: AuthProvider
+ * Gestiona el estado de autenticación y los efectos secundarios relacionados.
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const auth = getFirebaseAuth();
   const firebaseReady = auth != null;
 
+  // EFECTO: Configuración de Google Sign-In para plataformas nativas
   useEffect(() => {
     if (Platform.OS !== 'web') {
       GoogleSignin.configure({
@@ -59,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // EFECTO: Escuchar cambios en el estado de autenticación de Firebase
   useEffect(() => {
     if (!auth) {
       setUser(null);
@@ -69,15 +86,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('🛡️ [Auth] Sesión detectada:', u ? u.email : 'Ninguna');
       setUser(u);
       setLoading(false);
+      
+      // Si el usuario inicia sesión, realizamos tareas de sincronización inicial
       if (u) {
-        void asegurarPerfilFirestore(u);
-        void actualizarEstadoConexion('online');
-        void require('../services/userPreferences').sincronizarPreferenciasConFirestore(u.uid);
-        void registrarTokenEnFirestore(u.uid);
+        void asegurarPerfilFirestore(u);                 // Crear perfil en Firestore si no existe
+        void actualizarEstadoConexion('online');        // Marcar usuario como conectado
+        void sincronizarVersionAppInstalada(u.uid);     // Reportar versión instalada para releases segmentados
+        void require('../services/userPreferences').sincronizarPreferenciasConFirestore(u.uid); // Cargar ajustes
+        void registrarTokenEnFirestore(u.uid);           // Registro para notificaciones Push
       }
     });
 
-    // 🕒 Timeout de seguridad: no dejar al usuario en gris más de 5s
+    // 🕒 Timeout de seguridad: Si la sesión tarda más de 5s, asumimos que no hay sesión
+    // Esto evita que la pantalla de carga se quede infinita en conexiones lentas o errores de red.
     const timer = setTimeout(() => {
       if (loading) {
         console.warn('⚠️ [Auth] La sesión tarda demasiado en responder. Forzando paso a Login.');
@@ -91,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [auth]);
 
+  // EFECTO: Gestión del estado de conexión (Online/Ausente) según el estado de la App
   useEffect(() => {
     if (!user) return;
 
@@ -106,6 +128,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [user]);
 
+  /**
+   * MÉTODO: login
+   * Autentica al usuario con email y contraseña.
+   */
   const login = useCallback(
     async (email: string, password: string) => {
       if (!auth) throw new Error('Firebase no configurado (variables EXPO_PUBLIC_FIREBASE_*).');
@@ -114,22 +140,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [auth],
   );
 
+  /**
+   * MÉTODO: register
+   * Crea una nueva cuenta y envía el correo de verificación.
+   */
   const register = useCallback(
     async (email: string, password: string) => {
       if (!auth) throw new Error('Firebase no configurado (variables EXPO_PUBLIC_FIREBASE_*).');
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-      // Enviar verificación inmediatamente
       await sendEmailVerification(cred.user);
     },
     [auth],
   );
 
+  /**
+   * MÉTODO: refreshUser
+   * Recarga los datos del usuario desde Firebase (útil después de verificar el email).
+   */
   const refreshUser = useCallback(async () => {
     if (!auth?.currentUser) return;
     await reload(auth.currentUser);
     setUser({ ...auth.currentUser });
   }, [auth]);
 
+  /**
+   * MÉTODO: resetPassword
+   * Envía un email de recuperación de contraseña.
+   */
   const resetPassword = useCallback(
     async (email: string) => {
       if (!auth) throw new Error('Firebase no configurado.');
@@ -138,6 +175,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [auth],
   );
 
+  /**
+   * MÉTODO: signInWithGoogle
+   * Inicia sesión con la cuenta de Google (Web vs Nativo).
+   */
   const signInWithGoogle = useCallback(async () => {
     try {
       if (Platform.OS === 'web') {
@@ -160,12 +201,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [auth]);
 
+  /**
+   * MÉTODO: linkGoogleAccount
+   * Vincula una cuenta de Google a un usuario ya autenticado con email.
+   */
   const linkGoogleAccount = useCallback(async () => {
     if (!auth?.currentUser) return;
     try {
       if (Platform.OS === 'web') {
         const provider = new GoogleAuthProvider();
-        await linkWithCredential(auth.currentUser, provider as any); // Firebase linkWithPopup/Redirect is different but common for web
+        await linkWithCredential(auth.currentUser, provider as any);
         return;
       }
       await GoogleSignin.hasPlayServices();
@@ -182,6 +227,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [auth]);
 
+  /**
+   * MÉTODO: unlinkGoogleAccount
+   * Desvincula Google de la cuenta actual.
+   */
   const unlinkGoogleAccount = useCallback(async () => {
     if (!auth?.currentUser) return;
     try {
@@ -196,6 +245,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [auth]);
 
+  /**
+   * MÉTODO: changePassword
+   * Actualiza la contraseña del usuario (requiere re-autenticación reciente).
+   */
   const changePassword = useCallback(
     async (newPassword: string) => {
       if (!auth?.currentUser) return;
@@ -204,6 +257,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [auth],
   );
 
+  /**
+   * MÉTODO: reauthenticate
+   * Solicita credenciales de nuevo para operaciones críticas.
+   */
   const reauthenticate = useCallback(
     async (password: string) => {
       if (!auth?.currentUser || !auth.currentUser.email) return;
@@ -213,12 +270,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [auth],
   );
 
+  /**
+   * MÉTODO: logout
+   * Cierra la sesión y actualiza el estado a 'offline'.
+   */
   const logout = useCallback(async () => {
     if (!auth) return;
     try {
       await actualizarEstadoConexion('offline');
     } catch {
-      // Ignorar si falla al cerrar sesión
+      // Ignorar fallo si ya se perdió la sesión
     }
     await signOut(auth);
   }, [auth]);
@@ -240,25 +301,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       reauthenticate,
     }),
     [
-      user,
-      loading,
-      firebaseReady,
-      login,
-      signInWithGoogle,
-      linkGoogleAccount,
-      unlinkGoogleAccount,
-      register,
-      logout,
-      refreshUser,
-      resetPassword,
-      changePassword,
-      reauthenticate,
+      user, loading, firebaseReady, login, signInWithGoogle, linkGoogleAccount, 
+      unlinkGoogleAccount, register, logout, refreshUser, resetPassword, 
+      changePassword, reauthenticate
     ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/**
+ * Hook para acceder fácilmente al contexto de autenticación.
+ */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');

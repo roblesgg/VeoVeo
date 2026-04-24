@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: components/social/FriendRow.tsx
+ * DESCRIPCIÓN: Fila individual para la lista de amigos.
+ * Muestra el avatar, el nombre de usuario y el estado de conexión (Online/Offline).
+ * Utilizado en la pestaña Social y en selectores de amigos.
+ */
+
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
@@ -11,12 +18,15 @@ type Props = {
 };
 
 export const FriendRow = React.memo(({ amigo, onPress, fontFamily }: Props) => {
+  
+  /** Lógica cromática del estado de presencia */
   const statusColor =
     amigo.estado === 'online' ? '#7CFC9A' : amigo.estado === 'ausente' ? '#FFB74D' : '#9E9E9E';
 
   return (
     <View style={styles.container}>
       <Pressable style={styles.main} onPress={onPress}>
+        {/* AVATAR: Con caché de ExpoImage o inicial de respaldo */}
         <View style={styles.avatar}>
           {amigo.fotoPerfil && amigo.fotoPerfil.trim() !== '' ? (
             <ExpoImage 
@@ -31,19 +41,25 @@ export const FriendRow = React.memo(({ amigo, onPress, fontFamily }: Props) => {
             </Text>
           )}
         </View>
+
+        {/* INFORMACIÓN DE USUARIO */}
         <View style={{ flex: 1 }}>
-          <Text style={[styles.name, { fontFamily }]}>{amigo.username || amigo.email}</Text>
+          <Text style={[styles.name, { fontFamily }]} numberOfLines={1}>
+            {amigo.username || amigo.email}
+          </Text>
           <View style={styles.statusRow}>
              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
              <Text style={[styles.status, { fontFamily, color: 'rgba(255,255,255,0.4)' }]}>
                {amigo.estado === 'online'
                  ? 'En línea'
                  : amigo.estado === 'ausente'
-                   ? 'Ausente'
-                   : 'Desconectado'}
+                    ? 'Ausente'
+                    : 'Desconectado'}
              </Text>
           </View>
         </View>
+
+        {/* FEEDBACK DE INTERACCIÓN */}
         <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
       </Pressable>
     </View>

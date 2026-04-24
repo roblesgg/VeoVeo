@@ -1,14 +1,28 @@
+/**
+ * ARCHIVO: context/LanguageContext.tsx
+ * DESCRIPCIÓN: Gestiona el sistema de internacionalización (i18n) de la app.
+ * Permite cambiar entre español e inglés y persiste la elección en el dispositivo.
+ */
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Definición de idiomas soportados
 type Language = 'es' | 'en';
 
+/**
+ * Estructura de los datos expuestos por el contexto de idioma.
+ */
 type LanguageContextValue = {
-  language: Language;
-  setLanguage: (lang: Language) => Promise<void>;
-  t: (key: string) => string;
+  language: Language;                       // Idioma actual
+  setLanguage: (lang: Language) => Promise<void>; // Función para cambiar idioma
+  t: (key: string) => string;              // Función de traducción
 };
 
+/**
+ * DICCIONARIO DE TRADUCCIONES:
+ * Contiene todos los textos literales de la aplicación divididos por idioma.
+ */
 const translations: Record<Language, Record<string, string>> = {
   es: {
     settings: 'Ajustes',
@@ -91,9 +105,14 @@ const translations: Record<Language, Record<string, string>> = {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
+/**
+ * COMPONENTE: LanguageProvider
+ * Carga el idioma guardado y provee la lógica de traducción.
+ */
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLangState] = useState<Language>('es');
 
+  // EFECTO: Recuperar el idioma persistido en AsyncStorage al iniciar
   useEffect(() => {
     void (async () => {
       const saved = await AsyncStorage.getItem('app_language');
@@ -103,11 +122,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  /**
+   * Cambia el idioma actual y lo guarda de forma persistente.
+   */
   const setLanguage = async (lang: Language) => {
     setLangState(lang);
     await AsyncStorage.setItem('app_language', lang);
   };
 
+  /**
+   * Traduce una clave al idioma actual. Si no existe, devuelve la clave.
+   */
   const t = (key: string) => translations[language][key] || key;
 
   return (
@@ -117,6 +142,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Hook para usar traducciones en cualquier componente.
+ */
 export function useLanguage() {
   const ctx = useContext(LanguageContext);
   if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');

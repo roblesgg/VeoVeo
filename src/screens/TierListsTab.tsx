@@ -1,7 +1,14 @@
+/**
+ * ARCHIVO: screens/TierListsTab.tsx
+ * DESCRIPCIÓN: Pestaña de 'Tier Lists'. Permite a los usuarios crear, editar
+ * y visualizar listas jerárquicas de sus películas vistas.
+ * Incluye un flujo de creación en 3 pasos: Metadatos -> Selección -> Clasificación.
+ */
+
 import React, { useState, useMemo, memo, useCallback } from 'react';
 import {
   ActivityIndicator,
-  FlatList, // 🚀 Añadido para virtualización
+  FlatList,
   Image,
   Pressable,
   ScrollView,
@@ -12,7 +19,7 @@ import {
   Keyboard,
   BackHandler,
   useWindowDimensions,
-  DimensionValue, // 🚀 Tipo correcto para estilos
+  DimensionValue,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
@@ -28,7 +35,7 @@ import { SHADOWS } from '../theme/theme';
 import { FilterSortMenu } from '../components/FilterSortMenu';
 import { ConfirmModal } from '../components/common/ConfirmModal';
 
-// Modular Components
+// Componentes modulares internos
 import { TierListCard } from '../components/tierlist/TierListCard';
 import { TierRow } from '../components/tierlist/TierRow';
 import { TierListSelector } from '../components/tierlist/TierListSelector';
@@ -38,13 +45,14 @@ import { AlertModal } from '../components/common/AlertModal';
 
 type Props = {
   fontFamily: string;
-  pantalla: number;
+  pantalla: number; // 0: Lista, 1: Detalle, 2: Selección de Pelis, 3: Editor de categorías
   onPantallaChange: (p: number) => void;
   onPeliculaClick: (movieId: number) => void;
   onPerfilClick?: () => void;
   userFoto?: string | null;
 };
 
+// Definición de las categorías estándar de una Tier List
 const TIER_DEFS = [
   { key: 'tierObraMaestra', label: 'Obra Maestra' },
   { key: 'tierMuyBuena', label: 'Muy Buena' },
@@ -53,7 +61,7 @@ const TIER_DEFS = [
   { key: 'tierNefasta', label: 'Nefasta' },
 ] as const;
 
-// 🚀 [MEMO] Item de la Grilla de TierLists para máxima performance
+/** 🚀 [MEMO] Tarjeta individual del Grid de TierLists */
 const TierListGridItem = memo(({ 
   tier, 
   peliculasMap, 
@@ -78,6 +86,9 @@ const TierListGridItem = memo(({
 ));
 TierListGridItem.displayName = 'TierListGridItem';
 
+/**
+ * COMPONENTE: TierListsTab
+ */
 export function TierListsTab({
   fontFamily,
   pantalla,
@@ -89,9 +100,11 @@ export function TierListsTab({
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   
-  // 🚀 Cálculo dinámico de columnas (min 2, max según ancho)
+  // Layout adaptativo para el grid (multicolumna en tablets/web)
   const numColumns = Math.max(2, Math.floor(windowWidth / 160));
   const itemWidth: DimensionValue = `${100 / numColumns}%`;
+
+  // ESTADOS LOCALES DE UI
   const [moviendoMovieId, setMoviendoMovieId] = useState<number | null>(null);
   const [textoBuscarPool, setTextoBuscarPool] = useState('');
   const [ordenPool, setOrdenPool] = useState<'recientes' | 'alpha' | 'valoracion'>('recientes');
@@ -99,8 +112,9 @@ export function TierListsTab({
   const [pickedMovieId, setPickedMovieId] = useState<number | null>(null);
   const [tierListAEliminar, setTierListAEliminar] = useState<string | null>(null);
   const [errorInfo, setErrorInfo] = useState<{ title: string; message: string } | null>(null);
-  const [buscarAtivaTier, setBuscarAtivaTier] = useState(false); // 🚀 Lógica limpia de búsqueda
+  const [buscarAtivaTier, setBuscarAtivaTier] = useState(false);
 
+  /** Activa/Desactiva el campo de búsqueda global en la lista */
   const toggleSearch = () => {
     if (buscarAtivaTier) {
       setBuscarAtivaTier(false);
@@ -108,16 +122,11 @@ export function TierListsTab({
       Keyboard.dismiss();
     } else {
       setBuscarAtivaTier(true);
-      setTextoBuscarPool(''); // Limpio para que se vea el placeholder
+      setTextoBuscarPool('');
     }
   };
 
-  const closeSearchIfOutside = () => {
-    if (textoBuscarPool !== '') {
-      Keyboard.dismiss();
-      // 🛡️ [CAMBIO] Ya no borramos el texto al cerrar por click fuera
-    }
-  };
+  // Gestión del botón 'Atrás' físico (Android)
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
@@ -135,14 +144,13 @@ export function TierListsTab({
     }, [buscarAtivaTier])
   );
 
+  // HOOKS: Datos y Lógica de Edición
   const {
     cargando: cargandoData,
     error: dataError,
     tierLists,
     peliculasVistas,
     peliculasMap,
-    textoBuscar,
-    setTextoBuscar,
     recargar,
   } = useTierListData();
 
@@ -165,7 +173,7 @@ export function TierListsTab({
   const error = dataError || editError;
   const cargando = cargandoData || cargandoEdit;
 
-  // Screen Logic
+  /** Filtrado de películas candidatas para añadir a la lista */
   const peliculasFiltradas = useMemo(() => {
     const base = [...peliculasVistas];
     if (ordenPool === 'alpha') base.sort((a, b) => a.titulo.localeCompare(b.titulo));
@@ -178,6 +186,7 @@ export function TierListsTab({
     return base.filter((p) => p.titulo.toLowerCase().includes(q));
   }, [peliculasVistas, textoBuscarPool, ordenPool]);
 
+  /** Determina qué películas están en el 'Pool' (pendientes de clasificar) */
   const poolPeliculas = useMemo(() => {
     if (!tierListActual) return [];
     const yaAsignadas = new Set(todasLasPeliculasTierList(tierListActual));
@@ -187,13 +196,11 @@ export function TierListsTab({
     return peliculasVistas.map((p) => p.idPelicula).filter((id) => !yaAsignadas.has(id));
   }, [tierListActual, seleccionadas, peliculasVistas]);
 
+  /** Persiste los cambios en Firestore */
   const handleGuardarConRefresco = async () => {
-    console.log('--- EVENTO: PULSADO FINALIZAR TIERLIST ---');
     try {
       await handleGuardar();
-      console.log('--- RESULTADO: GUARDADO EXITOSO ---');
     } catch (e) {
-      console.error('--- ERROR CRÍTICO AL GUARDAR:', e);
       setErrorInfo({
         title: 'Error al guardar',
         message: e instanceof Error ? e.message : 'No se pudo guardar la TierList.'
@@ -201,6 +208,7 @@ export function TierListsTab({
     }
   };
 
+  /** Navegación secuencial entre estados de la pestaña */
   const handleBack = () => {
     if (pantalla === 3 && tierListActual?.id) onPantallaChange(1);
     else if (pantalla === 3 && !tierListActual?.id) onPantallaChange(2);
@@ -209,7 +217,7 @@ export function TierListsTab({
 
   return (
     <View style={styles.flex}>
-      {/* Back Button */}
+      {/* BOTÓN ATRÁS (Flotante) */}
       {pantalla !== 0 && (
         <Pressable
           onPress={handleBack}
@@ -222,10 +230,9 @@ export function TierListsTab({
         </Pressable>
       )}
 
-      {/* Screen 0: Grid List */}
+      {/* --- PANTALLA 0: LISTADO DE TIER LISTS (GRID) --- */}
       {pantalla === 0 && (
         <View style={styles.flex}>
-          {/* 🔮 Cabecera Glaseada Premium (Skia-Style) */}
           <View style={[styles.headerContainer, { height: insets.top + (buscarAtivaTier ? 160 : 80), backgroundColor: 'rgba(15, 23, 42, 0.12)' }]}>
             <View style={styles.headerBorder} />
             <View style={[styles.headerRow, { top: Math.max(insets.top, 12) + 12 }]}>
@@ -246,6 +253,7 @@ export function TierListsTab({
               </View>
             </View>
 
+            {/* BARRA DE BÚSQUEDA */}
             {buscarAtivaTier && (
               <View style={[styles.searchField, SHADOWS.macLight, { top: Math.max(insets.top, 12) + 80 }]}>
                 <TextInput
@@ -256,30 +264,13 @@ export function TierListsTab({
                   style={{ flex: 1, color: '#fff', fontFamily }}
                   autoFocus
                 />
-                {textoBuscarPool.trim().length > 0 && (
-                  <Pressable onPress={() => setTextoBuscarPool('')} style={{ paddingLeft: 8 }}>
-                    <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
-                  </Pressable>
-                )}
               </View>
             )}
           </View>
 
-          {buscarAtivaTier && (
-            <Pressable 
-              style={[StyleSheet.absoluteFillObject, { zIndex: 1200 }]} 
-              onPress={() => {
-                setBuscarAtivaTier(false);
-                setTextoBuscarPool('');
-                Keyboard.dismiss();
-              }}
-            >
-              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-            </Pressable>
-          )}
-
+          {/* GRID VIRTUALIZADO (Optimizado para listas largas) */}
           <FlatList
-            key={numColumns} // 🛡️ Requerido para cambiar numColumns al vuelo sin crashear
+            key={numColumns} 
             data={[{ id: 'new-button' } as any, ...tierLists.filter(t => t.nombre.toLowerCase().includes(textoBuscarPool.toLowerCase()))]}
             keyExtractor={(item) => item.id || 'new'}
             numColumns={numColumns}
@@ -289,8 +280,8 @@ export function TierListsTab({
               styles.gridWrap,
               { paddingTop: insets.top + (buscarAtivaTier ? 170 : 100) },
             ]}
-            style={[buscarAtivaTier && { zIndex: 1001 }]}
             renderItem={({ item }) => {
+              // BOTÓN: Crear nueva
               if (item.id === 'new-button') {
                 return (
                   <View style={[styles.newCard, { width: itemWidth }]}>
@@ -313,6 +304,7 @@ export function TierListsTab({
                 );
               }
 
+              // TARJETA DE TIER LIST
               return (
                 <TierListGridItem 
                   tier={item}
@@ -326,13 +318,12 @@ export function TierListsTab({
                 />
               );
             }}
-            ListHeaderComponent={() => null}
           />
           {cargando && <ActivityIndicator color="#fff" style={styles.loader} />}
         </View>
       )}
 
-      {/* Screen 1: Detail View */}
+      {/* --- PANTALLA 1: VISTA DE DETALLE (LECTURA) --- */}
       {pantalla === 1 && tierListActual && (
         <ScrollView contentContainerStyle={[styles.screenPad, { paddingTop: insets.top + 48 }]}>
           <Text style={[styles.detailTitle, { fontFamily }]}>{tierListActual.nombre}</Text>
@@ -343,6 +334,7 @@ export function TierListsTab({
             {todasLasPeliculasTierList(tierListActual).length} películas
           </Text>
 
+          {/* RENDERIZADO DE LAS FILAS DE TIER */}
           {TIER_DEFS.map((def) => (
             <TierRow
               key={def.key}
@@ -373,7 +365,7 @@ export function TierListsTab({
         </ScrollView>
       )}
 
-      {/* Screen 2: Creation Form */}
+      {/* --- PANTALLA 2: FORMULARIO DE ALTA / SELECCIÓN DE PELÍCULAS --- */}
       {pantalla === 2 && tierListActual && (
         <View style={styles.flex}>
           <ScrollView contentContainerStyle={[styles.screenPad, { paddingTop: insets.top + 48 }]}>
@@ -393,38 +385,14 @@ export function TierListsTab({
               style={[styles.field, styles.fieldMultiline, { fontFamily }]}
               multiline
             />
+            
             <View style={styles.selectorHeader}>
               <Text style={[styles.sectionTitle, { fontFamily, marginTop: 0 }]}>
                 Seleccionadas ({seleccionadas.length})
               </Text>
-              <View style={styles.selectorActions}>
-                <Pressable
-                  onPress={() => setMostrarMenuPool(true)}
-                  style={styles.iconBtn}
-                  hitSlop={8}
-                >
-                  <Ionicons name="options-outline" size={24} color="#fff" />
-                </Pressable>
-                <Pressable
-                  onPress={() => setTextoBuscarPool(textoBuscarPool ? '' : ' ')}
-                  style={styles.iconBtn}
-                  hitSlop={8}
-                >
-                  <Ionicons name="search" size={24} color="#fff" />
-                </Pressable>
-              </View>
             </View>
 
-            {textoBuscarPool !== '' && (
-              <TextInput
-                value={textoBuscarPool}
-                onChangeText={setTextoBuscarPool}
-                placeholder="Filtrar por título..."
-                placeholderTextColor="rgba(255,255,255,0.4)"
-                style={[styles.smallSearch, { fontFamily }]}
-              />
-            )}
-
+            {/* SELECTOR MÚLTIPLE DE LA BIBLIOTECA 'VISTAS' */}
             <TierListSelector
               peliculas={peliculasFiltradas}
               seleccionadas={seleccionadas}
@@ -449,13 +417,14 @@ export function TierListsTab({
         </View>
       )}
 
-      {/* Screen 3: Organization / Editor */}
+      {/* --- PANTALLA 3: EDITOR / CLASIFICACIÓN (ARRANQUE DE PELIS) --- */}
       {pantalla === 3 && tierListActual && (
         <View style={styles.flex}>
           <ScrollView contentContainerStyle={[styles.screenPad, { paddingTop: insets.top + 48 }]}>
             <Text style={[styles.detailTitle, { fontFamily }]}>Organizar TierList</Text>
             <Text style={[styles.hint, { fontFamily }]}>Pulsa una película para moverla</Text>
 
+            {/* SECCIONES DE TIER (Interactivas) */}
             {TIER_DEFS.map((def) => (
               <TierRow
                 key={def.key}
@@ -468,7 +437,6 @@ export function TierListsTab({
                     handleMoverPelicula(pickedMovieId, def.key as any);
                     setPickedMovieId(null);
                   } else if (id !== 0) {
-                    // Si pinchamos una peli en la tier sin tener nada cogido, vuelve al pool
                     handleMoverPelicula(id, 'pool');
                   }
                 }}
@@ -476,11 +444,9 @@ export function TierListsTab({
               />
             ))}
 
+            {/* POOL: Películas seleccionadas pero aún no asignadas a un Tier */}
             <Text style={[styles.sectionTitle, { fontFamily }]}>
               Pendientes ({poolPeliculas.length})
-            </Text>
-            <Text style={[styles.hint, { fontFamily }]}>
-              Toca para recoger, luego toca un Tier (o vuelve a tocar para soltar)
             </Text>
             <MoviePool
               ids={poolPeliculas}
@@ -508,23 +474,12 @@ export function TierListsTab({
         </View>
       )}
 
+      {/* COMPONENTES GLOBALES DE APOYO */}
       <MoveMovieModal
         visible={moviendoMovieId !== null}
         onClose={() => setMoviendoMovieId(null)}
         onSelectTier={(key) => handleMoverPelicula(moviendoMovieId!, key)}
         fontFamily={fontFamily}
-      />
-      <FilterSortMenu
-        visible={mostrarMenuPool}
-        onClose={() => setMostrarMenuPool(false)}
-        title="Ordenar por"
-        options={[
-          { label: 'Recientes', value: 'recientes', icon: 'time-outline' },
-          { label: 'Título (A-Z)', value: 'alpha', icon: 'text-outline' },
-          { label: 'Valoración', value: 'valoracion', icon: 'star-outline' },
-        ]}
-        currentValue={ordenPool}
-        onSelect={(v: any) => setOrdenPool(v)}
       />
 
       <ConfirmModal
@@ -538,18 +493,6 @@ export function TierListsTab({
         iconName="trash"
         fontFamily={fontFamily}
       />
-
-      {errorInfo && (
-        <AlertModal
-          visible={!!errorInfo}
-          onClose={() => setErrorInfo(null)}
-          title={errorInfo.title}
-          message={errorInfo.message}
-          iconName="alert-circle"
-          iconColor="#ff8a80"
-          fontFamily={fontFamily}
-        />
-      )}
     </View>
   );
 }
@@ -577,11 +520,10 @@ const styles = StyleSheet.create({
   perfilFotoMini: { width: '100%', height: '100%' },
   searchField: { position: 'absolute', left: 20, right: 20, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.1)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   gridWrap: {
-    paddingHorizontal: 4, // 🚀 Espacio extra para ganar tamaño de tarjetas
+    paddingHorizontal: 4,
     paddingBottom: 140,
   },
   newCard: {
-    // width: '50%', // 🚀 Ahora es dinámico via inline
     aspectRatio: 0.85, 
     padding: 2, 
   },
@@ -665,15 +607,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
     marginBottom: 12,
-  },
-  selectorActions: { flexDirection: 'row', gap: 12 },
-  smallSearch: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    height: 44,
-    color: '#fff',
-    marginBottom: 16,
   },
   backBtn: { position: 'absolute', left: 20, zIndex: 100 },
   backInner: {

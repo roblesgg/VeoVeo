@@ -1,3 +1,10 @@
+/**
+ * ARCHIVO: screens/LoginScreen.tsx
+ * DESCRIPCIÓN: Pantalla de inicio de sesión.
+ * Permite acceso mediante Email/Contraseña o Google Sign-In (Firebase).
+ * Gestiona errores de configuración de Firebase y recuperación de contraseña.
+ */
+
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useState } from 'react';
@@ -25,8 +32,10 @@ import { AlertModal } from '../components/common/AlertModal';
 export function LoginScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  
+  // HOOK DE AUTENTICACIÓN: Provee los métodos de Firebase centralizados
   const { login, signInWithGoogle, firebaseReady, resetPassword } = useAuth();
-  const { fontFamily, loaded } = useMontserrat();
+  const { fontFamily: ff_base, loaded } = useMontserrat();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,20 +43,23 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [alertInfo, setAlertInfo] = useState<{ visible: boolean; title: string; message: string; icon: any; color?: string } | null>(null);
 
+  // Fallback de fuente si aún no ha cargado
   const ff = loaded ? 'Montserrat_600SemiBold' : 'System';
 
   return (
     <GradientBackground style={[styles.center, { paddingTop: insets.top }]}>
       <View style={styles.pad}>
+        {/* LOGO PRINCIPAL */}
         <Text style={[styles.logo, { fontFamily: ff }]}>VeoVeo</Text>
 
+        {/* COMPRESIÓN DE ERRORES DE ENTORNO (Solo desarrollo) */}
         {!firebaseReady ? (
           <Text style={styles.warn}>
-            Configura las variables EXPO_PUBLIC_FIREBASE_* en un archivo .env (mismo proyecto
-            Firebase que el Android).
+            Configura las variables EXPO_PUBLIC_FIREBASE_* en un archivo .env
           </Text>
         ) : null}
 
+        {/* INPUTS DE ACCESO */}
         <TextInput
           value={email}
           onChangeText={setEmail}
@@ -68,10 +80,12 @@ export function LoginScreen() {
           style={[styles.input, SHADOWS.macLight, { fontFamily: ff }]}
         />
 
+        {/* MENSAJES DE ERROR DINÁMICOS */}
         {errorMessage ? <Text style={[styles.err, { fontFamily: ff }]}>{errorMessage}</Text> : null}
 
         {loading ? <ActivityIndicator color="#fff" style={{ marginBottom: 16 }} /> : null}
 
+        {/* BOTÓN: ACCESO TRADICIONAL */}
         <Pressable
           style={[styles.btn, styles.btnDark, SHADOWS.macLight]}
           disabled={loading || !firebaseReady}
@@ -90,6 +104,7 @@ export function LoginScreen() {
           <Text style={[styles.btnText, { fontFamily: ff }]}>INICIAR SESIÓN</Text>
         </Pressable>
 
+        {/* BOTÓN: ACCESO CON GOOGLE */}
         <Pressable
           style={[styles.btn, styles.btnLight, SHADOWS.macLight]}
           disabled={loading || !firebaseReady}
@@ -101,8 +116,9 @@ export function LoginScreen() {
             } catch (e) {
               const err = e as any;
               let msg = err?.message || 'Error con Google';
+              // Guía específica para errores de dominio en Web
               if (msg.includes('unauthorized-domain')) {
-                msg = '⚠️ Dominio no autorizado. Añade "veoveo.dripdev.dev" a los Authorized Domains en Firebase Console.';
+                msg = '⚠️ Dominio no autorizado en Firebase Console.';
               }
               setErrorMessage(msg);
             } finally {
@@ -112,7 +128,7 @@ export function LoginScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ marginRight: 10 }}>
-              {/* Google Logo SVG (G) */}
+              {/* Google Logo dinámico (DIV para Web, Icono para Nativo) */}
               {Platform.OS === 'web' ? (
                 <div style={{ width: 18, height: 18 }}>
                   <svg viewBox="0 0 24 24" width="18" height="18">
@@ -130,10 +146,12 @@ export function LoginScreen() {
           </View>
         </Pressable>
 
+        {/* NAVEGACIÓN A REGISTRO */}
         <Pressable onPress={() => navigation.navigate('Register')} style={{ marginTop: 16 }}>
           <Text style={[styles.link, { fontFamily: ff }]}>¿No tienes cuenta? Regístrate</Text>
         </Pressable>
 
+        {/* OLVIDO DE CONTRASEÑA */}
         <Pressable
           onPress={async () => {
             if (!email.trim()) {
@@ -179,6 +197,7 @@ export function LoginScreen() {
         </Pressable>
       </View>
 
+      {/* MODAL DE ALERTA PERSONALIZADO */}
       {alertInfo && (
         <AlertModal
           visible={alertInfo.visible}
@@ -203,7 +222,7 @@ const styles = StyleSheet.create({
   pad: { 
     paddingHorizontal: 32,
     width: '100%',
-    maxWidth: 420, // Perfección visual en escritorio
+    maxWidth: 420,
   },
   logo: { fontSize: 48, color: '#fff', textAlign: 'center', marginBottom: 40 },
   warn: { color: '#ffcc80', marginBottom: 16, textAlign: 'center', fontSize: 13 },

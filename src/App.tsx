@@ -62,12 +62,12 @@ function compareVersions(v1: string, v2: string) {
  */
 function VersionShield() {
   const [needsUpdate, setNeedsUpdate] = React.useState(false);
+  const [downloadUrl, setDownloadUrl] = React.useState('https://veoveo.dripdev.dev/descargar');
+  const lastNotifiedVersion = React.useRef<string | null>(null);
   
   // En Web no aplicamos bloqueo por versión nativa
   if (Platform.OS === 'web') return null;
 
-  // Obtenemos metadatos de la compilación actual
-  const currentBuild = Constants.expoConfig?.android?.versionCode ?? 0;
   const currentVersion = Constants.expoConfig?.version || '1.0.0';
   const isTest = Constants.expoConfig?.name?.includes('Test') ?? false;
 
@@ -80,16 +80,39 @@ function VersionShield() {
     return onSnapshot(doc(db, 'configuracion', 'app'), (snap: any) => {
       if (snap.exists()) {
          const data = snap.data();
+         const findValue = (prefix: string) => {
+           const key = Object.keys(data).find((k) => k.trim() === prefix);
+           return key ? data[key] : null;
+         };
+
          // Elegimos el campo de versión mínima según si es build de test o producción
-         const minVersionName = isTest ? data.min_version_test : data.min_version;
+         const minVersionName = findValue(isTest ? 'min_version_test' : 'min_version');
+         const nextDownloadUrl = findValue(isTest ? 'download_url_test' : 'download_url');
          
          // Si la versión actual es inferior a la requerida, activamos el escudo
-         if (minVersionName && compareVersions(currentVersion, minVersionName) === -1) {
-            setNeedsUpdate(true);
+         const updateNeeded =
+           minVersionName && compareVersions(currentVersion, String(minVersionName).trim()) === -1;
+
+         setNeedsUpdate(Boolean(updateNeeded));
+
+         if (nextDownloadUrl) {
+           setDownloadUrl(String(nextDownloadUrl).trim());
+         }
+
+         if (updateNeeded && lastNotifiedVersion.current !== String(minVersionName).trim()) {
+           lastNotifiedVersion.current = String(minVersionName).trim();
+           void Notifications.scheduleNotificationAsync({
+             content: {
+               title: 'Nueva actualización disponible',
+               body: `VeoVeo ${String(minVersionName).trim()} ya está lista para descargar.`,
+               data: { url: nextDownloadUrl || downloadUrl },
+             },
+             trigger: null,
+           });
          }
       }
     });
-  }, [currentVersion, isTest]);
+  }, [currentVersion, downloadUrl, isTest]);
 
   if (!needsUpdate) return null;
 
@@ -105,7 +128,7 @@ function VersionShield() {
           </Text>
           <View style={styles.updateBtnContainer}>
              <Text 
-                onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')} 
+                onPress={() => Linking.openURL(downloadUrl)} 
                 style={styles.updateBtn}
              >
                 Actualizar ahora
