@@ -39,6 +39,10 @@ yarn-error.*
 /ios
 /android
 
+# local IDE and temporary folders
+.idea/
+android_trash_*/
+
 # local config and secrets
 creds.json
 client_secret_*.json
@@ -51,7 +55,6 @@ firebase-admin.json
 !package.json
 !package-lock.json
 !eas.json
-!google-services.json
 !vercel.json
 !tsconfig.json
 !app.config.js
