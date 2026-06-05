@@ -60,6 +60,13 @@ firebase-admin.json
 !app.config.js
 !.expo/*.json
 
+# Generated web builds and distribution
+public/_expo/
+public/*.apk
+
+# Local editor and config
+.claude/
+
 # Web Distribution
 !web_out/
 !web_out/**
