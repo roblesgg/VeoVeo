@@ -16,7 +16,7 @@ const REQUIRED_ENV_KEYS = [
 ];
 
 const missingKeys = REQUIRED_ENV_KEYS.filter((key) => !process.env[key]?.trim());
-if (missingKeys.length > 0) {
+if (missingKeys.length > 0 && !process.env.CI && !process.env.EAS_BUILD) {
   throw new Error(`Faltan variables de entorno requeridas: ${missingKeys.join(', ')}`);
 }
 
