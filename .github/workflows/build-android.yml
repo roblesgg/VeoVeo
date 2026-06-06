@@ -37,6 +37,11 @@ jobs:
       - name: Fix enableBundleCompression (RN 0.76 compat)
         run: sed -i "s/enableBundleCompression = /\/\/ enableBundleCompression = /" android/app/build.gradle
 
+      - name: Fix Kotlin version for async-storage
+        run: |
+          echo "kotlinVersion=2.0.21" >> android/gradle.properties
+          cat android/gradle.properties | grep -E "kotlin|ksp"
+
       - name: Build APK
         run: cd android && ./gradlew assembleRelease
 
