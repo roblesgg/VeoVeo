@@ -39,8 +39,9 @@ jobs:
 
       - name: Fix Kotlin version for async-storage
         run: |
+          echo "" >> android/gradle.properties
           echo "kotlinVersion=2.0.21" >> android/gradle.properties
-          cat android/gradle.properties | grep -E "kotlin|ksp"
+          cat android/gradle.properties | grep -E "^kotlin|^android.kotlin"
 
       - name: Build APK
         run: cd android && ./gradlew assembleRelease
