@@ -13,6 +13,10 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "npm_config_registry": "https://registry.npmjs.org/",
+        "npm_config_ignore_scripts": "true"
       }
     },
     "production": {
