@@ -35,6 +35,14 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "plugins": [
+      ["expo-build-properties", {
+        "android": {
+          "kotlinVersion": "2.0.21",
+          "gradleVersion": "8.14.3"
+        }
+      }]
+    ],
     "extra": {
       "eas": {
         "projectId": "db438c91-21eb-4020-a3ad-efec69cef405"
