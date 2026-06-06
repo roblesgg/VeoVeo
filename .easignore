@@ -1,0 +1,40 @@
+# EAS Build ignore file — keep the archive small
+
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+
+# Large local folders
+backups/
+android_trash_*/
+public/*.apk
+public/*.aab
+
+# Git
+.git/
+
+# Android / iOS generated (EAS regenerates these)
+android/
+ios/
+
+# Local env
+.env
+.env*.local
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.eslint_report.json
