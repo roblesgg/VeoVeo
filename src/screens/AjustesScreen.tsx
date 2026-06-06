@@ -162,7 +162,7 @@ export function AjustesScreen() {
           </View>
 
 
-          <Text style={[styles.versionText, { fontFamily }]}>VeoVeo v1.6.0 | Developed by Drip Dev</Text>
+          <Text style={[styles.versionText, { fontFamily }]}>VeoVeo v1.9.1 | Developed by Drip Dev</Text>
         </View>
       </ScrollView>
     </GradientBackground>
