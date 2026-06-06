@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const vendors = [
   { src: 'vendor-builds/expo-asset', dest: 'node_modules/expo-asset/build' },
@@ -47,8 +48,6 @@ if (needsCopy) {
     copyDir(src, dest);
   }
   console.log('[eas-post-install] Done restoring.');
-} else {
-  console.log('[eas-post-install] All build dirs present, no action needed.');
 }
 
 // Final verification
@@ -62,5 +61,15 @@ for (const { dest } of vendors) {
 }
 
 if (!allOk) {
+  process.exit(1);
+}
+
+// Test bundle generation to catch issues early
+console.log('[eas-post-install] Testing JS bundle generation...');
+try {
+  execSync('npx expo export --platform android', { stdio: 'inherit' });
+  console.log('[eas-post-install] Bundle generation test PASSED');
+} catch (e) {
+  console.error('[eas-post-install] Bundle generation test FAILED:', e.message);
   process.exit(1);
 }
