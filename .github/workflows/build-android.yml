@@ -34,6 +34,9 @@ jobs:
       - name: Prebuild Android
         run: npx expo prebuild --platform android
 
+      - name: Fix enableBundleCompression (RN 0.76 compat)
+        run: sed -i "s/enableBundleCompression = /\/\/ enableBundleCompression = /" android/app/build.gradle
+
       - name: Build APK
         run: cd android && ./gradlew assembleRelease
 
