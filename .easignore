@@ -38,3 +38,4 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 .eslint_report.json
+node_modules_old2/
