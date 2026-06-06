@@ -15,8 +15,7 @@
         "buildType": "apk"
       },
       "env": {
-        "npm_config_registry": "https://registry.npmjs.org/",
-        "npm_config_ignore_scripts": "true"
+        "npm_config_registry": "https://registry.npmjs.org/"
       }
     },
     "production": {
