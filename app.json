@@ -23,8 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 34,
-      "googleServicesFile": "./google-services.json"
+      "versionCode": 35
     },
     "web": {
       "favicon": "./assets/favicon.png",
