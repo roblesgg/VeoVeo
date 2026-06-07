@@ -37,8 +37,13 @@ jobs:
       - name: Prebuild Android
         run: npx expo prebuild --platform android --clean
 
+      - name: Increase Gradle memory
+        run: |
+          sed -i 's/org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m/org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m/' android/gradle.properties
+          cat android/gradle.properties | grep jvmargs
+
       - name: Build APK
-        run: cd android && ./gradlew assembleRelease --no-daemon
+        run: cd android && ./gradlew assembleRelease --no-daemon --max-workers=2
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk veoveo-latest.apk
