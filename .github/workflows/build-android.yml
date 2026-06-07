@@ -31,17 +31,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Patch node_modules Kotlin versions
+        run: |
+          # Force async-storage to use 2.0.21 instead of 1.9.24 default
+          sed -i 's/DEFAULT_KOTLIN_VERSION = "1.9.24"/DEFAULT_KOTLIN_VERSION = "2.0.21"/' node_modules/@react-native-async-storage/async-storage/android/config.gradle
+          # Force expo-updates KSP to use 2.0.21
+          sed -i 's/def kotlinVersion = rootProject\["kotlinVersion"\]/def kotlinVersion = "2.0.21"/' node_modules/expo-updates/android/build.gradle
+          # Force expo-dev-launcher compose plugin to 2.0.21
+          sed -i 's/\${kotlinVersion}/2.0.21/g' node_modules/expo-dev-launcher/android/build.gradle
+
       - name: Prebuild Android
-        run: npx expo prebuild --platform android
+        run: npx expo prebuild --platform android --clean
 
       - name: Fix enableBundleCompression (RN 0.76 compat)
         run: sed -i "s/enableBundleCompression = /\/\/ enableBundleCompression = /" android/app/build.gradle
-
-      - name: Fix Kotlin version for async-storage
-        run: |
-          echo "" >> android/gradle.properties
-          echo "kotlinVersion=2.0.21" >> android/gradle.properties
-          cat android/gradle.properties | grep -E "^kotlin|^android.kotlin"
 
       - name: Build APK
         run: cd android && ./gradlew assembleRelease
