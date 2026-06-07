@@ -31,13 +31,5 @@ module.exports = {
   scheme: IS_TEST ? 'veoveotest' : 'veoveo',
   plugins: [
     ...(appJson.expo.plugins || []),
-    [
-      'expo-build-properties',
-      {
-        android: {
-          kotlinVersion: '2.0.21',
-        },
-      },
-    ],
   ],
 };

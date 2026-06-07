@@ -62,7 +62,6 @@ firebase-admin.json
 
 # Generated web builds and distribution
 # public/_expo/
-public/*.apk
 
 # Local editor and config
 .claude/
