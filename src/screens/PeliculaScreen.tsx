@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   body: { paddingHorizontal: 20 },
-  fixedBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  fixedBackdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   backdropImg: { width: '100%', height: 750, resizeMode: 'cover', transform: [{ scale: 1.2 }] },
   sectionTitle: {
     fontSize: 22,
