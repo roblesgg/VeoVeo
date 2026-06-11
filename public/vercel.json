@@ -1,29 +1,26 @@
 {
     "cleanUrls": true,
     "rewrites": [
-        { "source": "/movie/:path*", "destination": "/index.html" },
-        { "source": "/actor/:path*", "destination": "/index.html" },
-        { "source": "/share", "destination": "/index.html" },
-        { "source": "/descargar", "destination": "/descargar.html" },
-        { "source": "/((?!assets|static|favicon.ico|_expo|.*\\.apk|.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.ttf|.*\\.woff|.*\\.woff2|.*\\.json|.*\\.svg|\\.well-known).*)", "destination": "/index.html" }
+        { "source": "/(.*)", "destination": "/index.html" }
     ],
     "redirects": [
         {
             "source": "/www/(.*)",
             "destination": "https://veoveo.dripdev.dev/$1",
             "permanent": true
+        },
+        {
+            "source": "/veoveo-latest.apk",
+            "destination": "https://github.com/roblesgg/VeoVeo/releases/latest/download/veoveo-latest.apk",
+            "permanent": false
+        },
+        {
+            "source": "/apk",
+            "destination": "https://github.com/roblesgg/VeoVeo/releases/latest/download/veoveo-latest.apk",
+            "permanent": false
         }
     ],
     "headers": [
-        {
-            "source": "/(.+\\.apk)",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
         {
             "source": "/.well-known/(.*)",
             "headers": [
