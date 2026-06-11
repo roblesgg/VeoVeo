@@ -35,8 +35,9 @@ jobs:
         run: npm ci
 
       - name: Read app version
-        id: version
-        run: echo "APP_VERSION=$(node -p \"require('./app.json').expo.version\")" >> $GITHUB_ENV
+        run: |
+          VERSION=$(node -e "console.log(require('./app.json').expo.version)")
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Prebuild Android
         run: npx expo prebuild --platform android --clean
