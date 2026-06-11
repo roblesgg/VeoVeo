@@ -12,22 +12,19 @@
             "source": "/www/(.*)",
             "destination": "https://veoveo.dripdev.dev/$1",
             "permanent": true
+        },
+        {
+            "source": "/veoveo-latest.apk",
+            "destination": "https://github.com/roblesgg/VeoVeo/releases/latest/download/veoveo-latest.apk",
+            "permanent": false
+        },
+        {
+            "source": "/apk",
+            "destination": "https://github.com/roblesgg/VeoVeo/releases/latest/download/veoveo-latest.apk",
+            "permanent": false
         }
     ],
     "headers": [
-        {
-            "source": "/(.+\\.apk)",
-            "headers": [
-                {
-                    "key": "Content-Type",
-                    "value": "application/vnd.android.package-archive"
-                },
-                {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=31536000, immutable"
-                }
-            ]
-        },
         {
             "source": "/.well-known/(.*)",
             "headers": [
