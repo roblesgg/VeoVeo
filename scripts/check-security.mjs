@@ -48,6 +48,7 @@ const blockedByPath = trackedFiles.filter((file) => {
 const suspectFiles = getFilesWithPotentialSecrets();
 const blockedByContent = suspectFiles.filter((file) => {
   if (file === 'google-services.json') return false;
+  if (file === 'scripts/check-security.mjs') return false;
   try {
     const content = execSync(`git show HEAD:${file}`, { encoding: 'utf8' });
     return forbiddenContentPatterns.some((pattern) => pattern.test(content));
