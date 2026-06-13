@@ -404,7 +404,7 @@ export function SocialTab({
                       key={u.uid} 
                       usuario={{...u, fotoPerfil: u.fotoPerfil || undefined}} 
                       enviada={solEnviadas.has(u.uid)} 
-                      onAdd={() => handleSendSolicitud(u.uid)} 
+                      onAdd={() => handleSendSolicitud(u.uid, u.username)} 
                       fontFamily={fontFamily} 
                     />
                   ))}

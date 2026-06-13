@@ -173,22 +173,20 @@ export async function obtenerSolicitudesEnviadasPendientesUids(): Promise<Set<st
 /**
  * Envía una nueva solicitud de amistad a otro usuario.
  */
-export async function enviarSolicitudAmistad(destUid: string): Promise<void> {
+export async function enviarSolicitudAmistad(destUid: string, paraUsername?: string): Promise<void> {
   const db = dbOrThrow();
   const uid = uidOrThrow();
 
   if (destUid === uid) throw new Error('No puedes enviarte una solicitud a ti mismo');
 
   const miPerfil = await getPerfil(uid);
-  const destPerfil = await getPerfil(destUid);
-
-  if (!miPerfil || !destPerfil) throw new Error('No se pudo obtener la información de los perfiles');
+  if (!miPerfil) throw new Error('No se pudo obtener tu perfil');
 
   await addDoc(collection(db, 'solicitudes_amistad'), {
     deUid: uid,
     deUsername: miPerfil.username,
     paraUid: destUid,
-    paraUsername: destPerfil.username,
+    paraUsername: paraUsername ?? '',
     estado: 'pendiente' as const,
     timestamp: Date.now(),
   });

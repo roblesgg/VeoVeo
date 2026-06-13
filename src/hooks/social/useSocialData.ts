@@ -60,9 +60,9 @@ export function useSocialData() {
     return () => clearTimeout(timer);
   }, [busqueda]);
 
-  const handleSendSolicitud = async (uid: string) => {
+  const handleSendSolicitud = async (uid: string, username?: string) => {
     try {
-      await enviarSolicitudAmistad(uid);
+      await enviarSolicitudAmistad(uid, username);
       setSolEnviadas((prev) => new Set([...prev, uid]));
       setMensaje('Solicitud enviada');
       return true;
