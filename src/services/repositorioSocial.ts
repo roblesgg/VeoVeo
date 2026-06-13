@@ -50,10 +50,14 @@ export async function buscarUsuarios(queryText: string): Promise<UsuarioPerfil[]
   
   // Optimizable en el futuro con índices de búsqueda o un campo 'username_servido'
   const snap = await getDocs(collection(db, 'usuarios'));
-  const q = queryText.toLowerCase();
+  const q = queryText.toLowerCase().trim();
   return snap.docs
     .map((d) => ({ uid: d.id, ...d.data() }) as UsuarioPerfil)
-    .filter((u) => u.uid !== uidActual && (u.username || '').toLowerCase().includes(q))
+    .filter((u) => {
+      if (u.uid === uidActual) return false;
+      const haystack = (u.username_servido ?? u.username ?? '').toLowerCase();
+      return haystack.includes(q);
+    })
     .slice(0, 20);
 }
 
@@ -112,10 +116,21 @@ export function observarAmigos(callback: (amigos: UsuarioPerfil[]) => void): () 
     );
 
     unsubAmigos = onSnapshot(qAmigos, (amigosSnap) => {
-      const listaAmigos = amigosSnap.docs.map(
+      const todos = amigosSnap.docs.map(
         (d) => ({ uid: d.id, ...d.data() }) as UsuarioPerfil,
       );
-      callback(listaAmigos);
+
+      // Solo mostrar amigos mutuos (el otro también nos tiene en su lista)
+      const mutuos = todos.filter((f) => (f.amigos ?? []).includes(uidActual));
+      callback(mutuos);
+
+      // Auto-curación: si alguien ya no nos tiene como amigo, eliminarlo de nuestra lista
+      const noMutuos = todos.filter((f) => !(f.amigos ?? []).includes(uidActual));
+      if (noMutuos.length > 0) {
+        void updateDoc(doc(db, 'usuarios', uidActual), {
+          amigos: arrayRemove(...(noMutuos.map((f) => f.uid) as [string, ...string[]])),
+        });
+      }
     });
   });
 

@@ -42,7 +42,7 @@ export function useSocialData() {
   // Search logic
   useEffect(() => {
     const q = busqueda.trim();
-    if (q.length < 2) {
+    if (q.length < 1) {
       setResultados([]);
       return;
     }
