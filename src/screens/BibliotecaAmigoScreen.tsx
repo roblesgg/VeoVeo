@@ -23,6 +23,8 @@ import {
   eliminarAmigo,
   bloquearUsuario as bloquearSocial,
 } from '../services/repositorioSocial';
+import { crearChat } from '../services/repositorioChats';
+import { useAuth } from '../context/AuthContext';
 import { PeliculaUsuario, UsuarioPerfil } from '../types';
 import {
   COLORS,
@@ -45,6 +47,7 @@ export function BibliotecaAmigoScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RootStackParamList, 'BibliotecaAmigo'>>();
   const { amigoUid } = route.params;
+  const { user } = useAuth();
   
   const insets = useSafeAreaInsets();
   const { fontFamily, loaded: fontLoaded } = useMontserrat();
@@ -137,6 +140,20 @@ export function BibliotecaAmigoScreen() {
       >
         <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
           <Ionicons name="chevron-back" size={26} color="#fff" />
+        </BlurView>
+      </Pressable>
+
+      <Pressable
+        onPress={async () => {
+          if (!user) return;
+          const chatId = await crearChat([user.uid, amigoUid], 'individual');
+          navigation.navigate('ChatDetail', { chatId, participants: [user.uid, amigoUid], chatName: usuario?.username });
+        }}
+        style={[styles.chatBtn, { top: Math.max(insets.top, 12) + 8 }]}
+        hitSlop={12}
+      >
+        <BlurView intensity={50} tint="dark" style={styles.backBtnInner}>
+          <Ionicons name="chatbubble-outline" size={22} color="#38bdf8" />
         </BlurView>
       </Pressable>
 
@@ -377,6 +394,11 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: 20,
+    zIndex: 10,
+  },
+  chatBtn: {
+    position: 'absolute',
+    right: 132,
     zIndex: 10,
   },
   sortBtn: {

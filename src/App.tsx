@@ -19,6 +19,7 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { COLORS } from './theme/colors';
 import { getFirestoreDb } from './services/firebase';
 import { ensureNotificationChannelConfigured } from './services/notificationService';
+import { IOSInstallPrompt } from './components/IOSInstallPrompt';
 
 // 🛑 CONFIGURACIÓN DE ACCESIBILIDAD: Cap global de escalado de fuentes
 // Evita que configuraciones externas del sistema rompan los layouts de la app.
@@ -261,6 +262,7 @@ export default function App() {
                <View style={styles.mainContainer}>
                   <RootNavigator />
                   <VersionShield />
+                  <IOSInstallPrompt />
                </View>
             </View>
           </AuthProvider>

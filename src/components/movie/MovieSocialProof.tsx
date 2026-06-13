@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { obtenerActividadAmigosPelicula } from '../../services/repositorioSocial';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 type Props = {
   movieId: number;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function MovieSocialProof({ movieId, fontFamily }: Props) {
+  const navigation = useNavigation<any>();
   const [actividad, setActividad] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,7 @@ export function MovieSocialProof({ movieId, fontFamily }: Props) {
             contentContainerStyle={styles.scroll}
           >
             {vistas.map((a) => (
-              <View key={a.uid} style={styles.chip}>
+              <Pressable key={a.uid} style={styles.chip} onPress={() => navigation.navigate('BibliotecaAmigo', { amigoUid: a.uid })}>
                 <BlurView intensity={30} tint="dark" style={styles.chipInner}>
                   {a.foto ? (
                     <Image source={{ uri: a.foto }} style={styles.foto} />
@@ -65,7 +67,7 @@ export function MovieSocialProof({ movieId, fontFamily }: Props) {
                     <Text style={[styles.ratingText, { fontFamily }]}>{a.valoracion}</Text>
                   </View>
                 </BlurView>
-              </View>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
@@ -82,7 +84,7 @@ export function MovieSocialProof({ movieId, fontFamily }: Props) {
             contentContainerStyle={styles.scroll}
           >
             {porVer.map((a) => (
-              <View key={a.uid} style={styles.chip}>
+              <Pressable key={a.uid} style={styles.chip} onPress={() => navigation.navigate('BibliotecaAmigo', { amigoUid: a.uid })}>
                 <BlurView intensity={20} tint="dark" style={styles.chipInner}>
                   {a.foto ? (
                     <Image source={{ uri: a.foto }} style={styles.foto} />
@@ -94,7 +96,7 @@ export function MovieSocialProof({ movieId, fontFamily }: Props) {
                   <Text style={[styles.username, { fontFamily }]}>{a.username}</Text>
                   <Ionicons name="bookmark" size={12} color="#38bdf8" style={{ marginLeft: 4 }} />
                 </BlurView>
-              </View>
+              </Pressable>
             ))}
           </ScrollView>
         </View>
