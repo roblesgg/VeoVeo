@@ -20,6 +20,7 @@ import { COLORS } from './theme/colors';
 import { getFirestoreDb } from './services/firebase';
 import { ensureNotificationChannelConfigured } from './services/notificationService';
 import { IOSInstallPrompt } from './components/IOSInstallPrompt';
+import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 
 // 🛑 CONFIGURACIÓN DE ACCESIBILIDAD: Cap global de escalado de fuentes
 // Evita que configuraciones externas del sistema rompan los layouts de la app.
@@ -146,10 +147,8 @@ function VersionShield() {
  * Integra todos los proveedores de contexto y la navegación raíz.
  */
 export default function App() {
-  // Carga de fuentes icónicas necesarias para la UI
-  const [fontsLoaded] = useFonts({
-    ...Ionicons.font,
-  });
+  const [fontsLoaded] = useFonts({ ...Ionicons.font });
+  const [inAppNotif, setInAppNotif] = React.useState<{ title: string; body: string; url?: string } | null>(null);
 
   // EFECTO: Configuración Visual específica para WEB
   React.useEffect(() => {
@@ -222,33 +221,36 @@ export default function App() {
     }
   }, []);
 
-  // EFECTO: Listener de notificaciones para depuración
+  // EFECTO: Listeners de notificaciones push
   React.useEffect(() => {
+    if (Platform.OS === 'web') return;
     void ensureNotificationChannelConfigured();
 
-    const subscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('🔔 Notificación recibida:', notification);
+    // Notificación recibida con la app ABIERTA → muestra banner in-app
+    const receivedSub = Notifications.addNotificationReceivedListener(notification => {
+      const { title, body, data } = notification.request.content;
+      setInAppNotif({
+        title: title ?? 'VeoVeo',
+        body: body ?? '',
+        url: typeof data?.url === 'string' ? data.url : undefined,
+      });
     });
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const url = response.notification.request.content.data?.url;
-        if (typeof url === 'string' && url.length > 0) {
-          void Linking.openURL(url);
-        }
-      },
-    );
+    // Usuario toca la notificación desde bandeja (app en fondo o cerrada)
+    const responseSub = Notifications.addNotificationResponseReceivedListener(response => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === 'string' && url.length > 0) void Linking.openURL(url);
+    });
 
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
+    // App abierta pulsando una notificación desde estado completamente cerrado
+    void Notifications.getLastNotificationResponseAsync().then(response => {
       const url = response?.notification.request.content.data?.url;
-      if (typeof url === 'string' && url.length > 0) {
-        void Linking.openURL(url);
-      }
+      if (typeof url === 'string' && url.length > 0) void Linking.openURL(url);
     });
 
     return () => {
-      subscription.remove();
-      responseSubscription.remove();
+      receivedSub.remove();
+      responseSub.remove();
     };
   }, []);
 
@@ -263,6 +265,14 @@ export default function App() {
                   <RootNavigator />
                   <VersionShield />
                   <IOSInstallPrompt />
+                  {inAppNotif && (
+                    <InAppNotificationBanner
+                      title={inAppNotif.title}
+                      body={inAppNotif.body}
+                      url={inAppNotif.url}
+                      onDismiss={() => setInAppNotif(null)}
+                    />
+                  )}
                </View>
             </View>
           </AuthProvider>
