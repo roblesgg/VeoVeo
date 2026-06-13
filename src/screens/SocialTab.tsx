@@ -147,7 +147,15 @@ export function SocialTab({
     cargando,
     handleSendSolicitud,
     handleEliminarAmigo,
+    recargar,
   } = useSocialData();
+
+  // Refresca el contador de solicitudes al volver a esta pestaña
+  useFocusEffect(
+    React.useCallback(() => {
+      void recargar();
+    }, [recargar])
+  );
 
   // EFECTO: Escuchar cambios en los chats del usuario en tiempo real
   useEffect(() => {

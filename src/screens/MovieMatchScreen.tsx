@@ -8,7 +8,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -54,12 +54,14 @@ export function MovieMatchScreen() {
 
   const { matchId } = route.params;
   const [match, setMatch] = useState<MovieMatch | null>(null);
-  const [currentIndex, setCurrentIndex] = useState(0); // Puntero de la película actual en la cola
-  const [queue, setQueue] = useState<any[]>([]); // Cola de películas para votar
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [queue, setQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryKey, setRetryKey] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [currentDetails, setCurrentDetails] = useState<MovieDetails | null>(null);
-  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]); // Películas que ya son Match
+  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]);
+  const hasFetched = useRef(false);
 
   // VALORES COMPARTIDOS (REANIMATED)
   const translateX = useSharedValue(0);
@@ -70,97 +72,108 @@ export function MovieMatchScreen() {
     return observarMatch(matchId, setMatch);
   }, [matchId]);
 
-  /** 🧠 ALGORITMO DE RECOMENDACIÓN INTELIGENTE (Client-Side):
-   * 1. Extrae películas de las Watchlists de los demás participantes.
-   * 2. Utiliza películas bien valoradas por el usuario como semillas para recomendaciones de TMDB.
-   * 3. Filtra películas que el usuario actual YA ha votado en esta sesión.
-   */
+  /** Carga la cola de películas para votar con múltiples fuentes y fallbacks. */
   useEffect(() => {
-    if (!match || !user || queue.length > 0) return; 
+    if (!match || !user || hasFetched.current) return;
+    hasFetched.current = true;
+    setLoading(true);
+
     void (async () => {
-       try {
-         const db = getFirestore();
-         let watchlistMovies: any[] = [];
-         let seenSeeds: number[] = [];
-         
-         // Analizamos perfiles de los participantes
-         for (const uid of match.participants) {
-            const isMe = uid === user.uid;
-            
-            // Prioridad: Películas que a mis amigos les interesan
-            if (!isMe) {
-              const libRef = doc(db, 'usuarios', uid, 'biblioteca', 'por_ver');
-              const snap = await getDoc(libRef);
-              if (snap.exists()) {
-                const data = snap.data() as { peliculas: any[] };
-                if (data.peliculas) watchlistMovies.push(...data.peliculas);
-              }
+      try {
+        const db = getFirestore();
+        let watchlistMovies: any[] = [];
+        let highRatedSeeds: number[] = [];
+        let anyRatedSeeds: number[] = [];
+
+        for (const uid of match.participants) {
+          const isMe = uid === user.uid;
+
+          if (!isMe) {
+            const libRef = doc(db, 'usuarios', uid, 'biblioteca', 'por_ver');
+            const snap = await getDoc(libRef);
+            if (snap.exists()) {
+              const data = snap.data() as { peliculas: any[] };
+              if (data.peliculas) watchlistMovies.push(...data.peliculas);
             }
+          }
 
-            // Semillas: Nuestras pelis favoritas para buscar similares
-            const vistasRef = doc(db, 'usuarios', uid, 'biblioteca', 'vistas');
-            const vistasSnap = await getDoc(vistasRef);
-            if (vistasSnap.exists()) {
-              const data = vistasSnap.data() as { peliculas: any[] };
-              if (data.peliculas) {
-                const highRated = data.peliculas.filter(p => p.valoracion >= 4).map(p => p.idPelicula);
-                seenSeeds.push(...highRated);
-              }
+          const vistasRef = doc(db, 'usuarios', uid, 'biblioteca', 'vistas');
+          const vistasSnap = await getDoc(vistasRef);
+          if (vistasSnap.exists()) {
+            const data = vistasSnap.data() as { peliculas: any[] };
+            if (data.peliculas) {
+              highRatedSeeds.push(...data.peliculas.filter(p => p.valoracion >= 4).map(p => p.idPelicula));
+              anyRatedSeeds.push(...data.peliculas.map(p => p.idPelicula));
             }
-         }
+          }
+        }
 
-         // Filtramos lo que ya votamos en este juego para no repetir
-         const votedIds = new Set<string>();
-         const currentVotes = (match.votes || {}) as Record<string, string[]>;
-         const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
+        const votedIds = new Set<string>();
+        const currentVotes = (match.votes || {}) as Record<string, string[]>;
+        const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
+        Object.keys(currentVotes).forEach(mid => { if (currentVotes[mid]?.includes(user.uid)) votedIds.add(mid); });
+        Object.keys(currentNoVotes).forEach(mid => { if (currentNoVotes[mid]?.includes(user.uid)) votedIds.add(mid); });
 
-         Object.keys(currentVotes).forEach(mid => { 
-           if (currentVotes[mid]?.includes(user.uid)) votedIds.add(mid); 
-         });
-         Object.keys(currentNoVotes).forEach(mid => { 
-           if (currentNoVotes[mid]?.includes(user.uid)) votedIds.add(mid); 
-         });
+        const mapMovie = (p: any) => ({
+          id: p.id,
+          title: p.title,
+          poster_path: p.poster_path,
+          release_date: p.release_date?.split('-')[0] || '',
+        });
 
-         let finalQueue: any[] = [];
+        let finalQueue: any[] = watchlistMovies
+          .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
+          .filter(p => !votedIds.has(String(p.idPelicula)))
+          .map(p => ({
+            id: p.idPelicula,
+            title: p.titulo,
+            poster_path: p.rutaPoster,
+            release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : '',
+          }));
 
-         // Procesamos la watchlist filtrada
-         const filteredWatchlist = watchlistMovies
-           .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
-           .filter(p => !votedIds.has(String(p.idPelicula)))
-           .map(p => ({
-              id: p.idPelicula,
-              title: p.titulo,
-              poster_path: p.rutaPoster,
-              release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : ''
-           }));
-         
-         finalQueue.push(...filteredWatchlist);
-
-         // Solicitamos recomendaciones a la API si la cola es corta
-         if (seenSeeds.length > 0 && finalQueue.length < 20) {
-            const seed = seenSeeds[Math.floor(Math.random() * seenSeeds.length)];
-            const recommendations = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', 1);
-            const filteredRecs = recommendations.results
-              .filter((p: any) => p.vote_average > 6.0) 
+        // Recomendaciones basadas en semillas: primero bien valoradas, luego cualquier vista
+        if (finalQueue.length < 25) {
+          const seeds = highRatedSeeds.length > 0 ? highRatedSeeds : anyRatedSeeds;
+          if (seeds.length > 0) {
+            const seed = seeds[Math.floor(Math.random() * seeds.length)];
+            const randomPage = Math.floor(Math.random() * 3) + 1;
+            const recs = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', randomPage);
+            const filtered = recs.results
+              .filter((p: any) => p.vote_average > 5.5)
               .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
-              .map((p: any) => ({
-                id: p.id,
-                title: p.title,
-                poster_path: p.poster_path,
-                release_date: p.release_date?.split('-')[0] || ''
-              }));
-            
-            finalQueue.push(...filteredRecs);
-         }
+              .map(mapMovie);
+            finalQueue.push(...filtered);
+          }
+        }
 
-         setQueue(finalQueue);
-       } catch (e) {
-         console.error(e);
-       } finally {
-         setLoading(false);
-       }
+        // Fallback final: tendencias semanales si la cola sigue corta
+        if (finalQueue.length < 10) {
+          const trending = await tmdbApi.obtenerTendencias('es-ES', 'week');
+          const filtered = trending.results
+            .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
+            .map(mapMovie);
+          finalQueue.push(...filtered);
+        }
+
+        // Mezcla para variedad
+        finalQueue = finalQueue.sort(() => Math.random() - 0.5);
+
+        setQueue(finalQueue);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     })();
-  }, [match, user]);
+  }, [match, user, retryKey]);
+
+  const handleBuscarMas = useCallback(() => {
+    hasFetched.current = false;
+    setQueue([]);
+    setCurrentIndex(0);
+    setLoading(true);
+    setRetryKey(k => k + 1);
+  }, []);
 
   // Precarga de detalles TMDB para la película actual (Info Modal)
   useEffect(() => {
@@ -318,11 +331,21 @@ export function MovieMatchScreen() {
               <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}><Text style={styles.badgeText}>NO</Text></Animated.View>
             </Animated.View>
           </PanGestureHandler>
-        ) : (
-          /* ESCENARIO C: Sin más películas en la cola actual */
+        ) : loading ? (
+          /* ESCENARIO C: Cargando nueva tanda */
           <View style={styles.emptyDeck}>
-             <ActivityIndicator color={COLORS.primary} size="large" />
-             <Text style={styles.emptyText}>Buscando más recomendaciones...</Text>
+            <ActivityIndicator color={COLORS.primary} size="large" />
+            <Text style={styles.emptyText}>Buscando películas...</Text>
+          </View>
+        ) : (
+          /* ESCENARIO D: Cola vacía tras cargar */
+          <View style={styles.emptyDeck}>
+            <Ionicons name="film-outline" size={64} color="rgba(255,255,255,0.15)" />
+            <Text style={styles.emptyTitle}>¡Has votado todo!</Text>
+            <Text style={styles.emptyText}>No quedan más películas en tu cola.</Text>
+            <Pressable style={styles.recargarBtn} onPress={handleBuscarMas}>
+              <Text style={styles.recargarBtnText}>Buscar más películas</Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -372,8 +395,11 @@ const styles = StyleSheet.create({
   nopeBadge: { left: 40, borderColor: '#ff5050', color: '#ff5050', transform: [{ rotate: '-15deg' }] },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: 40 },
   roundBtn: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  emptyDeck: { alignItems: 'center', gap: 20, paddingHorizontal: 40 },
-  emptyText: { color: 'rgba(255,255,255,0.3)', fontSize: 16, textAlign: 'center' },
+  emptyDeck: { alignItems: 'center', gap: 16, paddingHorizontal: 40 },
+  emptyTitle: { color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center' },
+  emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 15, textAlign: 'center' },
+  recargarBtn: { marginTop: 8, backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 20 },
+  recargarBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
   matchFinishedTitle: { color: '#fff', fontSize: 28, fontWeight: '900', textAlign: 'center', marginTop: 10 },
   matchFinishedSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 30 },
   btnCerrarText: { color: '#000', fontWeight: '800', fontSize: 16 },
