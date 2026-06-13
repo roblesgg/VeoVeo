@@ -152,8 +152,8 @@ export function UpdateGuard({ children }: { children: React.ReactNode }) {
             {/* Listado manual de novedades para motivar al usuario */}
             <View style={styles.changelogBox}>
               <Text style={[styles.changelogTitle, { fontFamily: ff }]}>¿Qué hay de nuevo?</Text>
+              <Text style={[styles.changelogItem, { fontFamily: ff }]}>• 🔔 Activa notificaciones al abrir la app</Text>
               <Text style={[styles.changelogItem, { fontFamily: ff }]}>• 👥 Eliminar amigo actualiza ambas partes</Text>
-              <Text style={[styles.changelogItem, { fontFamily: ff }]}>• 🔍 Busca amigos con una sola letra</Text>
               <Text style={[styles.changelogItem, { fontFamily: ff }]}>• ✉️ Boton de agregar amigo corregido</Text>
               <Text style={[styles.changelogItem, { fontFamily: ff }]}>• ⚡ Correcciones de estabilidad</Text>
             </View>

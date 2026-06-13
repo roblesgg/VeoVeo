@@ -9,8 +9,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Linking, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import Constants from 'expo-constants';
+import { getAuth } from 'firebase/auth';
 import { BlurView } from 'expo-blur';
 
 import { AuthProvider } from './context/AuthContext';
@@ -21,6 +22,7 @@ import { getFirestoreDb } from './services/firebase';
 import { ensureNotificationChannelConfigured } from './services/notificationService';
 import { IOSInstallPrompt } from './components/IOSInstallPrompt';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
+import { NotificationPermissionPrompt } from './components/NotificationPermissionPrompt';
 
 // 🛑 CONFIGURACIÓN DE ACCESIBILIDAD: Cap global de escalado de fuentes
 // Evita que configuraciones externas del sistema rompan los layouts de la app.
@@ -150,6 +152,16 @@ export default function App() {
   const [fontsLoaded] = useFonts({ ...Ionicons.font });
   const [inAppNotif, setInAppNotif] = React.useState<{ title: string; body: string; url?: string } | null>(null);
 
+  const handleTokenRegistered = React.useCallback(async (token: string) => {
+    try {
+      const db = getFirestoreDb();
+      const uid = getAuth().currentUser?.uid;
+      if (db && uid) {
+        await updateDoc(doc(db, 'usuarios', uid), { pushToken: token });
+      }
+    } catch {}
+  }, []);
+
   // EFECTO: Configuración Visual específica para WEB
   React.useEffect(() => {
     if (Platform.OS === 'web') {
@@ -265,6 +277,7 @@ export default function App() {
                   <RootNavigator />
                   <VersionShield />
                   <IOSInstallPrompt />
+                  <NotificationPermissionPrompt onTokenRegistered={handleTokenRegistered} />
                   {inAppNotif && (
                     <InAppNotificationBanner
                       title={inAppNotif.title}

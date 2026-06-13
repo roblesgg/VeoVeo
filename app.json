@@ -3,7 +3,7 @@
     "name": "VeoVeo",
     "slug": "veoveo",
     "scheme": "veoveo",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 37
+      "versionCode": 38
     },
     "web": {
       "favicon": "./assets/favicon.png",
