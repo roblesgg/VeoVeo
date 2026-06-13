@@ -60,8 +60,9 @@ firebase-admin.json
 !app.config.js
 !.expo/*.json
 
-# Generated web builds and distribution
-# public/_expo/
+# Generated web builds and distribution (contain inlined secrets — deployed via Vercel CLI, not git)
+public/_expo/
+public/assets/
 
 # Local editor and config
 .claude/
