@@ -156,13 +156,15 @@ export function PerfilScreen() {
           <Text style={[styles.shareText, { fontFamily }]}>Compartir aplicación</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.downloadBtn}
-          onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')}
-        >
-          <Ionicons name="cloud-download-outline" size={22} color="#fff" />
-          <Text style={[styles.downloadText, { fontFamily }]}>Descargar App v1.9.1</Text>
-        </Pressable>
+        {Platform.OS === 'web' && (
+          <Pressable
+            style={styles.downloadBtn}
+            onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')}
+          >
+            <Ionicons name="cloud-download-outline" size={22} color="#fff" />
+            <Text style={[styles.downloadText, { fontFamily }]}>Descargar App</Text>
+          </Pressable>
+        )}
 
         {/* FEEDBACK DE ACCIONES (OK/ERR) */}
         {error && <Text style={styles.feedbackErr}>{error}</Text>}
