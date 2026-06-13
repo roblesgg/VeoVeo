@@ -15,6 +15,7 @@
     "clean": "powershell -ExecutionPolicy Bypass -Command \"rm -Recurse -Force .expo, android, backups/recycled/*\"",
     "env:sync": "node scripts/sync-firebase-env.mjs",
     "release": "node scripts/push-version.mjs",
+    "notify-users": "node scripts/notify-all-users.mjs",
     "lint": "eslint src app.config.js scripts --ext .js,.jsx,.ts,.tsx,.mjs",
     "format": "prettier --write .",
     "eas-build-post-install": "node scripts/eas-post-install.js"
