@@ -1,9 +1,9 @@
 /**
  * ARCHIVO: screens/MovieMatchScreen.tsx
  * DESCRIPCIÓN: Pantalla principal del juego 'Movie Match'.
- * Implementa una interfaz tipo 'Tinder' para películas donde los usuarios deslizan
- * a la derecha (SI) o izquierda (NO).
- * Utiliza React Native Reanimated y Gesture Handler para animaciones de 60fps.
+ * Swipe derecha = SÍ (verde), izquierda = NO (rojo).
+ * Algoritmo multi-fuente: watchlists + recomendaciones paralelas + trending/popular.
+ * Contador de matches abre panel con resultados parciales en tiempo real.
  */
 
 import { Ionicons } from '@expo/vector-icons';
@@ -18,17 +18,18 @@ import {
   View,
   ScrollView,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
   runOnJS,
   interpolate,
-  Extrapolate
+  Extrapolate,
 } from 'react-native-reanimated';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
@@ -40,39 +41,69 @@ import { MovieMatch, MovieDetails } from '../types';
 import { COLORS } from '../theme/colors';
 import { SHADOWS } from '../theme/theme';
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function shuffle<T>(arr: T[]): T[] {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
 export function MovieMatchScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { user } = useAuth();
-  
-  // 📐 LAYOUT CONFIG: Ajustes dinámicos para el swipe
+
   const SCREEN_WIDTH = windowWidth;
-  const BAR_WIDTH = Math.min(windowWidth * 0.85, 420); 
-  const SWIPE_THRESHOLD = BAR_WIDTH * 0.25; // Distancia mínima para confirmar voto
+  const BAR_WIDTH = Math.min(windowWidth * 0.85, 420);
+  const SWIPE_THRESHOLD = BAR_WIDTH * 0.25;
 
   const { matchId } = route.params;
+
+  // ── State ──
   const [match, setMatch] = useState<MovieMatch | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [queue, setQueue] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
+  const [showMatchesPanel, setShowMatchesPanel] = useState(false);
   const [currentDetails, setCurrentDetails] = useState<MovieDetails | null>(null);
-  const [matchedDetails, setMatchedDetails] = useState<MovieDetails[]>([]);
-  const hasFetched = useRef(false);
+  const [partialMatchDetails, setPartialMatchDetails] = useState<MovieDetails[]>([]);
 
-  // VALORES COMPARTIDOS (REANIMATED)
+  // Refs
+  const hasFetched = useRef(false);
+  const loadedMatchIds = useRef<Set<number>>(new Set());
+
+  // ── Reanimated ──
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  // EFECTO: Suscripción en tiempo real al estado del juego (puntuaciones, finalización)
+  // ── Suscripción al match ──
   useEffect(() => {
     return observarMatch(matchId, setMatch);
   }, [matchId]);
 
-  /** Carga la cola de películas para votar con múltiples fuentes y fallbacks. */
+  // ── Carga incremental de detalles de películas que hacen match ──
+  useEffect(() => {
+    if (!match?.matchedMovies.length) return;
+    const newIds = match.matchedMovies.filter(id => !loadedMatchIds.current.has(id));
+    if (!newIds.length) return;
+    newIds.forEach(id => loadedMatchIds.current.add(id));
+    void Promise.all(newIds.map(id => tmdbApi.obtenerDetallesPelicula(id))).then(results => {
+      setPartialMatchDetails(prev => {
+        const existing = new Set(prev.map(d => d.id));
+        return [...prev, ...results.filter(d => !existing.has(d.id))];
+      });
+    });
+  }, [match?.matchedMovies]);
+
+  // ── Algoritmo multi-fuente de recomendaciones ──
   useEffect(() => {
     if (!match || !user || hasFetched.current) return;
     hasFetched.current = true;
@@ -85,22 +116,21 @@ export function MovieMatchScreen() {
         let highRatedSeeds: number[] = [];
         let anyRatedSeeds: number[] = [];
 
+        // 1. Recopilar datos de todos los participantes
         for (const uid of match.participants) {
           const isMe = uid === user.uid;
 
           if (!isMe) {
-            const libRef = doc(db, 'usuarios', uid, 'biblioteca', 'por_ver');
-            const snap = await getDoc(libRef);
+            const snap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'por_ver'));
             if (snap.exists()) {
               const data = snap.data() as { peliculas: any[] };
               if (data.peliculas) watchlistMovies.push(...data.peliculas);
             }
           }
 
-          const vistasRef = doc(db, 'usuarios', uid, 'biblioteca', 'vistas');
-          const vistasSnap = await getDoc(vistasRef);
-          if (vistasSnap.exists()) {
-            const data = vistasSnap.data() as { peliculas: any[] };
+          const vSnap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'vistas'));
+          if (vSnap.exists()) {
+            const data = vSnap.data() as { peliculas: any[] };
             if (data.peliculas) {
               highRatedSeeds.push(...data.peliculas.filter(p => p.valoracion >= 4).map(p => p.idPelicula));
               anyRatedSeeds.push(...data.peliculas.map(p => p.idPelicula));
@@ -108,11 +138,14 @@ export function MovieMatchScreen() {
           }
         }
 
+        // 2. Construir set de IDs ya votados por el usuario actual
         const votedIds = new Set<string>();
         const currentVotes = (match.votes || {}) as Record<string, string[]>;
         const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
         Object.keys(currentVotes).forEach(mid => { if (currentVotes[mid]?.includes(user.uid)) votedIds.add(mid); });
         Object.keys(currentNoVotes).forEach(mid => { if (currentNoVotes[mid]?.includes(user.uid)) votedIds.add(mid); });
+
+        const seenIds = new Set<string>(votedIds);
 
         const mapMovie = (p: any) => ({
           id: p.id,
@@ -121,44 +154,76 @@ export function MovieMatchScreen() {
           release_date: p.release_date?.split('-')[0] || '',
         });
 
-        let finalQueue: any[] = watchlistMovies
+        const addUnique = (arr: any[], items: any[]) => {
+          for (const m of items) {
+            if (!seenIds.has(String(m.id))) {
+              seenIds.add(String(m.id));
+              arr.push(m);
+            }
+          }
+        };
+
+        // 3. Watchlist de los otros (prioridad máxima)
+        const watchlistQueue = watchlistMovies
           .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
           .filter(p => !votedIds.has(String(p.idPelicula)))
-          .map(p => ({
-            id: p.idPelicula,
-            title: p.titulo,
-            poster_path: p.rutaPoster,
-            release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : '',
-          }));
+          .map(p => {
+            seenIds.add(String(p.idPelicula));
+            return {
+              id: p.idPelicula,
+              title: p.titulo,
+              poster_path: p.rutaPoster,
+              release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : '',
+            };
+          });
 
-        // Recomendaciones basadas en semillas: primero bien valoradas, luego cualquier vista
-        if (finalQueue.length < 25) {
-          const seeds = highRatedSeeds.length > 0 ? highRatedSeeds : anyRatedSeeds;
-          if (seeds.length > 0) {
-            const seed = seeds[Math.floor(Math.random() * seeds.length)];
-            const randomPage = Math.floor(Math.random() * 3) + 1;
-            const recs = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', randomPage);
-            const filtered = recs.results
-              .filter((p: any) => p.vote_average > 5.5)
-              .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
+        let finalQueue: any[] = [...watchlistQueue];
+
+        // 4. Recomendaciones paralelas basadas en semillas (hasta 5 semillas)
+        const seeds = highRatedSeeds.length > 0 ? highRatedSeeds : anyRatedSeeds;
+        if (seeds.length > 0) {
+          // Tomar hasta 5 semillas distintas al azar
+          const chosenSeeds = shuffle([...new Set(seeds)]).slice(0, 5);
+          const recPromises = chosenSeeds.map(seed =>
+            tmdbApi.obtenerRecomendaciones(seed, 'es-ES', Math.floor(Math.random() * 4) + 1).catch(() => null)
+          );
+          const recResults = await Promise.all(recPromises);
+          for (const res of recResults) {
+            if (!res?.results) continue;
+            const filtered = res.results
+              .filter((p: any) => p.vote_average > 5.5 && p.poster_path)
               .map(mapMovie);
-            finalQueue.push(...filtered);
+            addUnique(finalQueue, filtered);
           }
         }
 
-        // Fallback final: tendencias semanales si la cola sigue corta
-        if (finalQueue.length < 10) {
-          const trending = await tmdbApi.obtenerTendencias('es-ES', 'week');
-          const filtered = trending.results
-            .filter((p: any) => !votedIds.has(String(p.id)) && !finalQueue.find(q => q.id === p.id))
-            .map(mapMovie);
-          finalQueue.push(...filtered);
+        // 5. También semillas desde la watchlist para más variedad
+        const watchlistSeeds = watchlistMovies.slice(0, 3).map(p => p.idPelicula).filter(Boolean);
+        if (watchlistSeeds.length > 0 && finalQueue.length < 40) {
+          const seed = pickRandom(watchlistSeeds);
+          const res = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', Math.floor(Math.random() * 3) + 1).catch(() => null);
+          if (res?.results) {
+            addUnique(finalQueue, res.results.filter((p: any) => p.poster_path).map(mapMovie));
+          }
         }
 
-        // Mezcla para variedad
-        finalQueue = finalQueue.sort(() => Math.random() - 0.5);
+        // 6. Tendencias semanales (página aleatoria para variedad)
+        if (finalQueue.length < 30) {
+          const trending = await tmdbApi.obtenerTendencias('es-ES', 'week').catch(() => null);
+          if (trending?.results) addUnique(finalQueue, trending.results.filter((p: any) => p.poster_path).map(mapMovie));
+        }
 
-        setQueue(finalQueue);
+        // 7. Populares con página aleatoria como último relleno
+        if (finalQueue.length < 20) {
+          const popular = await tmdbApi.obtenerPopulares('es-ES', Math.floor(Math.random() * 8) + 1).catch(() => null);
+          if (popular?.results) addUnique(finalQueue, popular.results.filter((p: any) => p.poster_path).map(mapMovie));
+        }
+
+        // 8. Mezcla final: watchlist va primero, el resto mezclado
+        const watchlistIds = new Set(watchlistQueue.map(w => w.id));
+        const watchlistPart = finalQueue.filter(m => watchlistIds.has(m.id));
+        const restPart = shuffle(finalQueue.filter(m => !watchlistIds.has(m.id)));
+        setQueue([...watchlistPart, ...restPart]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -175,48 +240,30 @@ export function MovieMatchScreen() {
     setRetryKey(k => k + 1);
   }, []);
 
-  // Precarga de detalles TMDB para la película actual (Info Modal)
+  // Precarga detalles de la carta actual para el modal info
   useEffect(() => {
     if (queue[currentIndex]) {
-      void tmdbApi.obtenerDetallesPelicula(Number(queue[currentIndex].id)).then(setCurrentDetails);
+      void tmdbApi.obtenerDetallesPelicula(Number(queue[currentIndex].id)).then(setCurrentDetails).catch(() => {});
     }
   }, [currentIndex, queue]);
 
-  // Si el match termina, cargamos las fichas finales de las ganadoras
-  useEffect(() => {
-    if (match?.status === 'finished' && match.matchedMovies.length > 0) {
-      void (async () => {
-        try {
-          const promises = match.matchedMovies.map(id => tmdbApi.obtenerDetallesPelicula(id));
-          const results = await Promise.all(promises);
-          setMatchedDetails(results);
-        } catch (e) {
-          console.error('Error cargando resultados del match:', e);
-        }
-      })();
-    }
-  }, [match?.status, match?.matchedMovies]);
-
-  /** Registra el voto en Firestore y resetea las animaciones */
+  // ── Swipe logic ──
   const onSwipeComplete = useCallback((direction: 'right' | 'left') => {
     if (!user || !match || !queue[currentIndex]) return;
     const movieId = queue[currentIndex].id;
     void votarPelicula(matchId, user.uid, movieId, direction === 'right' ? 'yes' : 'no');
-    
     translateX.value = 0;
     translateY.value = 0;
     setCurrentIndex(prev => prev + 1);
   }, [currentIndex, matchId, queue, user, match]);
 
-  /** Gestión de gestos del dedo */
   const onGestureEvent = (event: any) => {
     translateX.value = event.nativeEvent.translationX;
     translateY.value = event.nativeEvent.translationY;
   };
 
-  /** Finalización del gesto: ¿Se confirma el voto o vuelve al centro? */
   const onHandlerStateChange = (event: any) => {
-    if (event.nativeEvent.state === 5) { // END STATE
+    if (event.nativeEvent.state === 5) {
       if (Math.abs(event.nativeEvent.translationX) > SWIPE_THRESHOLD) {
         const direction = event.nativeEvent.translationX > 0 ? 'right' : 'left';
         translateX.value = withSpring(direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100);
@@ -228,26 +275,37 @@ export function MovieMatchScreen() {
     }
   };
 
-  // ESTILOS ANIMADOS DINÁMICOS (Reanimated 2)
+  // ── Animated styles ──
   const cardStyle = useAnimatedStyle(() => {
-    const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2], [-10, 0, 10], Extrapolate.CLAMP);
+    const rotate = interpolate(translateX.value, [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2], [-12, 0, 12], Extrapolate.CLAMP);
     return {
       transform: [
-        { translateX: translateX.value }, 
-        { translateY: translateY.value }, 
-        { rotate: `${rotate}deg` }
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { rotate: `${rotate}deg` },
       ],
     };
   });
 
+  // Overlay de color sobre la carta: verde a la derecha, rojo a la izquierda
+  const cardOverlayStyle = useAnimatedStyle(() => {
+    const rightOpacity = interpolate(translateX.value, [0, SWIPE_THRESHOLD * 1.5], [0, 0.5], Extrapolate.CLAMP);
+    const leftOpacity = interpolate(translateX.value, [-SWIPE_THRESHOLD * 1.5, 0], [0.5, 0], Extrapolate.CLAMP);
+    if (translateX.value >= 0) {
+      return { position: 'absolute' as const, inset: 0, backgroundColor: '#2ecc71', opacity: rightOpacity, borderRadius: 24 };
+    }
+    return { position: 'absolute' as const, inset: 0, backgroundColor: '#ff5050', opacity: leftOpacity, borderRadius: 24 };
+  });
+
   const likeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 1], Extrapolate.CLAMP),
+    opacity: interpolate(translateX.value, [SWIPE_THRESHOLD * 0.3, SWIPE_THRESHOLD], [0, 1], Extrapolate.CLAMP),
   }));
 
   const nopeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, 0], [1, 0], Extrapolate.CLAMP),
+    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, -SWIPE_THRESHOLD * 0.3], [1, 0], Extrapolate.CLAMP),
   }));
 
+  // ── Render ──
   if (loading || !match) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
@@ -257,44 +315,47 @@ export function MovieMatchScreen() {
   }
 
   const currentMovie = queue[currentIndex];
+  const matchCount = match.matchedMovies.length;
 
   return (
     <View style={styles.container}>
-      {/* CABECERA CON CONTADOR DE MATCHES EN TIEMPO REAL */}
+      {/* ── CABECERA ── */}
       <BlurView intensity={80} tint="dark" style={[styles.header, { paddingTop: insets.top + 10, paddingBottom: 15 }]}>
         <View style={styles.headerRow}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </Pressable>
           <Text style={styles.headerTitle}>Movie Match</Text>
-          <View style={styles.matchCounter}>
+          <Pressable
+            style={styles.matchCounter}
+            onPress={() => matchCount > 0 && setShowMatchesPanel(true)}
+            hitSlop={8}
+          >
             <Ionicons name="flame" size={16} color="#ff6b00" />
-            <Text style={styles.countText}>{match.matchedMovies.length} Matches</Text>
-          </View>
+            <Text style={styles.countText}>{matchCount} {matchCount === 1 ? 'Match' : 'Matches'}</Text>
+            {matchCount > 0 && <Ionicons name="chevron-forward" size={12} color="#ff6b00" />}
+          </Pressable>
         </View>
       </BlurView>
 
+      {/* ── DECK ── */}
       <View style={styles.deck}>
-        {/* ESCENARIO A: El juego ha terminado (Hay ganadoras) */}
         {match.status === 'finished' ? (
+          /* A: Juego terminado */
           <ScrollView contentContainerStyle={styles.resultsScroll} showsVerticalScrollIndicator={false}>
             <View style={styles.resultsHeader}>
               <Ionicons name="trophy" size={80} color="#f1c40f" />
               <Text style={styles.matchFinishedTitle}>¡Objetivo conseguido!</Text>
               <Text style={styles.matchFinishedSub}>
-                Habéis encontrado {match.matchedMovies.length} {match.matchedMovies.length === 1 ? 'película' : 'películas'} que os han gustado a todos:
+                {matchCount} {matchCount === 1 ? 'película que os ha gustado a todos' : 'películas que os han gustado a todos'}:
               </Text>
             </View>
-
             <View style={styles.resultsGrid}>
-              {matchedDetails.map(movie => (
-                <Pressable 
-                  key={movie.id} 
-                  style={styles.resultCard} 
-                  onPress={() => {
-                    setCurrentDetails(movie);
-                    setShowInfo(true);
-                  }}
+              {partialMatchDetails.map(movie => (
+                <Pressable
+                  key={movie.id}
+                  style={styles.resultCard}
+                  onPress={() => { setCurrentDetails(movie); setShowInfo(true); }}
                 >
                   <Image source={{ uri: posterUrl(movie.poster_path, 'w342')! }} style={styles.resultPoster} />
                   <View style={styles.resultInfo}>
@@ -303,42 +364,50 @@ export function MovieMatchScreen() {
                 </Pressable>
               ))}
             </View>
-
             <Pressable style={styles.btnCerrarFinal} onPress={() => navigation.goBack()}>
               <Text style={styles.btnCerrarText}>Volver al chat</Text>
             </Pressable>
           </ScrollView>
         ) : currentIndex < queue.length ? (
-          /* ESCENARIO B: Juego en curso (Cartas Swipables) */
+          /* B: Carta swipable */
           <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
             <Animated.View style={[
-              styles.card, 
+              styles.card,
               { width: BAR_WIDTH, height: Math.min(windowHeight * 0.6, 600) },
-              cardStyle, 
-              SHADOWS.macLight
+              cardStyle,
+              SHADOWS.macLight,
             ]}>
               <Image source={{ uri: posterUrl(currentMovie.poster_path, 'w500')! }} style={styles.poster} />
-              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.9)']} style={styles.cardGradient}>
+              <LinearGradient colors={['transparent', 'rgba(0,0,0,0.92)']} style={styles.cardGradient}>
                 <View style={styles.movieInfo}>
                   <Text style={styles.movieTitle}>{currentMovie.title}</Text>
                   <Text style={styles.movieYear}>{currentMovie.release_date}</Text>
                 </View>
-                <Pressable onPress={() => setShowInfo(true)} style={styles.infoBtn}><Ionicons name="information-circle-outline" size={34} color="#fff" /></Pressable>
+                <Pressable onPress={() => setShowInfo(true)} style={styles.infoBtn}>
+                  <Ionicons name="information-circle-outline" size={34} color="#fff" />
+                </Pressable>
               </LinearGradient>
-              
-              {/* BADGES DINÁMICOS DE VOTO (SÍ / NO) */}
-              <Animated.View style={[styles.badge, styles.likeBadge, likeOpacity]}><Text style={styles.badgeText}>SÍ</Text></Animated.View>
-              <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}><Text style={styles.badgeText}>NO</Text></Animated.View>
+
+              {/* Overlay de color al deslizar */}
+              <Animated.View style={cardOverlayStyle} pointerEvents="none" />
+
+              {/* Badges SÍ / NO */}
+              <Animated.View style={[styles.badge, styles.likeBadge, likeOpacity]}>
+                <Text style={[styles.badgeText, { color: '#2ecc71' }]}>SÍ</Text>
+              </Animated.View>
+              <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}>
+                <Text style={[styles.badgeText, { color: '#ff5050' }]}>NO</Text>
+              </Animated.View>
             </Animated.View>
           </PanGestureHandler>
         ) : loading ? (
-          /* ESCENARIO C: Cargando nueva tanda */
+          /* C: Cargando */
           <View style={styles.emptyDeck}>
             <ActivityIndicator color={COLORS.primary} size="large" />
             <Text style={styles.emptyText}>Buscando películas...</Text>
           </View>
         ) : (
-          /* ESCENARIO D: Cola vacía tras cargar */
+          /* D: Cola vacía */
           <View style={styles.emptyDeck}>
             <Ionicons name="film-outline" size={64} color="rgba(255,255,255,0.15)" />
             <Text style={styles.emptyTitle}>¡Has votado todo!</Text>
@@ -350,25 +419,89 @@ export function MovieMatchScreen() {
         )}
       </View>
 
-      {/* BOTONES DE ACCIÓN RÁPIDA (Alternativa al swipe táctil) */}
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
-         <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(-SCREEN_WIDTH - 100); runOnJS(onSwipeComplete)('left'); }}><Ionicons name="close" size={32} color="#ff5050" /></Pressable>
-         <Pressable style={styles.roundBtn} onPress={() => { translateX.value = withSpring(SCREEN_WIDTH + 100); runOnJS(onSwipeComplete)('right'); }}><Ionicons name="heart" size={32} color="#2ecc71" /></Pressable>
-      </View>
-
-      {/* MODAL DE INFORMACIÓN (MODAL GLAREADO) */}
-      {showInfo && currentDetails && (
-        <View style={StyleSheet.absoluteFillObject}>
-           <Pressable onPress={() => setShowInfo(false)} style={StyleSheet.absoluteFillObject}><BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} /></Pressable>
-           <View style={[styles.infoModal, { bottom: insets.bottom + 100 }]}>
-              <Text style={styles.modalTitle}>{currentDetails.title}</Text>
-              <ScrollView style={styles.modalScroll}>
-                 <Text style={styles.modalOverview}>{currentDetails.overview}</Text>
-                 <View style={styles.modalDetails}><Text style={styles.modalMeta}>⭐ {currentDetails.vote_average?.toFixed(1)}</Text><Text style={styles.modalMeta}>📅 {currentDetails.release_date}</Text></View>
-              </ScrollView>
-           </View>
+      {/* ── BOTONES RÁPIDOS ── */}
+      {match.status !== 'finished' && currentIndex < queue.length && (
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
+          <Pressable
+            style={[styles.roundBtn, styles.roundBtnNo]}
+            onPress={() => {
+              translateX.value = withSpring(-SCREEN_WIDTH - 100);
+              runOnJS(onSwipeComplete)('left');
+            }}
+          >
+            <Ionicons name="close" size={32} color="#ff5050" />
+          </Pressable>
+          <Pressable
+            style={[styles.roundBtn, styles.roundBtnYes]}
+            onPress={() => {
+              translateX.value = withSpring(SCREEN_WIDTH + 100);
+              runOnJS(onSwipeComplete)('right');
+            }}
+          >
+            <Ionicons name="heart" size={32} color="#2ecc71" />
+          </Pressable>
         </View>
       )}
+
+      {/* ── MODAL INFO PELÍCULA ── */}
+      {showInfo && currentDetails && (
+        <View style={StyleSheet.absoluteFillObject}>
+          <Pressable onPress={() => setShowInfo(false)} style={StyleSheet.absoluteFillObject}>
+            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+          </Pressable>
+          <View style={[styles.infoModal, { bottom: insets.bottom + 100 }]}>
+            <Text style={styles.modalTitle}>{currentDetails.title}</Text>
+            <ScrollView style={styles.modalScroll}>
+              <Text style={styles.modalOverview}>{currentDetails.overview}</Text>
+              <View style={styles.modalDetails}>
+                <Text style={styles.modalMeta}>⭐ {currentDetails.vote_average?.toFixed(1)}</Text>
+                <Text style={styles.modalMeta}>📅 {currentDetails.release_date}</Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {/* ── PANEL DE MATCHES PARCIALES ── */}
+      <Modal visible={showMatchesPanel} transparent animationType="slide" onRequestClose={() => setShowMatchesPanel(false)}>
+        <Pressable style={styles.panelBackdrop} onPress={() => setShowMatchesPanel(false)}>
+          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+        </Pressable>
+        <View style={[styles.panel, { paddingBottom: insets.bottom + 16 }]}>
+          <View style={styles.panelHandle} />
+          <Text style={styles.panelTitle}>
+            {matchCount} {matchCount === 1 ? 'Match hasta ahora' : 'Matches hasta ahora'}
+          </Text>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
+            {partialMatchDetails.length === 0 ? (
+              <ActivityIndicator color="#fff" style={{ marginTop: 20 }} />
+            ) : (
+              <View style={styles.resultsGrid}>
+                {partialMatchDetails.map(movie => (
+                  <Pressable
+                    key={movie.id}
+                    style={styles.resultCard}
+                    onPress={() => {
+                      setCurrentDetails(movie);
+                      setShowMatchesPanel(false);
+                      setShowInfo(true);
+                    }}
+                  >
+                    <Image source={{ uri: posterUrl(movie.poster_path, 'w342')! }} style={styles.resultPoster} />
+                    <View style={styles.resultInfo}>
+                      <Text style={styles.resultTitle} numberOfLines={2}>{movie.title}</Text>
+                    </View>
+                    <View style={styles.matchBadge}>
+                      <Ionicons name="flame" size={12} color="#ff6b00" />
+                      <Text style={styles.matchBadgeText}>Match</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -379,22 +512,24 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   backBtn: { padding: 8 },
   headerTitle: { flex: 1, color: '#fff', fontSize: 17, fontWeight: '700', textAlign: 'center' },
-  matchCounter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,107,0,0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 6 },
+  matchCounter: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,107,0,0.12)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 5, borderWidth: 1, borderColor: 'rgba(255,107,0,0.25)' },
   countText: { color: '#ff6b00', fontSize: 12, fontWeight: '900' },
   deck: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
   card: { borderRadius: 24, overflow: 'hidden', backgroundColor: '#1e293b' },
   poster: { width: '100%', height: '100%' },
-  cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, padding: 20, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  cardGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, padding: 20, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   movieInfo: { flex: 1 },
   movieTitle: { color: '#fff', fontSize: 24, fontWeight: '800' },
   movieYear: { color: 'rgba(255,255,255,0.4)', fontSize: 16, marginTop: 4 },
   infoBtn: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: 50, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 3 },
-  badgeText: { fontSize: 32, fontWeight: '900' },
-  likeBadge: { right: 40, borderColor: '#2ecc71', color: '#2ecc71', transform: [{ rotate: '15deg' }] },
-  nopeBadge: { left: 40, borderColor: '#ff5050', color: '#ff5050', transform: [{ rotate: '-15deg' }] },
-  footer: { flexDirection: 'row', justifyContent: 'center', gap: 40 },
-  roundBtn: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', top: 48, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, borderWidth: 3.5 },
+  badgeText: { fontSize: 34, fontWeight: '900' },
+  likeBadge: { right: 30, borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.18)', transform: [{ rotate: '15deg' }] },
+  nopeBadge: { left: 30, borderColor: '#ff5050', backgroundColor: 'rgba(255,80,80,0.18)', transform: [{ rotate: '-15deg' }] },
+  footer: { flexDirection: 'row', justifyContent: 'center', gap: 48 },
+  roundBtn: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  roundBtnNo: { backgroundColor: 'rgba(255,80,80,0.12)', borderWidth: 1.5, borderColor: 'rgba(255,80,80,0.3)' },
+  roundBtnYes: { backgroundColor: 'rgba(46,204,113,0.12)', borderWidth: 1.5, borderColor: 'rgba(46,204,113,0.3)' },
   emptyDeck: { alignItems: 'center', gap: 16, paddingHorizontal: 40 },
   emptyTitle: { color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center' },
   emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 15, textAlign: 'center' },
@@ -403,20 +538,25 @@ const styles = StyleSheet.create({
   matchFinishedTitle: { color: '#fff', fontSize: 28, fontWeight: '900', textAlign: 'center', marginTop: 10 },
   matchFinishedSub: { color: 'rgba(255,255,255,0.5)', fontSize: 16, textAlign: 'center', marginBottom: 30 },
   btnCerrarText: { color: '#000', fontWeight: '800', fontSize: 16 },
+  btnCerrarFinal: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 20, alignItems: 'center', marginTop: 30 },
   infoModal: { position: 'absolute', left: 24, right: 24, backgroundColor: '#1e293b', borderRadius: 24, padding: 24, maxHeight: 300 },
   modalTitle: { color: '#fff', fontSize: 22, fontWeight: '800', marginBottom: 12 },
   modalScroll: { flex: 1 },
   modalOverview: { color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 22 },
   modalDetails: { flexDirection: 'row', gap: 20, marginTop: 20 },
   modalMeta: { color: COLORS.primary, fontWeight: '800' },
-  
-  // Resultados finalizados
   resultsScroll: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 100 },
   resultsHeader: { alignItems: 'center', marginBottom: 30 },
   resultsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
-  resultCard: { width: 160, borderRadius: 20, backgroundColor: '#1e293b', overflow: 'hidden', ...SHADOWS.macLight, marginBottom: 12 },
-  resultPoster: { width: '100%', aspectRatio: 2/3 },
+  resultCard: { width: 150, borderRadius: 20, backgroundColor: '#1e293b', overflow: 'hidden', ...SHADOWS.macLight, marginBottom: 12 },
+  resultPoster: { width: '100%', aspectRatio: 2 / 3 },
   resultInfo: { padding: 10 },
-  resultTitle: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  btnCerrarFinal: { backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 20, alignItems: 'center', marginTop: 30 },
+  resultTitle: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  matchBadge: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,107,0,0.85)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 },
+  matchBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  panelBackdrop: { ...StyleSheet.absoluteFillObject, zIndex: 0 },
+  panel: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#0f172a', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '75%', paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  panelHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)', alignSelf: 'center', marginBottom: 16 },
+  panelTitle: { color: '#fff', fontSize: 20, fontWeight: '900', marginBottom: 16 },
+  panelScroll: { paddingBottom: 20 },
 });
