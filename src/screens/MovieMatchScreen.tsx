@@ -43,9 +43,6 @@ import { SHADOWS } from '../theme/theme';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
@@ -103,7 +100,7 @@ export function MovieMatchScreen() {
     });
   }, [match?.matchedMovies]);
 
-  // ── Algoritmo multi-fuente de recomendaciones ──
+  // ── Algoritmo de películas ──
   useEffect(() => {
     if (!match || !user || hasFetched.current) return;
     hasFetched.current = true;
@@ -112,29 +109,32 @@ export function MovieMatchScreen() {
     void (async () => {
       try {
         const db = getFirestore();
-        let watchlistMovies: any[] = [];
-        let highRatedSeeds: number[] = [];
-        let anyRatedSeeds: number[] = [];
 
-        // 1. Recopilar datos de todos los participantes (por_ver de todos, vistas de todos)
+        // 1. Leer por_ver de cada participante por separado
+        const watchlistsPerUser = new Map<string, Set<number>>();
+        const moviesById = new Map<number, any>();
+
         for (const uid of match.participants) {
           const snap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'por_ver'));
+          const userSet = new Set<number>();
           if (snap.exists()) {
             const data = snap.data() as { peliculas: any[] };
-            if (data.peliculas) watchlistMovies.push(...data.peliculas);
-          }
-
-          const vSnap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'vistas'));
-          if (vSnap.exists()) {
-            const data = vSnap.data() as { peliculas: any[] };
-            if (data.peliculas) {
-              highRatedSeeds.push(...data.peliculas.filter(p => p.valoracion >= 4).map(p => p.idPelicula));
-              anyRatedSeeds.push(...data.peliculas.map(p => p.idPelicula));
+            for (const p of data.peliculas ?? []) {
+              userSet.add(p.idPelicula);
+              if (!moviesById.has(p.idPelicula)) {
+                moviesById.set(p.idPelicula, {
+                  id: p.idPelicula,
+                  title: p.titulo,
+                  poster_path: p.rutaPoster,
+                  release_date: '',
+                });
+              }
             }
           }
+          watchlistsPerUser.set(uid, userSet);
         }
 
-        // 2. Construir set de IDs ya votados por el usuario actual
+        // 2. IDs ya votados por el usuario actual
         const votedIds = new Set<string>();
         const currentVotes = (match.votes || {}) as Record<string, string[]>;
         const currentNoVotes = (match.noVotes || {}) as Record<string, string[]>;
@@ -143,83 +143,52 @@ export function MovieMatchScreen() {
 
         const seenIds = new Set<string>(votedIds);
 
-        const mapMovie = (p: any) => ({
-          id: p.id,
-          title: p.title,
-          poster_path: p.poster_path,
-          release_date: p.release_date?.split('-')[0] || '',
-        });
+        // 3. Coincidencias: películas en TODAS las listas
+        const allSets = [...watchlistsPerUser.values()];
+        const coincidenceIds = allSets.length > 0
+          ? [...allSets[0]].filter(id => allSets.every(s => s.has(id)))
+          : [];
+        const coincidenceSet = new Set(coincidenceIds);
 
-        const addUnique = (arr: any[], items: any[]) => {
+        // 4. Individuales: en alguna lista pero no en todas
+        const individualIds = [...moviesById.keys()].filter(id => !coincidenceSet.has(id));
+
+        const toQueueItem = (id: number) => moviesById.get(id)!;
+        const filterUnseen = (ids: number[]) =>
+          ids.filter(id => !seenIds.has(String(id))).map(id => {
+            seenIds.add(String(id));
+            return toQueueItem(id);
+          });
+
+        const coincidencePart = filterUnseen(shuffle(coincidenceIds));
+        const individualPart = filterUnseen(shuffle(individualIds));
+
+        // 5. Fallback variado: tendencias + populares con páginas aleatorias
+        const fallbackPart: any[] = [];
+        const mapTmdb = (p: any) => ({ id: p.id, title: p.title, poster_path: p.poster_path, release_date: p.release_date?.split('-')[0] || '' });
+        const addFallback = (items: any[]) => {
           for (const m of items) {
-            if (!seenIds.has(String(m.id))) {
+            if (m.poster_path && !seenIds.has(String(m.id))) {
               seenIds.add(String(m.id));
-              arr.push(m);
+              fallbackPart.push(mapTmdb(m));
             }
           }
         };
 
-        // 3. Watchlist de los otros (prioridad máxima)
-        const watchlistQueue = watchlistMovies
-          .filter((v, i, a) => a.findIndex(t => t.idPelicula === v.idPelicula) === i)
-          .filter(p => !votedIds.has(String(p.idPelicula)))
-          .map(p => {
-            seenIds.add(String(p.idPelicula));
-            return {
-              id: p.idPelicula,
-              title: p.titulo,
-              poster_path: p.rutaPoster,
-              release_date: p.fechaAnadido ? new Date(p.fechaAnadido).getFullYear().toString() : '',
-            };
-          });
+        const [trending, popular1, popular2] = await Promise.all([
+          tmdbApi.obtenerTendencias('es-ES', 'week').catch(() => null),
+          tmdbApi.obtenerPopulares('es-ES', Math.floor(Math.random() * 10) + 1).catch(() => null),
+          tmdbApi.obtenerPopulares('es-ES', Math.floor(Math.random() * 10) + 1).catch(() => null),
+        ]);
 
-        let finalQueue: any[] = [...watchlistQueue];
+        const fallbackRaw = shuffle([
+          ...(trending?.results ?? []),
+          ...(popular1?.results ?? []),
+          ...(popular2?.results ?? []),
+        ]);
+        addFallback(fallbackRaw);
 
-        // 4. Recomendaciones paralelas basadas en semillas (hasta 5 semillas)
-        const seeds = highRatedSeeds.length > 0 ? highRatedSeeds : anyRatedSeeds;
-        if (seeds.length > 0) {
-          // Tomar hasta 5 semillas distintas al azar
-          const chosenSeeds = shuffle([...new Set(seeds)]).slice(0, 5);
-          const recPromises = chosenSeeds.map(seed =>
-            tmdbApi.obtenerRecomendaciones(seed, 'es-ES', Math.floor(Math.random() * 4) + 1).catch(() => null)
-          );
-          const recResults = await Promise.all(recPromises);
-          for (const res of recResults) {
-            if (!res?.results) continue;
-            const filtered = res.results
-              .filter((p: any) => p.vote_average > 5.5 && p.poster_path)
-              .map(mapMovie);
-            addUnique(finalQueue, filtered);
-          }
-        }
-
-        // 5. También semillas desde la watchlist para más variedad
-        const watchlistSeeds = watchlistMovies.slice(0, 3).map(p => p.idPelicula).filter(Boolean);
-        if (watchlistSeeds.length > 0 && finalQueue.length < 40) {
-          const seed = pickRandom(watchlistSeeds);
-          const res = await tmdbApi.obtenerRecomendaciones(seed, 'es-ES', Math.floor(Math.random() * 3) + 1).catch(() => null);
-          if (res?.results) {
-            addUnique(finalQueue, res.results.filter((p: any) => p.poster_path).map(mapMovie));
-          }
-        }
-
-        // 6. Tendencias semanales (página aleatoria para variedad)
-        if (finalQueue.length < 30) {
-          const trending = await tmdbApi.obtenerTendencias('es-ES', 'week').catch(() => null);
-          if (trending?.results) addUnique(finalQueue, trending.results.filter((p: any) => p.poster_path).map(mapMovie));
-        }
-
-        // 7. Populares con página aleatoria como último relleno
-        if (finalQueue.length < 20) {
-          const popular = await tmdbApi.obtenerPopulares('es-ES', Math.floor(Math.random() * 8) + 1).catch(() => null);
-          if (popular?.results) addUnique(finalQueue, popular.results.filter((p: any) => p.poster_path).map(mapMovie));
-        }
-
-        // 8. Mezcla final: watchlist va primero, el resto mezclado
-        const watchlistIds = new Set(watchlistQueue.map(w => w.id));
-        const watchlistPart = finalQueue.filter(m => watchlistIds.has(m.id));
-        const restPart = shuffle(finalQueue.filter(m => !watchlistIds.has(m.id)));
-        setQueue([...watchlistPart, ...restPart]);
+        setQueue([...coincidencePart, ...individualPart, ...fallbackPart]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -293,13 +262,6 @@ export function MovieMatchScreen() {
     return { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#ff5050', opacity: leftOpacity, borderRadius: 24 };
   });
 
-  const likeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [SWIPE_THRESHOLD * 0.3, SWIPE_THRESHOLD], [0, 1], Extrapolate.CLAMP),
-  }));
-
-  const nopeOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(translateX.value, [-SWIPE_THRESHOLD, -SWIPE_THRESHOLD * 0.3], [1, 0], Extrapolate.CLAMP),
-  }));
 
   // ── Render ──
   if (loading || !match) {
@@ -387,13 +349,6 @@ export function MovieMatchScreen() {
               {/* Overlay de color al deslizar */}
               <Animated.View style={cardOverlayStyle} pointerEvents="none" />
 
-              {/* Badges SÍ / NO */}
-              <Animated.View style={[styles.badge, styles.likeBadge, likeOpacity]}>
-                <Text style={[styles.badgeText, { color: '#2ecc71' }]}>SÍ</Text>
-              </Animated.View>
-              <Animated.View style={[styles.badge, styles.nopeBadge, nopeOpacity]}>
-                <Text style={[styles.badgeText, { color: '#ff5050' }]}>NO</Text>
-              </Animated.View>
             </Animated.View>
           </PanGestureHandler>
         ) : loading ? (
@@ -518,10 +473,6 @@ const styles = StyleSheet.create({
   movieTitle: { color: '#fff', fontSize: 24, fontWeight: '800' },
   movieYear: { color: 'rgba(255,255,255,0.4)', fontSize: 16, marginTop: 4 },
   infoBtn: { width: 50, height: 50, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: 48, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, borderWidth: 3.5 },
-  badgeText: { fontSize: 34, fontWeight: '900' },
-  likeBadge: { right: 30, borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.18)', transform: [{ rotate: '15deg' }] },
-  nopeBadge: { left: 30, borderColor: '#ff5050', backgroundColor: 'rgba(255,80,80,0.18)', transform: [{ rotate: '-15deg' }] },
   footer: { flexDirection: 'row', justifyContent: 'center', gap: 48 },
   roundBtn: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   roundBtnNo: { backgroundColor: 'rgba(255,80,80,0.12)', borderWidth: 1.5, borderColor: 'rgba(255,80,80,0.3)' },
