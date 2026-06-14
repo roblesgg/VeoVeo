@@ -8,6 +8,7 @@
  */
 
 import fs from 'fs';
+import { execSync } from 'child_process';
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 
@@ -26,6 +27,22 @@ try {
 
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
+
+// ── Pasos 1-6: Build web + deploy Vercel ─────────────────────────────────────
+async function buildAndDeployWeb() {
+  console.log('\n🌐 Paso 1 — Build web (expo export)...');
+  execSync('npx expo export --platform web', { stdio: 'inherit' });
+
+  console.log('\n📁 Paso 2 — Sincronizando dist/ → public/...');
+  execSync('xcopy /E /I /Y dist\\_expo public\\_expo > nul', { stdio: 'inherit', shell: true });
+  execSync('xcopy /E /I /Y dist\\assets public\\assets > nul', { stdio: 'inherit', shell: true });
+  execSync('copy /Y dist\\index.html public\\index.html > nul', { stdio: 'inherit', shell: true });
+  execSync('copy /Y dist\\metadata.json public\\metadata.json > nul', { stdio: 'inherit', shell: true });
+
+  console.log('\n🚀 Paso 3 — Deploying a Vercel (producción)...');
+  execSync('npx vercel --cwd public --prod', { stdio: 'inherit' });
+  console.log('✅ Web deployada en producción');
+}
 
 // ── Paso 7: Actualizar min_version en Firestore ──────────────────────────────
 async function actualizarVersion() {
@@ -91,10 +108,12 @@ async function main() {
   console.log(`  🚀 LANZAMIENTO VeoVeo ${version}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+  await buildAndDeployWeb();
   await actualizarVersion();
   await enviarNotificaciones();
 
   console.log('\n✅ Lanzamiento completado.');
+  console.log('   • Web deployada en Vercel (veoveo.dripdev.dev)');
   console.log(`   • min_version en Firestore: ${version}`);
   console.log('   • Notificaciones enviadas a todos los dispositivos');
   console.log('   • Verifica el APK en: github.com/roblesgg/VeoVeo/releases');
