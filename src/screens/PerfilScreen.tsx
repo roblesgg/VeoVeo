@@ -6,7 +6,7 @@
  * Incluye accesos a ajustes, usuarios bloqueados y descarga de la app.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -26,6 +26,8 @@ import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { doc, getDoc } from 'firebase/firestore';
+import { getFirestoreDb } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useMontserrat } from '../theme/useMontserrat';
 import { useLanguage } from '../context/LanguageContext';
@@ -66,6 +68,17 @@ export function PerfilScreen() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [latestVersion, setLatestVersion] = useState('');
+
+  // En web: leer la versión publicada desde Firestore para mostrarla en el botón de descarga
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const db = getFirestoreDb();
+    if (!db) return;
+    void getDoc(doc(db, 'configuracion', 'app')).then(snap => {
+      if (snap.exists()) setLatestVersion(snap.data().min_version ?? '');
+    });
+  }, []);
 
   // ESTADO DE CARGA INICIAL
   if (cargando && !usuario) {
@@ -162,7 +175,9 @@ export function PerfilScreen() {
             onPress={() => Linking.openURL('https://veoveo.dripdev.dev/descargar')}
           >
             <Ionicons name="cloud-download-outline" size={22} color="#fff" />
-            <Text style={[styles.downloadText, { fontFamily }]}>Descargar App</Text>
+            <Text style={[styles.downloadText, { fontFamily }]}>
+              {latestVersion ? `Descargar App v${latestVersion}` : 'Descargar App'}
+            </Text>
           </Pressable>
         )}
 
