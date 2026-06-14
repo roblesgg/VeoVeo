@@ -116,21 +116,10 @@ export function observarAmigos(callback: (amigos: UsuarioPerfil[]) => void): () 
     );
 
     unsubAmigos = onSnapshot(qAmigos, (amigosSnap) => {
-      const todos = amigosSnap.docs.map(
+      const listaAmigos = amigosSnap.docs.map(
         (d) => ({ uid: d.id, ...d.data() }) as UsuarioPerfil,
       );
-
-      // Solo mostrar amigos mutuos (el otro también nos tiene en su lista)
-      const mutuos = todos.filter((f) => (f.amigos ?? []).includes(uidActual));
-      callback(mutuos);
-
-      // Auto-curación: si alguien ya no nos tiene como amigo, eliminarlo de nuestra lista
-      const noMutuos = todos.filter((f) => !(f.amigos ?? []).includes(uidActual));
-      if (noMutuos.length > 0) {
-        void updateDoc(doc(db, 'usuarios', uidActual), {
-          amigos: arrayRemove(...(noMutuos.map((f) => f.uid) as [string, ...string[]])),
-        });
-      }
+      callback(listaAmigos);
     });
   });
 
