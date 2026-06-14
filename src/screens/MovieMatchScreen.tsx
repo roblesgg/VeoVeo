@@ -116,16 +116,12 @@ export function MovieMatchScreen() {
         let highRatedSeeds: number[] = [];
         let anyRatedSeeds: number[] = [];
 
-        // 1. Recopilar datos de todos los participantes
+        // 1. Recopilar datos de todos los participantes (por_ver de todos, vistas de todos)
         for (const uid of match.participants) {
-          const isMe = uid === user.uid;
-
-          if (!isMe) {
-            const snap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'por_ver'));
-            if (snap.exists()) {
-              const data = snap.data() as { peliculas: any[] };
-              if (data.peliculas) watchlistMovies.push(...data.peliculas);
-            }
+          const snap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'por_ver'));
+          if (snap.exists()) {
+            const data = snap.data() as { peliculas: any[] };
+            if (data.peliculas) watchlistMovies.push(...data.peliculas);
           }
 
           const vSnap = await getDoc(doc(db, 'usuarios', uid, 'biblioteca', 'vistas'));
@@ -292,9 +288,9 @@ export function MovieMatchScreen() {
     const rightOpacity = interpolate(translateX.value, [0, SWIPE_THRESHOLD * 1.5], [0, 0.5], Extrapolate.CLAMP);
     const leftOpacity = interpolate(translateX.value, [-SWIPE_THRESHOLD * 1.5, 0], [0.5, 0], Extrapolate.CLAMP);
     if (translateX.value >= 0) {
-      return { position: 'absolute' as const, inset: 0, backgroundColor: '#2ecc71', opacity: rightOpacity, borderRadius: 24 };
+      return { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#2ecc71', opacity: rightOpacity, borderRadius: 24 };
     }
-    return { position: 'absolute' as const, inset: 0, backgroundColor: '#ff5050', opacity: leftOpacity, borderRadius: 24 };
+    return { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#ff5050', opacity: leftOpacity, borderRadius: 24 };
   });
 
   const likeOpacity = useAnimatedStyle(() => ({
