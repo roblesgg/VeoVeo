@@ -43,7 +43,8 @@ export function NotificationPermissionPrompt({ onTokenRegistered }: Props) {
   }
 
   async function handleAllow() {
-    await dismiss();
+    setVisible(false);
+    await AsyncStorage.setItem(STORAGE_KEY, '1');
     const { status } = await Notifications.requestPermissionsAsync();
     if (status === 'granted') {
       try {
